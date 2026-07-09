@@ -49,7 +49,11 @@
 	<div class="rounded-2xl bg-club-800 p-6 text-cream-200 shadow-md sm:p-7">
 		<div class="flex items-start justify-between">
 			<span class="text-xs font-semibold tracking-[0.2em] text-gold-400 uppercase"> Handicap </span>
-			<span class="text-xs tracking-widest text-cream-200/50 uppercase">Beer Golf · Heder</span>
+			<a
+				href="/members"
+				class="text-xs font-semibold tracking-widest text-gold-300 uppercase hover:underline"
+				>#{d.member.rank} av {d.member.memberCount} på leaderboarden</a
+			>
 		</div>
 		<div class="mt-2 flex items-center gap-4">
 			<span class="font-display text-7xl leading-none font-semibold">{d.member.hcp}</span>

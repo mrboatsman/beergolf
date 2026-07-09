@@ -132,6 +132,15 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   finnas i db — ingen path traversal). `BODY_SIZE_LIMIT` i .env höjer adapter-nodes
   body-gräns för videouppladdning; max 200 MB/fil valideras i actionen.
 
+- Kontoåtgärder i admin (endast rollen admin, ej på sig själv): **Återställ lösenord**
+  (engångslösenord visas en gång; `members.mustChangePassword` tvingar byte via
+  hooks-redirect till `/password`), **Inaktivera/Aktivera** (inactive kan inte logga in,
+  levande sessioner dödas i hooks), **Anonymisera (GDPR, oåterkallelig)** — namn/e-post
+  ersätts, lösenord+sessioner raderas, bevismedia tas bort ur lagringen och fadderns
+  omdöme rensas; spelhistorik behålls som klubbstatistik. `/password` = byt eget lösenord
+  (länk i sidebarens användarkort), loggar ut övriga sessioner.
+- Profilens HCP-kort visar global leaderboard-placering ("#N av M", länkad till /members).
+
 ## Kvar att bygga
 
 - Turneringar (leaderboard, koppla rundor/coasters)

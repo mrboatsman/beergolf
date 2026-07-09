@@ -2,6 +2,7 @@ import { redirect, type Handle } from '@sveltejs/kit';
 import {
 	SESSION_COOKIE,
 	validateSessionToken,
+	invalidateSession,
 	setSessionCookie,
 	deleteSessionCookie,
 	toSafeMember
@@ -10,7 +11,7 @@ import {
 // Ocertifierade (aspiranter) har bara tillgång till certifieringsflödet.
 // Grönt kort (teori + praktik + etikett) är obligatoriskt innan resten
 // av klubbhuset låses upp.
-const ASPIRANT_ALLOWED = ['/certification', '/quiz', '/logout', '/files'];
+const ASPIRANT_ALLOWED = ['/certification', '/quiz', '/logout', '/files', '/password'];
 const ALWAYS_ALLOWED = ['/_app', '/@', '/favicon', '/.well-known'];
 
 export const handle: Handle = async ({ event, resolve }) => {
@@ -22,14 +23,24 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 
 	const { session, member } = await validateSessionToken(token);
-	if (session && member) {
+	if (session && member && member.status !== 'inactive') {
 		setSessionCookie(event, token, session.expiresAt);
 		event.locals.member = toSafeMember(member);
 		event.locals.session = session;
 	} else {
+		// Inaktiverade konton loggas ut direkt
+		if (session) await invalidateSession(session.id);
 		deleteSessionCookie(event);
 		event.locals.member = null;
 		event.locals.session = null;
+	}
+
+	// Engångslösenord från admin måste bytas innan något annat
+	if (event.locals.member?.mustChangePassword) {
+		const p = event.url.pathname;
+		const allowed =
+			ALWAYS_ALLOWED.some((a) => p.startsWith(a)) || p === '/password' || p === '/logout';
+		if (!allowed) throw redirect(303, '/password');
 	}
 
 	if (event.locals.member?.status === 'aspirant') {

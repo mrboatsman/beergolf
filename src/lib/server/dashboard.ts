@@ -39,7 +39,11 @@ export async function getDashboard(memberId: string) {
 			hcp: members.hcp,
 			memberNumber: members.memberNumber,
 			greenCardIssuedAt: members.greenCardIssuedAt,
-			createdAt: members.createdAt
+			createdAt: members.createdAt,
+			// Global leaderboard-placering (lägst hcp = bäst). OBS: literal
+			// members.hcp — drizzle-interpolation binder fel i subqueries.
+			rank: sql<number>`(select count(*) + 1 from members m2 where m2.hcp < members.hcp)`,
+			memberCount: sql<number>`(select count(*) from members)`
 		})
 		.from(members)
 		.where(eq(members.id, memberId))

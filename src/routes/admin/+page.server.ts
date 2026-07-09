@@ -2,8 +2,17 @@ import { fail } from '@sveltejs/kit';
 import { asc, desc, eq, isNotNull, like, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/sqlite-core';
 import { db } from '$lib/server/db';
-import { certifications, invites, members, quizQuestions, type Role } from '$lib/server/db/schema';
+import {
+	certificationProofs,
+	certifications,
+	invites,
+	members,
+	sessions,
+	quizQuestions,
+	type Role
+} from '$lib/server/db/schema';
 import { hashPassword } from '$lib/server/auth';
+import { storage } from '$lib/server/storage';
 import { newId, newInviteCode } from '$lib/server/ids';
 import { requireRole } from '$lib/server/guard';
 import { buildFadderTree } from '$lib/fadder-tree';
@@ -207,5 +216,95 @@ export const actions: Actions = {
 		const id = String(form.get('id') ?? '');
 		await db.delete(quizQuestions).where(eq(quizQuestions.id, id));
 		return { questionDeleted: true };
+	},
+
+	// --- Kontoåtgärder (endast admin) ----------------------------------------
+
+	// Nytt engångslösenord — visas en gång för admin, måste bytas vid inloggning.
+	resetPassword: async ({ request, locals }) => {
+		const me = requireRole(locals.member, 'admin');
+		const form = await request.formData();
+		const id = String(form.get('id') ?? '');
+		if (id === me.id) return fail(400, { error: 'Byt ditt eget lösenord under /password.' });
+		const target = await db.select().from(members).where(eq(members.id, id)).get();
+		if (!target) return fail(404, { error: 'Medlemmen finns inte.' });
+
+		const oneTime = newInviteCode(10);
+		await db
+			.update(members)
+			.set({ passwordHash: await hashPassword(oneTime), mustChangePassword: true })
+			.where(eq(members.id, id));
+		// gamla sessioner ska inte överleva en återställning
+		await db.delete(sessions).where(eq(sessions.memberId, id));
+
+		return { passwordReset: { name: target.name, oneTime } };
+	},
+
+	toggleActive: async ({ request, locals }) => {
+		const me = requireRole(locals.member, 'admin');
+		const form = await request.formData();
+		const id = String(form.get('id') ?? '');
+		if (id === me.id) return fail(400, { error: 'Du kan inte inaktivera dig själv.' });
+		const target = await db.select().from(members).where(eq(members.id, id)).get();
+		if (!target) return fail(404, { error: 'Medlemmen finns inte.' });
+
+		if (target.status === 'inactive') {
+			// tillbaka till aspirant om grönt kort saknas, annars aktiv
+			const status = target.greenCardIssuedAt ? 'active' : 'aspirant';
+			await db.update(members).set({ status }).where(eq(members.id, id));
+			return { activated: target.name };
+		}
+		await db.update(members).set({ status: 'inactive' }).where(eq(members.id, id));
+		await db.delete(sessions).where(eq(sessions.memberId, id));
+		return { deactivated: target.name };
+	},
+
+	// GDPR: oåterkallelig anonymisering. Spelhistoriken (rundor/coasters)
+	// behålls som klubbstatistik men utan personuppgifter; bevismedia och
+	// fadderns omdöme raderas.
+	anonymize: async ({ request, locals }) => {
+		const me = requireRole(locals.member, 'admin');
+		const form = await request.formData();
+		const id = String(form.get('id') ?? '');
+		if (id === me.id) return fail(400, { error: 'Du kan inte anonymisera dig själv.' });
+		const target = await db.select().from(members).where(eq(members.id, id)).get();
+		if (!target) return fail(404, { error: 'Medlemmen finns inte.' });
+
+		// Radera bevisfiler (bilder/video på personen) ur lagringen
+		const cert = await db
+			.select()
+			.from(certifications)
+			.where(eq(certifications.memberId, id))
+			.get();
+		if (cert) {
+			const proofs = await db
+				.select()
+				.from(certificationProofs)
+				.where(eq(certificationProofs.certificationId, cert.id))
+				.all();
+			for (const p of proofs) await storage.remove(p.storageKey);
+			await db.delete(certificationProofs).where(eq(certificationProofs.certificationId, cert.id));
+			await db
+				.update(certifications)
+				.set({ practicalComment: null })
+				.where(eq(certifications.id, cert.id));
+		}
+
+		const anonName = target.memberNumber
+			? `Avregistrerad medlem nr ${target.memberNumber}`
+			: 'Avregistrerad medlem';
+		await db
+			.update(members)
+			.set({
+				name: anonName,
+				email: `anonymiserad-${id.slice(0, 8)}@gdpr.local`,
+				passwordHash: null,
+				mustChangePassword: false,
+				status: 'inactive'
+			})
+			.where(eq(members.id, id));
+		await db.delete(sessions).where(eq(sessions.memberId, id));
+
+		return { anonymized: anonName };
 	}
 };

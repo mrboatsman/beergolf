@@ -18,6 +18,8 @@ export const members = sqliteTable('members', {
 	name: text('name').notNull(),
 	email: text('email').notNull().unique(),
 	passwordHash: text('password_hash'), // null tills aspiranten satt lösenord
+	// true efter admin-återställning: engångslösenordet måste bytas vid inloggning
+	mustChangePassword: integer('must_change_password', { mode: 'boolean' }).notNull().default(false),
 	role: text('role').$type<Role>().notNull().default('aspirant'),
 	status: text('status').$type<'aspirant' | 'active' | 'inactive'>().notNull().default('aspirant'),
 	hcp: real('hcp').notNull().default(START_HCP),

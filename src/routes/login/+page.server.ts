@@ -28,6 +28,9 @@ export const actions: Actions = {
 		// Kör alltid en verify för att undvika timing-läckage om användaren finns.
 		const ok = member?.passwordHash && (await verifyPassword(member.passwordHash, password));
 		if (!member || !ok) return fail(400, { email, error: 'Fel e-post eller lösenord.' });
+		if (member.status === 'inactive') {
+			return fail(403, { email, error: 'Kontot är inaktiverat — kontakta klubbmästaren.' });
+		}
 
 		const token = generateSessionToken();
 		const session = await createSession(token, member.id);

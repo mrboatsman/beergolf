@@ -1,9 +1,12 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { page } from '$app/state';
 	import FadderTree from '$lib/components/FadderTree.svelte';
 	let { data, form } = $props();
 
 	const roles = ['aspirant', 'member', 'fadder', 'captain', 'admin'];
+	let isAdmin = $derived(page.data.member?.role === 'admin');
+	let meId = $derived(page.data.member?.id);
 
 	// Paginering: bevara båda tabellernas query-params i länkarna
 	function pageUrl(patch: Record<string, string | number>) {
@@ -40,6 +43,28 @@
 {/if}
 {#if form?.questionCreated}
 	<p class="mt-4 rounded bg-club-100 px-3 py-2 text-sm text-club-700">Fråga tillagd.</p>
+{/if}
+{#if form?.passwordReset}
+	<p class="mt-4 rounded bg-gold-400/20 px-3 py-2 text-sm text-club-900">
+		Engångslösenord för <strong>{form.passwordReset.name}</strong>:
+		<span class="font-mono text-lg font-bold">{form.passwordReset.oneTime}</span>
+		— visas bara nu. Användaren måste byta det vid inloggning.
+	</p>
+{/if}
+{#if form?.deactivated}
+	<p class="mt-4 rounded bg-club-100 px-3 py-2 text-sm text-club-700">
+		{form.deactivated} inaktiverad — kan inte längre logga in.
+	</p>
+{/if}
+{#if form?.activated}
+	<p class="mt-4 rounded bg-club-100 px-3 py-2 text-sm text-club-700">
+		{form.activated} aktiverad igen.
+	</p>
+{/if}
+{#if form?.anonymized}
+	<p class="mt-4 rounded bg-club-100 px-3 py-2 text-sm text-club-700">
+		Anonymiserad enligt GDPR: {form.anonymized}. Personuppgifter, bevismedia och omdömen raderade.
+	</p>
 {/if}
 
 <div class="mt-6 grid gap-6 md:grid-cols-2">
@@ -125,11 +150,12 @@
 					<th class="px-3 py-2">Roll</th>
 					<th class="px-3 py-2">Status</th>
 					<th class="px-3 py-2">HCP</th>
+					{#if isAdmin}<th class="px-3 py-2">Åtgärder</th>{/if}
 				</tr>
 			</thead>
 			<tbody>
 				{#each data.members as m (m.id)}
-					<tr class="border-t border-cream-300">
+					<tr class="border-t border-cream-300 {m.status === 'inactive' ? 'opacity-50' : ''}">
 						<td class="px-3 py-2 font-medium"
 							><a class="hover:underline" href={`/members/${m.id}`}>{m.name}</a></td
 						>
@@ -137,9 +163,48 @@
 						<td class="px-3 py-2 capitalize">{m.role}</td>
 						<td class="px-3 py-2 capitalize">{m.status}</td>
 						<td class="px-3 py-2">{m.hcp}</td>
+						{#if isAdmin}
+							<td class="px-3 py-2">
+								{#if m.id !== meId}
+									<div class="flex flex-wrap gap-2 text-xs whitespace-nowrap">
+										<form method="POST" action="?/resetPassword" use:enhance>
+											<input type="hidden" name="id" value={m.id} />
+											<button class="font-semibold text-club-700 hover:underline"
+												>Återställ lösenord</button
+											>
+										</form>
+										<form method="POST" action="?/toggleActive" use:enhance>
+											<input type="hidden" name="id" value={m.id} />
+											<button class="font-semibold text-club-700 hover:underline"
+												>{m.status === 'inactive' ? 'Aktivera' : 'Inaktivera'}</button
+											>
+										</form>
+										<form
+											method="POST"
+											action="?/anonymize"
+											use:enhance={({ cancel }) => {
+												if (
+													!confirm(
+														`Anonymisera ${m.name} enligt GDPR? Namn, e-post, lösenord, bevismedia och omdömen raderas permanent. Detta går inte att ångra.`
+													)
+												)
+													cancel();
+												return async ({ update }) => update();
+											}}
+										>
+											<input type="hidden" name="id" value={m.id} />
+											<button class="font-semibold text-red-700 hover:underline">Anonymisera</button
+											>
+										</form>
+									</div>
+								{:else}
+									<span class="text-xs text-club-900/40">—</span>
+								{/if}
+							</td>
+						{/if}
 					</tr>
 				{:else}
-					<tr><td colspan="5" class="px-3 py-3 text-club-900/60">Ingen träff.</td></tr>
+					<tr><td colspan="6" class="px-3 py-3 text-club-900/60">Ingen träff.</td></tr>
 				{/each}
 			</tbody>
 		</table>

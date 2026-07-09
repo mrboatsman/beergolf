@@ -114,11 +114,17 @@
 							<div class="text-xs text-cream-200/60">HCP {member.hcp}</div>
 						</div>
 					</div>
-					<form method="POST" action="/logout" class="mt-3">
-						<button class="text-xs text-cream-200/60 hover:text-cream-200 hover:underline"
-							>Logga ut</button
+					<div class="mt-3 flex gap-3">
+						<a
+							href="/password"
+							class="text-xs text-cream-200/60 hover:text-cream-200 hover:underline">Byt lösenord</a
 						>
-					</form>
+						<form method="POST" action="/logout">
+							<button class="text-xs text-cream-200/60 hover:text-cream-200 hover:underline"
+								>Logga ut</button
+							>
+						</form>
+					</div>
 				</div>
 			</div>
 		</aside>
