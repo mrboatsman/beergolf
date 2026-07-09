@@ -105,6 +105,12 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   medlemmens relaterade träd = fadder-kedjan uppåt + skyddslingar neråt, skalar till 1000+).
   Träd-logiken (ren, delad server/klient) i `src/lib/fadder-tree.ts`: `buildFadderTree`,
   `flattenForest`, `focusForest` — relationerna kommer från `certifications.fadderId`.
+  Trädet har fit-to-view-start, dynamiska zoomgränser, "Anpassa vy" och fullskärmsläge.
+- Listor är paginerade + filtrerbara (server-side, GET-params): `/members` (q/page,
+  namn eller e-post), admin-medlemmar (mq/mpage) och invalskoder (iq/ipage — sök på kod
+  eller medlemsnamn; kolumnen "Blev medlem" länkar till profilen som koden skapade).
+- Fake-data: `npm run db:seed:fake` skapar 1000 medlemmar i fadderträd (5–10 nivåer,
+  superfaddrar, djupa kedjor; allt märkt @fake.beergolf). `-- --clean` tar bort dem.
   **Praktiskt prov kräver minst en bild/film** (server-side + required i UI) — missat bevis
   = rekonstruera situationen. Etikett godkänns via bekräftelsemodal som listar kriterierna
   (`src/lib/etiquette.ts`, `ETIQUETTE_CRITERIA`); aspiranten ser samma kriterier i Del 3-kortet

@@ -1,5 +1,6 @@
 import { fail } from '@sveltejs/kit';
-import { asc, desc, eq, isNotNull } from 'drizzle-orm';
+import { asc, desc, eq, isNotNull, like, or, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/sqlite-core';
 import { db } from '$lib/server/db';
 import { certifications, invites, members, quizQuestions, type Role } from '$lib/server/db/schema';
 import { hashPassword } from '$lib/server/auth';
@@ -10,10 +11,82 @@ import type { Actions, PageServerLoad } from './$types';
 
 const ROLES: Role[] = ['aspirant', 'member', 'fadder', 'captain', 'admin'];
 
-export const load: PageServerLoad = async () => {
-	const [memberList, inviteList, questionList, relations] = await Promise.all([
-		db.select().from(members).orderBy(desc(members.createdAt)).all(),
-		db.select().from(invites).orderBy(desc(invites.createdAt)).all(),
+const PAGE_SIZE = 25;
+
+function paging(url: URL, key: string) {
+	const q = url.searchParams.get(`${key}q`)?.trim() ?? '';
+	const page = Math.max(1, Number(url.searchParams.get(`${key}page`) ?? 1) || 1);
+	return { q, page };
+}
+
+export const load: PageServerLoad = async ({ url }) => {
+	// Medlemslistan: filtrera på namn/e-post, paginerad (mq/mpage)
+	const m = paging(url, 'm');
+	const memberWhere = m.q
+		? or(like(members.name, `%${m.q}%`), like(members.email, `%${m.q}%`))
+		: undefined;
+	const memberTotal =
+		(
+			await db
+				.select({ n: sql<number>`count(*)` })
+				.from(members)
+				.where(memberWhere)
+				.get()
+		)?.n ?? 0;
+	const memberPages = Math.max(1, Math.ceil(memberTotal / PAGE_SIZE));
+	const memberPage = Math.min(m.page, memberPages);
+	const memberList = await db
+		.select()
+		.from(members)
+		.where(memberWhere)
+		.orderBy(desc(members.createdAt))
+		.limit(PAGE_SIZE)
+		.offset((memberPage - 1) * PAGE_SIZE)
+		.all();
+
+	// Invalskoder: filtrera på kod eller namnet på medlemmen som koden
+	// skapade, paginerad (iq/ipage). usedByName visar vem som löste in koden.
+	const usedBy = alias(members, 'used_by_member');
+	const i = paging(url, 'i');
+	const inviteWhere = i.q
+		? or(like(invites.code, `%${i.q}%`), like(usedBy.name, `%${i.q}%`))
+		: undefined;
+	const inviteTotal =
+		(
+			await db
+				.select({ n: sql<number>`count(*)` })
+				.from(invites)
+				.leftJoin(usedBy, eq(invites.usedBy, usedBy.id))
+				.where(inviteWhere)
+				.get()
+		)?.n ?? 0;
+	const invitePages = Math.max(1, Math.ceil(inviteTotal / PAGE_SIZE));
+	const invitePage = Math.min(i.page, invitePages);
+	const inviteList = await db
+		.select({
+			id: invites.id,
+			code: invites.code,
+			role: invites.role,
+			usedAt: invites.usedAt,
+			expiresAt: invites.expiresAt,
+			createdAt: invites.createdAt,
+			usedById: usedBy.id,
+			usedByName: usedBy.name
+		})
+		.from(invites)
+		.leftJoin(usedBy, eq(invites.usedBy, usedBy.id))
+		.where(inviteWhere)
+		.orderBy(desc(invites.createdAt))
+		.limit(PAGE_SIZE)
+		.offset((invitePage - 1) * PAGE_SIZE)
+		.all();
+
+	// Fadderträdet behöver hela medlemslistan (lätta fält)
+	const [allMembers, questionList, relations] = await Promise.all([
+		db
+			.select({ id: members.id, name: members.name, role: members.role, status: members.status })
+			.from(members)
+			.all(),
 		db.select().from(quizQuestions).orderBy(asc(quizQuestions.question)).all(),
 		db
 			.select({ memberId: certifications.memberId, fadderId: certifications.fadderId })
@@ -22,12 +95,21 @@ export const load: PageServerLoad = async () => {
 			.all()
 	]);
 	const fadderTree = buildFadderTree(
-		memberList.map((m) => ({ id: m.id, name: m.name, role: m.role, status: m.status })),
+		allMembers,
 		relations.filter((r): r is { memberId: string; fadderId: string } => r.fadderId !== null)
 	);
+
 	return {
-		members: memberList.map(({ passwordHash: _drop, ...m }) => m),
+		members: memberList.map(({ passwordHash: _drop, ...mm }) => mm),
+		memberTotal,
+		memberPage,
+		memberPages,
+		memberQ: m.q,
 		invites: inviteList,
+		inviteTotal,
+		invitePage,
+		invitePages,
+		inviteQ: i.q,
 		questions: questionList,
 		fadderTree
 	};

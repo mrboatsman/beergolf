@@ -4,6 +4,25 @@
 	let { data, form } = $props();
 
 	const roles = ['aspirant', 'member', 'fadder', 'captain', 'admin'];
+
+	// Paginering: bevara båda tabellernas query-params i länkarna
+	function pageUrl(patch: Record<string, string | number>) {
+		const params = new URLSearchParams();
+		if (data.memberQ) params.set('mq', data.memberQ);
+		if (data.memberPage > 1) params.set('mpage', String(data.memberPage));
+		if (data.inviteQ) params.set('iq', data.inviteQ);
+		if (data.invitePage > 1) params.set('ipage', String(data.invitePage));
+		for (const [k, v] of Object.entries(patch)) {
+			if (v === '' || v === 1) params.delete(k);
+			else params.set(k, String(v));
+		}
+		const s = params.toString();
+		return s ? `/admin?${s}` : '/admin';
+	}
+
+	function fmtDate(d: Date | string) {
+		return new Date(d).toLocaleDateString('sv-SE');
+	}
 </script>
 
 <h1 class="font-display text-4xl font-semibold text-club-900">Admin</h1>
@@ -80,7 +99,23 @@
 </div>
 
 <section class="mt-8">
-	<h2 class="font-semibold text-club-900">Medlemmar ({data.members.length})</h2>
+	<div class="flex flex-wrap items-center justify-between gap-3">
+		<h2 class="font-semibold text-club-900">Medlemmar ({data.memberTotal})</h2>
+		<form method="GET" class="flex gap-2">
+			{#if data.inviteQ}<input type="hidden" name="iq" value={data.inviteQ} />{/if}
+			<input
+				type="search"
+				name="mq"
+				value={data.memberQ}
+				placeholder="Sök namn eller e-post…"
+				class="w-56 rounded-lg border-cream-300 bg-white text-sm"
+			/>
+			<button
+				class="rounded-lg bg-club-700 px-3 py-2 text-sm font-semibold text-cream-200 hover:bg-club-800"
+				>Sök</button
+			>
+		</form>
+	</div>
 	<div class="mt-3 overflow-x-auto rounded-2xl bg-parchment shadow-sm">
 		<table class="w-full text-left text-sm">
 			<thead class="bg-club-800 text-cream-200">
@@ -95,20 +130,57 @@
 			<tbody>
 				{#each data.members as m (m.id)}
 					<tr class="border-t border-cream-300">
-						<td class="px-3 py-2 font-medium">{m.name}</td>
+						<td class="px-3 py-2 font-medium"
+							><a class="hover:underline" href={`/members/${m.id}`}>{m.name}</a></td
+						>
 						<td class="px-3 py-2 text-club-900/60">{m.email}</td>
 						<td class="px-3 py-2 capitalize">{m.role}</td>
 						<td class="px-3 py-2 capitalize">{m.status}</td>
 						<td class="px-3 py-2">{m.hcp}</td>
 					</tr>
+				{:else}
+					<tr><td colspan="5" class="px-3 py-3 text-club-900/60">Ingen träff.</td></tr>
 				{/each}
 			</tbody>
 		</table>
 	</div>
+	{#if data.memberPages > 1}
+		<nav class="mt-3 flex items-center justify-center gap-3 text-sm" aria-label="Medlemssidor">
+			{#if data.memberPage > 1}
+				<a
+					href={pageUrl({ mpage: data.memberPage - 1 })}
+					class="font-semibold text-club-700 hover:underline">← Föregående</a
+				>
+			{/if}
+			<span class="text-club-900/60">Sida {data.memberPage} av {data.memberPages}</span>
+			{#if data.memberPage < data.memberPages}
+				<a
+					href={pageUrl({ mpage: data.memberPage + 1 })}
+					class="font-semibold text-club-700 hover:underline">Nästa →</a
+				>
+			{/if}
+		</nav>
+	{/if}
 </section>
 
 <section class="mt-8">
-	<h2 class="font-semibold text-club-900">Invalskoder ({data.invites.length})</h2>
+	<div class="flex flex-wrap items-center justify-between gap-3">
+		<h2 class="font-semibold text-club-900">Invalskoder ({data.inviteTotal})</h2>
+		<form method="GET" class="flex gap-2">
+			{#if data.memberQ}<input type="hidden" name="mq" value={data.memberQ} />{/if}
+			<input
+				type="search"
+				name="iq"
+				value={data.inviteQ}
+				placeholder="Sök kod eller medlem…"
+				class="w-56 rounded-lg border-cream-300 bg-white text-sm"
+			/>
+			<button
+				class="rounded-lg bg-club-700 px-3 py-2 text-sm font-semibold text-cream-200 hover:bg-club-800"
+				>Sök</button
+			>
+		</form>
+	</div>
 	<div class="mt-3 overflow-x-auto rounded-2xl bg-parchment shadow-sm">
 		<table class="w-full text-left text-sm">
 			<thead class="bg-club-800 text-cream-200">
@@ -116,6 +188,7 @@
 					<th class="px-3 py-2">Kod</th>
 					<th class="px-3 py-2">Roll</th>
 					<th class="px-3 py-2">Status</th>
+					<th class="px-3 py-2">Blev medlem</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -124,17 +197,48 @@
 						<td class="px-3 py-2 font-mono font-bold">{i.code}</td>
 						<td class="px-3 py-2 capitalize">{i.role}</td>
 						<td class="px-3 py-2">
-							{#if i.usedBy}
-								<span class="text-club-900/50">använd</span>
+							{#if i.usedById}
+								<span class="text-club-900/50"
+									>använd{#if i.usedAt}
+										{fmtDate(i.usedAt)}{/if}</span
+								>
 							{:else}
 								<span class="font-semibold text-club-700">öppen</span>
 							{/if}
 						</td>
+						<td class="px-3 py-2">
+							{#if i.usedById}
+								<a class="font-medium hover:underline" href={`/members/${i.usedById}`}
+									>{i.usedByName}</a
+								>
+							{:else}
+								<span class="text-club-900/40">—</span>
+							{/if}
+						</td>
 					</tr>
+				{:else}
+					<tr><td colspan="4" class="px-3 py-3 text-club-900/60">Ingen träff.</td></tr>
 				{/each}
 			</tbody>
 		</table>
 	</div>
+	{#if data.invitePages > 1}
+		<nav class="mt-3 flex items-center justify-center gap-3 text-sm" aria-label="Invalskodssidor">
+			{#if data.invitePage > 1}
+				<a
+					href={pageUrl({ ipage: data.invitePage - 1 })}
+					class="font-semibold text-club-700 hover:underline">← Föregående</a
+				>
+			{/if}
+			<span class="text-club-900/60">Sida {data.invitePage} av {data.invitePages}</span>
+			{#if data.invitePage < data.invitePages}
+				<a
+					href={pageUrl({ ipage: data.invitePage + 1 })}
+					class="font-semibold text-club-700 hover:underline">Nästa →</a
+				>
+			{/if}
+		</nav>
+	{/if}
 </section>
 
 <section class="mt-8">

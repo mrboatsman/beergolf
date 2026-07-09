@@ -5,7 +5,7 @@
 	import { hierarchy, tree, type HierarchyPointNode } from 'd3-hierarchy';
 	import { linkHorizontal } from 'd3-shape';
 	import { select } from 'd3-selection';
-	import { zoom } from 'd3-zoom';
+	import { zoom, zoomIdentity, type ZoomBehavior } from 'd3-zoom';
 	import { flattenForest, focusForest, type FadderNode } from '$lib/fadder-tree';
 
 	let { forest }: { forest: FadderNode[] } = $props();
@@ -43,11 +43,14 @@
 		const xs = nodes.map((n) => n.x);
 		const ys = nodes.map((n) => n.y);
 		const pad = 30;
-		const minX = Math.min(...xs, 0) - pad;
-		const maxX = Math.max(...xs, 0) + pad;
-		const minY = Math.min(...ys, 0) - pad;
-		const maxY = Math.max(...ys, 0) + pad + 140; // plats för namnetiketter
-		return { nodes, links, viewBox: `${minY} ${minX} ${maxY - minY} ${maxX - minX}` };
+		return {
+			nodes,
+			links,
+			minX: Math.min(...xs, 0) - pad,
+			maxX: Math.max(...xs, 0) + pad,
+			minY: Math.min(...ys, 0) - pad,
+			maxY: Math.max(...ys, 0) + pad + 150 // plats för namnetiketter
+		};
 	});
 
 	const linkPath = linkHorizontal<
@@ -65,16 +68,56 @@
 		aspirant: 'var(--color-gold-300)'
 	};
 
-	// Zoom/panorering
+	// Zoom/panorering i pixelkoordinater. Startläget anpassas till trädets
+	// storlek och zoomgränserna beräknas dynamiskt — ett träd på 1000
+	// medlemmar ska gå att både överblicka och zooma in till läsbar text.
 	let svgEl = $state<SVGSVGElement | null>(null);
 	let gEl = $state<SVGGElement | null>(null);
+	let wrapEl = $state<HTMLDivElement | null>(null);
+	let isFullscreen = $state(false);
+	let zoomBehavior: ZoomBehavior<SVGSVGElement, unknown> | null = null;
+
+	async function toggleFullscreen() {
+		if (document.fullscreenElement) await document.exitFullscreen();
+		else await wrapEl?.requestFullscreen();
+	}
+
+	function fitView() {
+		if (!svgEl || !zoomBehavior) return;
+		const w = svgEl.clientWidth;
+		const h = svgEl.clientHeight;
+		const treeW = layout.maxY - layout.minY;
+		const treeH = layout.maxX - layout.minX;
+		const k = Math.min(w / treeW, h / treeH, 1);
+		const tx = (w - k * (layout.minY + layout.maxY)) / 2;
+		const ty = (h - k * (layout.minX + layout.maxX)) / 2;
+		// tillåt alltid att zooma ut till helbild och in till 12x läsläge
+		zoomBehavior.scaleExtent([Math.min(k, 0.05), 12]);
+		select(svgEl).call(zoomBehavior.transform, zoomIdentity.translate(tx, ty).scale(k));
+	}
+
 	$effect(() => {
 		if (!svgEl || !gEl) return;
 		const g = gEl;
-		const z = zoom<SVGSVGElement, unknown>()
-			.scaleExtent([0.15, 4])
-			.on('zoom', (e) => select(g).attr('transform', e.transform.toString()));
-		select(svgEl).call(z);
+		zoomBehavior = zoom<SVGSVGElement, unknown>().on('zoom', (e) =>
+			select(g).attr('transform', e.transform.toString())
+		);
+		select(svgEl).call(zoomBehavior);
+		fitView();
+
+		// Anpassa vyn när fullskärmsläget slås av/på (ytan byter storlek)
+		const onFsChange = () => {
+			isFullscreen = !!document.fullscreenElement;
+			requestAnimationFrame(() => fitView());
+		};
+		document.addEventListener('fullscreenchange', onFsChange);
+		return () => document.removeEventListener('fullscreenchange', onFsChange);
+	});
+
+	// Anpassa vyn när fokus ändras (layouten byts)
+	$effect(() => {
+		void layout;
+		fitView();
 	});
 
 	function pick(id: string) {
@@ -83,98 +126,116 @@
 	}
 </script>
 
-<div class="flex flex-wrap items-center gap-2">
-	<div class="relative">
-		<input
-			type="search"
-			bind:value={query}
-			placeholder="Sök fadder eller medlem…"
-			class="w-64 rounded-lg border-cream-300 bg-white text-sm"
-		/>
-		{#if suggestions.length > 0}
-			<ul
-				class="absolute z-10 mt-1 w-64 overflow-hidden rounded-lg border border-cream-300 bg-white shadow-lg"
+<div
+	bind:this={wrapEl}
+	class={isFullscreen ? 'flex h-full flex-col overflow-hidden bg-cream-200 p-6' : ''}
+>
+	<div class="flex flex-wrap items-center gap-2">
+		<div class="relative">
+			<input
+				type="search"
+				bind:value={query}
+				placeholder="Sök fadder eller medlem…"
+				class="w-64 rounded-lg border-cream-300 bg-white text-sm"
+			/>
+			{#if suggestions.length > 0}
+				<ul
+					class="absolute z-10 mt-1 w-64 overflow-hidden rounded-lg border border-cream-300 bg-white shadow-lg"
+				>
+					{#each suggestions as m (m.id)}
+						<li>
+							<button
+								type="button"
+								onclick={() => pick(m.id)}
+								class="w-full px-3 py-2 text-left text-sm hover:bg-club-100"
+							>
+								{m.name}
+								<span class="text-xs text-club-900/50">
+									{#if m.children.length > 0}· fadder åt {m.children.length}{/if}
+								</span>
+							</button>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</div>
+		{#if focused}
+			<span class="rounded-full bg-club-700/10 px-3 py-1 text-sm font-semibold text-club-700">
+				{focused.name}s träd
+			</span>
+			<button
+				type="button"
+				onclick={() => (focusId = null)}
+				class="text-sm text-club-900/60 underline hover:text-club-900">Visa hela trädet</button
 			>
-				{#each suggestions as m (m.id)}
-					<li>
-						<button
-							type="button"
-							onclick={() => pick(m.id)}
-							class="w-full px-3 py-2 text-left text-sm hover:bg-club-100"
-						>
-							{m.name}
-							<span class="text-xs text-club-900/50">
-								{#if m.children.length > 0}· fadder åt {m.children.length}{/if}
-							</span>
-						</button>
-					</li>
-				{/each}
-			</ul>
 		{/if}
-	</div>
-	{#if focused}
-		<span class="rounded-full bg-club-700/10 px-3 py-1 text-sm font-semibold text-club-700">
-			{focused.name}s träd
-		</span>
 		<button
 			type="button"
-			onclick={() => (focusId = null)}
-			class="text-sm text-club-900/60 underline hover:text-club-900">Visa hela trädet</button
+			onclick={fitView}
+			class="rounded-lg border border-cream-300 bg-white px-3 py-1 text-sm text-club-900/70 hover:bg-club-100"
+			>Anpassa vy</button
 		>
-	{/if}
-	<span class="ml-auto text-xs text-club-900/50">
-		{all.length} medlemmar · scrolla för zoom, dra för att panorera
-	</span>
-</div>
+		<button
+			type="button"
+			onclick={toggleFullscreen}
+			class="rounded-lg border border-cream-300 bg-white px-3 py-1 text-sm text-club-900/70 hover:bg-club-100"
+			>{isFullscreen ? 'Avsluta fullskärm' : 'Fullskärm'}</button
+		>
+		<span class="ml-auto text-xs text-club-900/50">
+			{all.length} medlemmar · scrolla för zoom, dra för att panorera
+		</span>
+	</div>
 
-<svg
-	bind:this={svgEl}
-	viewBox={layout.viewBox}
-	class="mt-3 h-[480px] w-full cursor-grab rounded-xl bg-white/50 active:cursor-grabbing"
-	role="img"
-	aria-label="Fadderträd"
->
-	<g bind:this={gEl}>
-		{#each layout.links as l (l.target.data.id)}
-			<path
-				d={linkPath(l) ?? ''}
-				fill="none"
-				stroke="var(--color-club-700)"
-				stroke-opacity="0.25"
-				stroke-width="1.5"
-			/>
-		{/each}
-		{#each layout.nodes as n (n.data.id)}
-			<g
-				transform={`translate(${n.y},${n.x})`}
-				class="cursor-pointer"
-				onclick={() => pick(n.data.id)}
-				onkeydown={(e) => e.key === 'Enter' && pick(n.data.id)}
-				role="button"
-				tabindex="0"
-				aria-label={`Fokusera ${n.data.name}`}
-			>
-				<circle
-					r="6"
-					fill={roleColor[n.data.role] ?? 'var(--color-club-800)'}
-					stroke={n.data.id === focusId ? 'var(--color-gold-500)' : 'none'}
-					stroke-width="3"
+	<svg
+		bind:this={svgEl}
+		class="mt-3 w-full cursor-grab rounded-xl bg-white/50 active:cursor-grabbing {isFullscreen
+			? 'min-h-0 flex-1'
+			: 'h-[520px]'}"
+		role="img"
+		aria-label="Fadderträd"
+	>
+		<g bind:this={gEl}>
+			{#each layout.links as l (l.target.data.id)}
+				<path
+					d={linkPath(l) ?? ''}
+					fill="none"
+					stroke="var(--color-club-700)"
+					stroke-opacity="0.25"
+					stroke-width="1.5"
 				/>
-				<text
-					x="11"
-					dy="4"
-					font-size="12"
-					fill="var(--color-club-900)"
-					class="select-none"
-					font-weight={n.data.id === focusId ? '700' : '400'}
+			{/each}
+			{#each layout.nodes as n (n.data.id)}
+				<g
+					transform={`translate(${n.y},${n.x})`}
+					class="cursor-pointer"
+					onclick={() => pick(n.data.id)}
+					onkeydown={(e) => e.key === 'Enter' && pick(n.data.id)}
+					role="button"
+					tabindex="0"
+					aria-label={`Fokusera ${n.data.name}`}
 				>
-					{n.data.name}{n.data.status === 'aspirant' ? ' ◦' : ''}
-				</text>
-			</g>
-		{/each}
-	</g>
-</svg>
-<p class="mt-2 text-xs text-club-900/50">
-	Klicka på en nod för att se dess relaterade träd. ◦ = aspirant. Guld = captain/admin, grön =
-	fadder/medlem.
-</p>
+					<circle
+						r="6"
+						fill={roleColor[n.data.role] ?? 'var(--color-club-800)'}
+						stroke={n.data.id === focusId ? 'var(--color-gold-500)' : 'none'}
+						stroke-width="3"
+					/>
+					<text
+						x="11"
+						dy="4"
+						font-size="12"
+						fill="var(--color-club-900)"
+						class="select-none"
+						font-weight={n.data.id === focusId ? '700' : '400'}
+					>
+						{n.data.name}{n.data.status === 'aspirant' ? ' ◦' : ''}
+					</text>
+				</g>
+			{/each}
+		</g>
+	</svg>
+	<p class="mt-2 text-xs text-club-900/50">
+		Klicka på en nod för att se dess relaterade träd. ◦ = aspirant. Guld = captain/admin, grön =
+		fadder/medlem.
+	</p>
+</div>
