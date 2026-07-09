@@ -17,6 +17,13 @@
 	--color-turf-500: #2f855a;
 	--color-turf-600: #276749;
 	--color-turf-700: #22543d;
+
+	/* Score Coaster — tryckt papp-look (efter fysiska underlägget) */
+	--color-print: #4a7a5e; /* mossgrönt tryck */
+	--color-ink: #221f1a; /* handskriven tusch */
+	--color-card: #fcfbf6; /* off-white papp */
+	--font-coaster: 'Iowan Old Style', Palatino, 'Palatino Linotype', Georgia, serif;
+	--font-hand: 'Bradley Hand', 'Segoe Print', 'Comic Sans MS', 'Comic Sans', cursive;
 }
 
 body {

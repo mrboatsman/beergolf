@@ -6,6 +6,7 @@
 	let players = $derived(data.players);
 	let myRow = $derived(players.find((p) => p.memberId === data.meId));
 	let parTotal = $derived(coaster.par.reduce((a, b) => a + b, 0));
+	let signed = $derived(players.filter((p) => p.signedAt));
 
 	function rowTotal(scores: (number | null)[]) {
 		const filled = scores.filter((s): s is number => s !== null);
@@ -32,66 +33,109 @@
 	<p class="mb-4 rounded bg-turf-100 px-3 py-2 text-sm text-turf-700">{form.added} tillagd.</p>
 {/if}
 
-<!-- Virtuell Score Coaster — layout efter det fysiska underlägget -->
+<!-- Formulär för egen rad — inputs i tabellen kopplas hit via form-attributet -->
+{#if myRow && !myRow.signedAt}
+	<form id="scoreform" method="POST" action="?/saveScores" use:enhance></form>
+{/if}
+
+<!-- ====== Papp-coastern ====== -->
 <div
-	class="mx-auto max-w-3xl rounded-2xl border-2 border-beer-300 bg-[#fbf6ea] p-6 shadow-md sm:p-8"
+	class="mx-auto max-w-2xl -rotate-[0.6deg] rounded-[28px] border border-black/5 bg-card px-6 py-7 font-coaster text-print shadow-[0_10px_30px_-8px_rgba(60,50,30,0.35),0_2px_6px_rgba(60,50,30,0.15)] sm:px-10 sm:py-9"
 >
-	<div class="flex items-start justify-between">
-		<div>
-			<h1 class="font-serif text-3xl font-extrabold tracking-tight text-turf-700 sm:text-4xl">
-				Score Coaster
-			</h1>
-			<p class="mt-1 text-xs font-semibold text-turf-700 sm:text-sm">
+	<!-- Huvud: titel + vimpel -->
+	<div class="flex items-start justify-between gap-4">
+		<div class="pt-2">
+			<h1 class="text-4xl font-bold tracking-tight sm:text-5xl">Score Coaster</h1>
+			<p class="mt-3 text-sm font-bold sm:text-base">
 				You don't have to play nine at one time. Drink responsibly.
 			</p>
 			{#if coaster.name}
-				<p class="mt-1 text-sm text-beer-600">{coaster.name} · {fmtDate(coaster.createdAt)}</p>
+				<p class="mt-1 text-xs text-print/70">{coaster.name} · {fmtDate(coaster.createdAt)}</p>
 			{/if}
 		</div>
-		<!-- Beer Golf-märke (glas) -->
-		<div
-			class="flex h-16 w-14 flex-col items-center justify-center border-2 border-turf-700 text-center font-serif text-xs leading-tight font-bold text-turf-700 [clip-path:polygon(0%_0%,100%_0%,82%_100%,18%_100%)]"
-		>
-			<span>Beer</span>
-			<span>Golf</span>
-		</div>
+		<!-- Beer Golf-vimpel med glas och korsade klubbor -->
+		<svg viewBox="0 0 64 86" class="h-24 w-[4.5rem] shrink-0" aria-label="Beer Golf">
+			<path
+				d="M4 3h56v66L32 83 4 69Z"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2.5"
+				stroke-linejoin="round"
+			/>
+			<!-- korsade klubbor -->
+			<path
+				d="M20 30 40 12M44 30 24 12"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.6"
+				stroke-linecap="round"
+			/>
+			<circle cx="20.5" cy="30" r="2" fill="currentColor" />
+			<circle cx="43.5" cy="30" r="2" fill="currentColor" />
+			<!-- ölglas -->
+			<path
+				d="M27 13.5h10l-1.6 12h-6.8Z"
+				fill="var(--color-card)"
+				stroke="currentColor"
+				stroke-width="1.6"
+			/>
+			<path d="M28.4 17h7.4" stroke="currentColor" stroke-width="1" />
+			<text x="17" y="20" text-anchor="middle" font-size="7" font-weight="bold" fill="currentColor"
+				>B</text
+			>
+			<text x="47" y="20" text-anchor="middle" font-size="7" font-weight="bold" fill="currentColor"
+				>G</text
+			>
+			<text x="32" y="49" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor"
+				>Beer</text
+			>
+			<text x="32" y="63" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor"
+				>Golf</text
+			>
+		</svg>
 	</div>
 
-	<!-- Formulär för egen rad — inputs kopplas hit via form-attributet -->
-	{#if myRow && !myRow.signedAt}
-		<form id="scoreform" method="POST" action="?/saveScores" use:enhance></form>
-	{/if}
-
+	<!-- Poängtabell -->
 	<div class="mt-6 overflow-x-auto">
-		<table class="w-full border-collapse text-sm">
+		<table class="w-full border-collapse">
 			<thead>
-				<tr class="border-y-2 border-beer-800/60">
-					<th class="py-1.5 pr-2 text-left font-bold text-beer-900">Hole</th>
+				<tr class="border-t-[4px] border-b border-double border-t-print border-b-print/80">
+					<th class="w-[30%] min-w-28 py-2 pr-2 text-left text-xl font-bold">Hole</th>
 					{#each coaster.par as _, i (i)}
-						<th class="w-9 px-1 py-1.5 text-center font-bold text-beer-900">{i + 1}</th>
+						<th class="w-9 border-l border-print/60 px-1 py-2 text-center text-lg font-bold"
+							>{i + 1}</th
+						>
 					{/each}
-					<th class="w-14 px-1 py-1.5 text-center font-bold text-beer-900">Total</th>
+					<th class="w-16 border-l border-print/60 px-1 py-2 text-center text-lg font-bold"
+						>Total</th
+					>
 				</tr>
 			</thead>
 			<tbody>
-				<tr class="border-b border-beer-800/40">
-					<td class="py-1.5 pr-2 font-bold text-beer-900">Par</td>
+				<!-- Par-rad (tryckt) -->
+				<tr class="border-b border-print/80">
+					<td class="py-2 pr-2 text-xl font-bold">Par</td>
 					{#each coaster.par as p, i (i)}
-						<td class="border-l border-beer-800/30 px-1 py-1.5 text-center">{p}</td>
+						<td class="border-l border-print/60 px-1 py-2 text-center text-lg font-semibold">{p}</td
+						>
 					{/each}
-					<td class="border-l border-beer-800/30 px-1 py-1.5 text-center font-semibold"
+					<td class="border-l border-print/60 px-1 py-2 text-center text-lg font-semibold"
 						>{parTotal}</td
 					>
 				</tr>
+				<!-- Spelarrader (handskrivna) -->
 				{#each players as p (p.id)}
 					{@const mine = p.memberId === data.meId && !p.signedAt}
-					<tr class="border-b border-beer-800/40">
-						<td class="py-1.5 pr-2">
-							<span class="font-medium text-beer-900">{p.name}</span>
-							{#if p.signedAt}<span class="ml-1 text-turf-600" title="Signerad">✓</span>{/if}
+					<tr class="border-b border-print/80">
+						<td class="h-12 py-1 pr-2 align-top">
+							<span class="block text-[9px] leading-none text-print/80">Player {p.position}</span>
+							<span class="font-hand text-xl leading-tight text-ink">{p.name}</span>
+							{#if p.signedAt}<span class="ml-1 align-middle text-xs text-print/70" title="Signerad"
+									>✓</span
+								>{/if}
 						</td>
 						{#each p.scores as s, i (i)}
-							<td class="border-l border-beer-800/30 px-0.5 py-1 text-center">
+							<td class="border-l border-print/60 p-0 text-center align-middle">
 								{#if mine}
 									<input
 										form="scoreform"
@@ -100,66 +144,69 @@
 										min="1"
 										max="30"
 										value={s ?? ''}
-										class="h-8 w-8 rounded border-beer-300 p-0 text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+										class="h-11 w-full min-w-8 border-0 bg-transparent p-0 text-center font-hand text-xl text-ink [appearance:textfield] focus:ring-1 focus:ring-print/50 [&::-webkit-inner-spin-button]:appearance-none"
 									/>
 								{:else}
-									{s ?? ''}
+									<span class="font-hand text-xl text-ink">{s ?? ''}</span>
 								{/if}
 							</td>
 						{/each}
-						<td class="border-l border-beer-800/30 px-1 py-1.5 text-center font-bold">
-							{rowTotal(p.scores) ?? ''}
+						<td class="border-l border-print/60 px-1 text-center">
+							<span class="font-hand text-xl font-bold text-ink">{rowTotal(p.scores) ?? ''}</span>
 						</td>
 					</tr>
 				{/each}
-				<!-- Tomma rader upp till max, som på det fysiska underlägget -->
+				<!-- Tomma rader upp till sex, som på det tryckta underlägget -->
 				{#each Array(Math.max(0, data.maxPlayers - players.length)) as _, i (i)}
-					<tr class="border-b border-beer-800/40">
-						<td class="py-3 pr-2 text-xs text-beer-400">Player {players.length + i + 1}</td>
+					<tr class="border-b border-print/80">
+						<td class="h-12 py-1 pr-2 align-top">
+							<span class="block text-[9px] leading-none text-print/80"
+								>Player {players.length + i + 1}</span
+							>
+						</td>
 						{#each coaster.par as _p, j (j)}
-							<td class="border-l border-beer-800/30"></td>
+							<td class="border-l border-print/60"></td>
 						{/each}
-						<td class="border-l border-beer-800/30"></td>
+						<td class="border-l border-print/60"></td>
 					</tr>
 				{/each}
 			</tbody>
 		</table>
 	</div>
 
-	{#if myRow && !myRow.signedAt}
-		<div class="mt-4 flex flex-wrap gap-2">
-			<button
-				form="scoreform"
-				class="rounded-lg bg-beer-600 px-4 py-2 text-sm font-semibold text-white hover:bg-beer-700"
-				>Spara poäng</button
-			>
-			<form method="POST" action="?/sign" use:enhance>
-				<button
-					class="rounded-lg bg-turf-600 px-4 py-2 text-sm font-semibold text-white hover:bg-turf-700"
-					disabled={myRow.scores.some((s) => s === null)}
-					title={myRow.scores.some((s) => s === null) ? 'Fyll i alla nio hål först' : ''}
-					>Signera rundan</button
-				>
-			</form>
-		</div>
-	{/if}
-
 	<!-- Player Signature -->
-	<div class="mt-8 border-t border-beer-800/40 pt-3">
-		<span class="font-bold text-beer-900">Player Signature:</span>
-		<div class="mt-2 flex flex-wrap gap-x-8 gap-y-1">
-			{#each players.filter((p) => p.signedAt) as p (p.id)}
-				<span class="font-serif text-lg text-beer-800 italic underline decoration-beer-400"
-					>{p.name}</span
-				>
+	<div class="mt-10">
+		<div class="flex flex-wrap items-end gap-x-6 border-b border-print/80 pb-1">
+			<span class="text-xl font-bold">Player Signature:</span>
+			{#each signed as p (p.id)}
+				<span class="font-hand text-2xl text-ink">{p.name}</span>
 			{/each}
 		</div>
+		<div class="mt-8 border-b border-print/80"></div>
 	</div>
 </div>
 
-<!-- Lägg till spelare -->
+<!-- ====== Kontroller (utanför pappen) ====== -->
+{#if myRow && !myRow.signedAt}
+	<div class="mx-auto mt-6 flex max-w-2xl flex-wrap gap-2">
+		<button
+			form="scoreform"
+			class="rounded-lg bg-beer-600 px-4 py-2 text-sm font-semibold text-white hover:bg-beer-700"
+			>Spara poäng</button
+		>
+		<form method="POST" action="?/sign" use:enhance>
+			<button
+				class="rounded-lg bg-turf-600 px-4 py-2 text-sm font-semibold text-white hover:bg-turf-700 disabled:cursor-not-allowed disabled:opacity-50"
+				disabled={myRow.scores.some((s) => s === null)}
+				title={myRow.scores.some((s) => s === null) ? 'Fyll i alla nio hål först' : ''}
+				>Signera rundan</button
+			>
+		</form>
+	</div>
+{/if}
+
 {#if players.length < data.maxPlayers && data.addable.length > 0}
-	<div class="mx-auto mt-6 max-w-3xl">
+	<div class="mx-auto mt-6 max-w-2xl">
 		<form method="POST" action="?/addPlayer" use:enhance class="flex items-end gap-2">
 			<label class="block flex-1 text-sm">
 				<span class="text-beer-700">Lägg till spelare</span>
@@ -177,6 +224,6 @@
 	</div>
 {/if}
 
-<div class="mx-auto mt-4 max-w-3xl">
+<div class="mx-auto mt-4 max-w-2xl">
 	<a href="/coasters" class="text-sm text-beer-600 hover:underline">← Alla coasters</a>
 </div>
