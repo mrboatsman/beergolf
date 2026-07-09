@@ -112,6 +112,11 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
 - Listor är paginerade + filtrerbara (server-side, GET-params): `/members` (q/page,
   namn eller e-post), admin-medlemmar (mq/mpage) och invalskoder (iq/ipage — sök på kod
   eller medlemsnamn; kolumnen "Blev medlem" länkar till profilen som koden skapade).
+- `/members` är kombinerad **Leaderboard + medlemslista** (nav-etikett "Leaderboard"):
+  rankad på HCP (lägst bäst), global rank via korrelerad subquery. OBS: skriv
+  `members.hcp` som literal text i sql-templaten — drizzle-interpolation av kolumner
+  inuti korrelerade subqueries renderas okvalificerat och binder till fel tabell.
+  Kolumner: grönt kort-nr, rundor i år, bästa brutto. 🏆 på (delad) förstaplats.
 - Fake-data: `npm run db:seed:fake` skapar 1000 medlemmar i fadderträd (5–10 nivåer,
   superfaddrar, djupa kedjor; allt märkt @fake.beergolf). `-- --clean` tar bort dem.
   **Praktiskt prov kräver minst en bild/film** (server-side + required i UI) — missat bevis

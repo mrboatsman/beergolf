@@ -25,12 +25,21 @@
 		const s = params.toString();
 		return s ? `/members?${s}` : '/members';
 	}
+
+	function rankClass(rank: number) {
+		if (rank === 1) return 'text-gold-500';
+		if (rank <= 3) return 'text-gold-600';
+		return 'text-club-900/60';
+	}
 </script>
 
 <div class="flex flex-wrap items-end justify-between gap-3">
 	<div>
-		<p class="text-xs font-semibold tracking-[0.2em] text-gold-600 uppercase">Klubben</p>
-		<h1 class="font-display mt-1 text-4xl font-semibold">Medlemmar ({data.total})</h1>
+		<p class="text-xs font-semibold tracking-[0.2em] text-gold-600 uppercase">
+			Klubben · Säsong {data.seasonYear}
+		</p>
+		<h1 class="font-display mt-1 text-4xl font-semibold">Leaderboard</h1>
+		<p class="mt-1 text-sm text-club-900/60">{data.total} medlemmar, rankade på handikapp.</p>
 	</div>
 	<form method="GET" class="flex gap-2">
 		<input
@@ -50,26 +59,56 @@
 {#if data.members.length === 0}
 	<p class="mt-6 text-sm text-club-900/60">Ingen medlem matchar ”{data.q}”.</p>
 {:else}
-	<div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-		{#each data.members as m (m.id)}
-			<a
-				href={`/members/${m.id}`}
-				class="flex items-center gap-4 rounded-2xl bg-parchment p-5 shadow-sm transition-shadow hover:shadow-md"
-			>
-				<span
-					class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-club-800 font-display text-lg font-semibold text-gold-300"
-					>{initials(m.name)}</span
-				>
-				<div class="min-w-0">
-					<div class="truncate font-semibold">{m.name}</div>
-					<div class="text-xs text-club-900/60">
-						{roleLabel[m.role] ?? m.role}
-						{#if m.memberNumber}· Grönt Kort nr {m.memberNumber}{/if}
-					</div>
-				</div>
-				<span class="ml-auto font-display text-2xl font-semibold text-club-700">{m.hcp}</span>
-			</a>
-		{/each}
+	<div class="mt-6 overflow-x-auto rounded-2xl bg-parchment shadow-sm">
+		<table class="w-full text-left text-sm">
+			<thead class="bg-club-800 text-cream-200">
+				<tr>
+					<th class="px-4 py-2.5 text-right">#</th>
+					<th class="px-3 py-2.5">Medlem</th>
+					<th class="px-3 py-2.5">Grönt Kort</th>
+					<th class="px-3 py-2.5 text-right">Rundor i år</th>
+					<th class="px-3 py-2.5 text-right">Bästa brutto</th>
+					<th class="px-4 py-2.5 text-right">HCP</th>
+				</tr>
+			</thead>
+			<tbody>
+				{#each data.members as m (m.id)}
+					<tr class="border-t border-cream-300 hover:bg-white/60">
+						<td class="px-4 py-2.5 text-right">
+							<span class="font-display text-lg font-semibold {rankClass(m.rank)}">
+								{m.rank}{#if m.rank === 1}<span class="ml-1">🏆</span>{/if}
+							</span>
+						</td>
+						<td class="px-3 py-2.5">
+							<a href={`/members/${m.id}`} class="group flex items-center gap-3">
+								<span
+									class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-club-800 font-display text-sm font-semibold text-gold-300"
+									>{initials(m.name)}</span
+								>
+								<span class="min-w-0">
+									<span class="block truncate font-semibold group-hover:underline">{m.name}</span>
+									<span class="block text-xs text-club-900/50">{roleLabel[m.role] ?? m.role}</span>
+								</span>
+								{#if m.status === 'aspirant'}
+									<span
+										class="rounded-full bg-gold-400/20 px-2 py-0.5 text-[10px] font-semibold text-gold-600"
+										>aspirant</span
+									>
+								{/if}
+							</a>
+						</td>
+						<td class="px-3 py-2.5 text-club-900/60">
+							{#if m.memberNumber}Nr {m.memberNumber}{:else}—{/if}
+						</td>
+						<td class="px-3 py-2.5 text-right">{m.roundsSeason}</td>
+						<td class="px-3 py-2.5 text-right">{m.bestGross ?? '—'}</td>
+						<td class="px-4 py-2.5 text-right">
+							<span class="font-display text-lg font-semibold text-club-700">{m.hcp}</span>
+						</td>
+					</tr>
+				{/each}
+			</tbody>
+		</table>
 	</div>
 {/if}
 

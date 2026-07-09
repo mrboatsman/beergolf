@@ -40,7 +40,7 @@
 					...quizItem,
 					{
 						href: '/members',
-						label: 'Medlemmar',
+						label: 'Leaderboard',
 						active: page.url.pathname.startsWith('/members')
 					},
 					...(isStaff
