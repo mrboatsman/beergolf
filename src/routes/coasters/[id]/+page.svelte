@@ -8,6 +8,16 @@
 	let parTotal = $derived(coaster.par.reduce((a, b) => a + b, 0));
 	let signed = $derived(players.filter((p) => p.signedAt));
 
+	// Sök bland medlemmar att lägga till — lista funkar inte med 1000 st
+	let playerQuery = $state('');
+	let playerSuggestions = $derived(
+		playerQuery.trim().length === 0
+			? []
+			: data.addable
+					.filter((m) => m.name.toLowerCase().includes(playerQuery.trim().toLowerCase()))
+					.slice(0, 8)
+	);
+
 	function rowTotal(scores: (number | null)[]) {
 		const filled = scores.filter((s): s is number => s !== null);
 		return filled.length ? filled.reduce((a, b) => a + b, 0) : null;
@@ -31,6 +41,54 @@
 {/if}
 {#if form?.added}
 	<p class="mb-4 rounded bg-club-100 px-3 py-2 text-sm text-club-700">{form.added} tillagd.</p>
+{/if}
+
+<!-- Lägg till spelare: sök bland medlemmar (högst upp) -->
+{#if players.length < data.maxPlayers && data.addable.length > 0}
+	<div class="mx-auto mb-6 max-w-2xl">
+		<label class="block text-sm font-semibold text-club-900" for="player-search"
+			>Lägg till spelare</label
+		>
+		<div class="relative mt-1 max-w-sm">
+			<input
+				id="player-search"
+				type="search"
+				bind:value={playerQuery}
+				placeholder="Sök medlem på namn…"
+				autocomplete="off"
+				class="w-full rounded-lg border-cream-300 bg-white text-sm"
+			/>
+			{#if playerSuggestions.length > 0}
+				<ul
+					class="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-cream-300 bg-white shadow-lg"
+				>
+					{#each playerSuggestions as m (m.id)}
+						<li>
+							<form
+								method="POST"
+								action="?/addPlayer"
+								use:enhance={() => {
+									playerQuery = '';
+									return async ({ update }) => update();
+								}}
+							>
+								<input type="hidden" name="memberId" value={m.id} />
+								<button class="w-full px-3 py-2 text-left text-sm hover:bg-club-100"
+									>{m.name}</button
+								>
+							</form>
+						</li>
+					{/each}
+				</ul>
+			{:else if playerQuery.trim().length > 0}
+				<p
+					class="absolute z-10 mt-1 w-full rounded-lg border border-cream-300 bg-white px-3 py-2 text-sm text-club-900/60 shadow-lg"
+				>
+					Ingen medlem matchar ”{playerQuery}”.
+				</p>
+			{/if}
+		</div>
+	</div>
 {/if}
 
 <!-- Formulär för egen rad — inputs i tabellen kopplas hit via form-attributet -->
@@ -200,25 +258,6 @@
 				disabled={myRow.scores.some((s) => s === null)}
 				title={myRow.scores.some((s) => s === null) ? 'Fyll i alla nio hål först' : ''}
 				>Signera rundan</button
-			>
-		</form>
-	</div>
-{/if}
-
-{#if players.length < data.maxPlayers && data.addable.length > 0}
-	<div class="mx-auto mt-6 max-w-2xl">
-		<form method="POST" action="?/addPlayer" use:enhance class="flex items-end gap-2">
-			<label class="block flex-1 text-sm">
-				<span class="text-club-900/70">Lägg till spelare</span>
-				<select name="memberId" class="mt-1 w-full rounded-lg border-cream-300 bg-parchment">
-					{#each data.addable as m (m.id)}
-						<option value={m.id}>{m.name}</option>
-					{/each}
-				</select>
-			</label>
-			<button
-				class="rounded-lg bg-club-700 px-4 py-2 text-sm font-semibold text-cream-200 hover:bg-club-800"
-				>Lägg till</button
 			>
 		</form>
 	</div>
