@@ -1,9 +1,33 @@
+@import '@fontsource/cormorant-garamond/500.css';
+@import '@fontsource/cormorant-garamond/600.css';
+@import '@fontsource/cormorant-garamond/700.css';
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
 
-/* Beer Golf™ palett — inspirerad av öl (amber/skum) och golf (grön) */
+/* Beer Golf™ — grafisk profil "country club" (tmp/design.html)
+   Mörk skogsgrön + guld + cream, serif-rubriker i Cormorant Garamond. */
 @theme {
+	/* Klubbgrönt (sidebar, hero-kort, knappar) */
+	--color-club-950: #0d211a;
+	--color-club-900: #122b21;
+	--color-club-800: #17382b;
+	--color-club-700: #1d4636;
+	--color-club-600: #275b45;
+	--color-club-100: #dbe5dc;
+
+	/* Guld (accenter, etiketter, grafer) */
+	--color-gold-300: #dcc08a;
+	--color-gold-400: #cfa964;
+	--color-gold-500: #c19a4f;
+	--color-gold-600: #a98336;
+
+	/* Cream/parchment (bakgrund, kort) */
+	--color-cream-200: #ede6d3;
+	--color-cream-300: #e3dac2;
+	--color-parchment: #faf6eb;
+
+	/* Äldre bruna toner (används sparsamt i äldre vyer) */
 	--color-beer-50: #fdf8ed;
 	--color-beer-100: #f9ecca;
 	--color-beer-200: #f2d894;
@@ -24,8 +48,11 @@
 	--color-card: #fcfbf6; /* off-white papp */
 	--font-coaster: 'Iowan Old Style', Palatino, 'Palatino Linotype', Georgia, serif;
 	--font-hand: 'Bradley Hand', 'Segoe Print', 'Comic Sans MS', 'Comic Sans', cursive;
+
+	/* Profilens serif */
+	--font-display: 'Cormorant Garamond', 'Iowan Old Style', Palatino, Georgia, serif;
 }
 
 body {
-	@apply bg-beer-50 text-beer-900 antialiased;
+	@apply bg-cream-200 text-club-900 antialiased;
 }

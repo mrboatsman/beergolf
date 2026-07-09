@@ -2,81 +2,118 @@
 	import { enhance } from '$app/forms';
 	let { data, form } = $props();
 
+	let ongoing = $derived(data.coasters.filter((c) => c.signedCount < c.playerCount));
+	let finished = $derived(data.coasters.filter((c) => c.signedCount >= c.playerCount));
+
 	function fmtDate(d: Date | string) {
 		return new Date(d).toLocaleDateString('sv-SE');
 	}
 </script>
 
-<div class="flex items-center justify-between">
-	<h1 class="text-2xl font-bold text-beer-800">Score Coasters</h1>
-</div>
+<p class="text-xs font-semibold tracking-[0.2em] text-gold-600 uppercase">Enter Scorecard</p>
+<h1 class="font-display mt-1 text-4xl font-semibold">Score Coasters</h1>
 
 {#if form?.error}
 	<p class="mt-4 rounded bg-red-100 px-3 py-2 text-sm text-red-700">{form.error}</p>
 {/if}
 
-<section class="mt-6 rounded-2xl border-2 border-beer-300 bg-beer-100 p-5">
-	<h2 class="flex items-center gap-2 font-semibold text-beer-800">
+<section class="mt-6 rounded-2xl bg-club-800 p-6 text-cream-200 shadow-md">
+	<h2 class="font-display flex items-center gap-2 text-2xl font-semibold">
 		<span>🍺</span> Ny Score Coaster
 	</h2>
-	<form method="POST" action="?/create" use:enhance class="mt-3 space-y-3">
+	<form method="POST" action="?/create" use:enhance class="mt-4 space-y-4">
 		<label class="block text-sm">
-			<span class="text-beer-700">Namn (valfritt)</span>
+			<span class="text-xs font-semibold tracking-[0.18em] text-gold-400 uppercase"
+				>Namn (valfritt)</span
+			>
 			<input
 				name="name"
 				placeholder="Lördagsslingan"
-				class="mt-1 w-full rounded-lg border-beer-300"
+				class="mt-1 w-full rounded-lg border-club-600 bg-club-900/40 text-cream-200 placeholder:text-cream-200/30 focus:border-gold-400 focus:ring-gold-400"
 			/>
 		</label>
 		<div class="text-sm">
-			<span class="text-beer-700">Par per hål</span>
+			<span class="text-xs font-semibold tracking-[0.18em] text-gold-400 uppercase"
+				>Par per hål</span
+			>
 			<div class="mt-1 flex flex-wrap gap-1">
 				{#each data.defaultPar as p, i (i)}
 					<label class="flex flex-col items-center">
-						<span class="text-xs text-beer-500">{i + 1}</span>
+						<span class="text-xs text-cream-200/50">{i + 1}</span>
 						<input
 							name={`par${i}`}
 							type="number"
 							min="1"
 							max="9"
 							value={p}
-							class="w-12 rounded-lg border-beer-300 px-1 py-1 text-center"
+							class="w-12 rounded-lg border-club-600 bg-club-900/40 px-1 py-1 text-center text-cream-200 focus:border-gold-400 focus:ring-gold-400"
 						/>
 					</label>
 				{/each}
 			</div>
 		</div>
-		<button class="rounded-lg bg-turf-600 px-4 py-2 font-semibold text-white hover:bg-turf-700"
+		<button class="rounded-lg bg-gold-500 px-5 py-2 font-semibold text-club-900 hover:bg-gold-400"
 			>Skapa coaster</button
 		>
 	</form>
 </section>
 
 <section class="mt-8">
-	<h2 class="font-semibold text-beer-800">Alla coasters ({data.coasters.length})</h2>
-	{#if data.coasters.length === 0}
-		<p class="mt-2 text-sm text-beer-600">Inga coasters än. Skapa den första ovan.</p>
+	<h2 class="font-display text-2xl font-semibold">Pågående ({ongoing.length})</h2>
+	{#if ongoing.length === 0}
+		<p class="mt-2 text-sm text-club-900/60">Inga pågående matcher.</p>
 	{:else}
 		<ul class="mt-3 space-y-2">
-			{#each data.coasters as c (c.id)}
+			{#each ongoing as c (c.id)}
 				<li>
 					<a
 						href={`/coasters/${c.id}`}
-						class="flex items-center justify-between rounded-xl border border-beer-200 bg-white px-4 py-3 shadow-sm hover:shadow"
+						class="flex items-center justify-between rounded-xl bg-parchment px-4 py-3 shadow-sm hover:shadow"
 					>
 						<div>
-							<span class="font-semibold text-beer-800">{c.name ?? 'Score Coaster'}</span>
-							<span class="ml-2 text-sm text-beer-600"
+							<span class="font-semibold">{c.name ?? 'Score Coaster'}</span>
+							<span class="ml-2 text-sm text-club-900/60"
 								>av {c.creatorName} · {fmtDate(c.createdAt)}</span
 							>
 						</div>
-						<span class="text-sm text-beer-600">
+						<span class="text-sm text-club-900/60">
+							{c.playerCount} spelare · {c.signedCount} signerade
+							<span
+								class="ml-2 rounded-full bg-gold-400/20 px-2.5 py-0.5 text-xs font-semibold text-gold-600"
+								>Pågående</span
+							>
+						</span>
+					</a>
+				</li>
+			{/each}
+		</ul>
+	{/if}
+</section>
+
+<section class="mt-8">
+	<h2 class="font-display text-2xl font-semibold">Avslutade ({finished.length})</h2>
+	{#if finished.length === 0}
+		<p class="mt-2 text-sm text-club-900/60">Inga avslutade matcher än.</p>
+	{:else}
+		<ul class="mt-3 space-y-2">
+			{#each finished as c (c.id)}
+				<li>
+					<a
+						href={`/coasters/${c.id}`}
+						class="flex items-center justify-between rounded-xl bg-parchment px-4 py-3 shadow-sm hover:shadow"
+					>
+						<div>
+							<span class="font-semibold">{c.name ?? 'Score Coaster'}</span>
+							<span class="ml-2 text-sm text-club-900/60"
+								>av {c.creatorName} · {fmtDate(c.createdAt)}</span
+							>
+						</div>
+						<span class="text-sm text-club-900/60">
 							{c.playerCount} spelare
-							{#if c.signedCount === c.playerCount}
-								<span class="ml-1 font-semibold text-turf-600">✓ klar</span>
-							{:else}
-								<span class="ml-1">({c.signedCount} signerade)</span>
-							{/if}
+							<span
+								class="ml-2 rounded-full bg-club-700/10 px-2.5 py-0.5 text-xs font-semibold text-club-700"
+								>Avslutad</span
+							>
 						</span>
 					</a>
 				</li>

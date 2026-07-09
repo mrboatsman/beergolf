@@ -22,15 +22,15 @@
 	<p class="mb-4 rounded bg-red-100 px-3 py-2 text-sm text-red-700">{form.error}</p>
 {/if}
 {#if form?.signed}
-	<p class="mb-4 rounded bg-turf-100 px-3 py-2 text-sm text-turf-700">
+	<p class="mb-4 rounded bg-club-100 px-3 py-2 text-sm text-club-700">
 		Signerat! HCP {form.hcpBefore} → <strong>{form.hcpAfter}</strong>.
 	</p>
 {/if}
 {#if form?.saved}
-	<p class="mb-4 rounded bg-turf-100 px-3 py-2 text-sm text-turf-700">Poäng sparade.</p>
+	<p class="mb-4 rounded bg-club-100 px-3 py-2 text-sm text-club-700">Poäng sparade.</p>
 {/if}
 {#if form?.added}
-	<p class="mb-4 rounded bg-turf-100 px-3 py-2 text-sm text-turf-700">{form.added} tillagd.</p>
+	<p class="mb-4 rounded bg-club-100 px-3 py-2 text-sm text-club-700">{form.added} tillagd.</p>
 {/if}
 
 <!-- Formulär för egen rad — inputs i tabellen kopplas hit via form-attributet -->
@@ -191,12 +191,12 @@
 	<div class="mx-auto mt-6 flex max-w-2xl flex-wrap gap-2">
 		<button
 			form="scoreform"
-			class="rounded-lg bg-beer-600 px-4 py-2 text-sm font-semibold text-white hover:bg-beer-700"
+			class="rounded-lg bg-club-700 px-4 py-2 text-sm font-semibold text-cream-200 hover:bg-club-800"
 			>Spara poäng</button
 		>
 		<form method="POST" action="?/sign" use:enhance>
 			<button
-				class="rounded-lg bg-turf-600 px-4 py-2 text-sm font-semibold text-white hover:bg-turf-700 disabled:cursor-not-allowed disabled:opacity-50"
+				class="rounded-lg bg-gold-500 px-4 py-2 text-sm font-semibold text-club-900 hover:bg-gold-400 disabled:cursor-not-allowed disabled:opacity-50"
 				disabled={myRow.scores.some((s) => s === null)}
 				title={myRow.scores.some((s) => s === null) ? 'Fyll i alla nio hål först' : ''}
 				>Signera rundan</button
@@ -209,15 +209,15 @@
 	<div class="mx-auto mt-6 max-w-2xl">
 		<form method="POST" action="?/addPlayer" use:enhance class="flex items-end gap-2">
 			<label class="block flex-1 text-sm">
-				<span class="text-beer-700">Lägg till spelare</span>
-				<select name="memberId" class="mt-1 w-full rounded-lg border-beer-300">
+				<span class="text-club-900/70">Lägg till spelare</span>
+				<select name="memberId" class="mt-1 w-full rounded-lg border-cream-300 bg-parchment">
 					{#each data.addable as m (m.id)}
 						<option value={m.id}>{m.name}</option>
 					{/each}
 				</select>
 			</label>
 			<button
-				class="rounded-lg bg-beer-600 px-4 py-2 text-sm font-semibold text-white hover:bg-beer-700"
+				class="rounded-lg bg-club-700 px-4 py-2 text-sm font-semibold text-cream-200 hover:bg-club-800"
 				>Lägg till</button
 			>
 		</form>
@@ -225,5 +225,5 @@
 {/if}
 
 <div class="mx-auto mt-4 max-w-2xl">
-	<a href="/coasters" class="text-sm text-beer-600 hover:underline">← Alla coasters</a>
+	<a href="/coasters" class="text-sm text-club-900/60 hover:underline">← Alla coasters</a>
 </div>

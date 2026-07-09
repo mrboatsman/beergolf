@@ -7,7 +7,7 @@ handikapp och turneringar. Hobbyprojekt, låga volymer.
 
 - **SvelteKit** (Svelte 5, runes) + **adapter-node** (self-host på VPS)
 - **SQLite** via **Drizzle ORM** + better-sqlite3 (synkron driver)
-- **Tailwind CSS v4** (`@theme` i `src/routes/layout.css`, palett `beer-*` / `turf-*`)
+- **Tailwind CSS v4** (`@theme` i `src/routes/layout.css`)
 - Sessioner: token i cookie, sha256 lagras i db. Lösenord: argon2id (`@node-rs/argon2`)
 - **jj (Jujutsu)** för versionshantering (colocated med git) — se `jujutsu`-skill före VCS-kommandon
 
@@ -25,6 +25,19 @@ npm run db:studio      # drizzle studio
 ```
 
 DB-fil: `./data/beergolf.db` (via `DATABASE_URL` i `.env`, ej i git).
+
+## Grafisk profil ("country club", efter tmp/design.html)
+
+- Mörk skogsgrön sidebar + guld + cream. Tokens i `layout.css`: `club-*` (grönt),
+  `gold-*`, `cream-*`, `parchment` (kort). Serif-rubriker: `font-display`
+  (Cormorant Garamond via @fontsource).
+- Layout: sidebar (desktop) / topbar (mobil) i `+layout.svelte`; nav: Dashboard,
+  Enter Scorecard, Rundor, Medlemmar, Admin (staff). Utloggad: enkel centrerad vy.
+- Papp-coastern (`/coasters/[id]`) har egen profil: `print`/`ink`/`card`-tokens +
+  `font-coaster`/`font-hand` — ändra inte den till club-paletten.
+- `beer-*`/`turf-*`-tokens är legacy, används ej i nya vyer.
+- Visuell verifiering: puppeteer-core + systemets Chrome (se scratchpad-mönster:
+  logga in via curl, skicka session-cookie, screenshot).
 
 ## Arkitektur
 
@@ -63,6 +76,10 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   runda skapas och HCP justeras mot coasterns par. Layout efter fysiska underlägget
   (`tmp/score-coaster.png`).
 - **Coastern är enda sättet att registrera rundor** — `/rounds` är ren historik.
+- Dashboard (`/`, komponent `MemberDashboard.svelte`, data `src/lib/server/dashboard.ts`):
+  HCP-hero med säsongsförändring, statkort (rundor/bästa brutto/snitt mot par),
+  HCP-trendgraf (`HcpTrend.svelte`, ren SVG), matcher (pågående/avslutade coasters),
+  senaste rundor. Alla medlemmar kan se varandras dashboards: `/members` → `/members/[id]`.
 
 ## Kvar att bygga
 

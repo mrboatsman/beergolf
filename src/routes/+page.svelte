@@ -1,58 +1,46 @@
 <script lang="ts">
+	import MemberDashboard from '$lib/components/MemberDashboard.svelte';
 	let { data } = $props();
-	let member = $derived(data.member);
 </script>
 
-<section class="prose prose-beer max-w-none">
-	<h1 class="text-beer-800">Välkommen till Beer Golf™</h1>
-	<p class="text-lg text-beer-700">
-		Herrklubbens system för medlemshantering, grönt kort och turneringar. Play Slow, räkna ärligt,
-		håll hemresan löst.
-	</p>
-</section>
-
-{#if member}
-	<div class="mt-8 grid gap-4 sm:grid-cols-3">
-		<a
-			href="/coasters"
-			class="rounded-xl border border-beer-200 bg-white p-5 shadow-sm hover:shadow"
-		>
-			<div class="text-2xl">🍺</div>
-			<div class="mt-2 font-semibold text-beer-800">Score Coasters</div>
-			<p class="text-sm text-beer-600">Skapa en coaster, spela och signera din runda.</p>
-		</a>
-		<div class="rounded-xl border border-beer-200 bg-white p-5 shadow-sm">
-			<div class="text-2xl">⛳</div>
-			<div class="mt-2 font-semibold text-beer-800">Ditt handikapp</div>
-			<p class="text-3xl font-bold text-turf-600">{member.hcp}</p>
-		</div>
-		<div class="rounded-xl border border-beer-200 bg-white p-5 shadow-sm">
-			<div class="text-2xl">🪪</div>
-			<div class="mt-2 font-semibold text-beer-800">Status</div>
-			<p class="text-sm capitalize text-beer-600">{member.role} · {member.status}</p>
-		</div>
-	</div>
+{#if data.dashboard}
+	<MemberDashboard dashboard={data.dashboard} isSelf />
 {:else}
-	<div class="mt-8 flex flex-wrap gap-3">
-		<a
-			href="/login"
-			class="rounded-lg bg-turf-600 px-5 py-2.5 font-semibold text-white hover:bg-turf-700"
-			>Logga in</a
-		>
-		<a
-			href="/join"
-			class="rounded-lg border border-beer-300 bg-white px-5 py-2.5 font-semibold text-beer-800 hover:bg-beer-100"
-			>Har du en invalskod?</a
-		>
-	</div>
+	<section class="mx-auto max-w-2xl pt-8 text-center">
+		<p class="text-xs font-semibold tracking-[0.25em] text-gold-600 uppercase">Herrklubben</p>
+		<h1 class="font-display mt-2 text-5xl font-semibold sm:text-6xl">Beer Golf™</h1>
+		<p class="mt-4 text-lg text-club-900/70">
+			Medlemshantering, grönt kort och turneringar. Play Slow, räkna ärligt, håll hemresan löst.
+		</p>
+		<div class="mt-8 flex flex-wrap justify-center gap-3">
+			<a
+				href="/login"
+				class="rounded-lg bg-club-700 px-6 py-2.5 font-semibold text-cream-200 hover:bg-club-800"
+				>Logga in</a
+			>
+			<a
+				href="/join"
+				class="rounded-lg border border-gold-500 px-6 py-2.5 font-semibold text-club-900 hover:bg-gold-400/10"
+				>Har du en invalskod?</a
+			>
+		</div>
+	</section>
 
-	<div class="prose prose-beer mt-10 max-w-none">
-		<h2>Grönt kort i tre delar</h2>
-		<ol>
-			<li><strong>Teoriprov</strong> — kort quiz om regler, säkerhet och klubbhistoria.</li>
-			<li><strong>Praktiskt prov</strong> — provslingan under uppsikt av en fadder.</li>
-			<li><strong>Etikett &amp; hänsyn</strong> — bedöms löpande av faddern.</li>
+	<div class="mx-auto mt-14 max-w-2xl">
+		<h2 class="font-display text-3xl font-semibold">Grönt kort i tre delar</h2>
+		<ol class="mt-4 space-y-3">
+			<li class="rounded-xl bg-parchment px-5 py-4 shadow-sm">
+				<strong>1. Teoriprov</strong> — kort quiz om regler, säkerhet och klubbhistoria.
+			</li>
+			<li class="rounded-xl bg-parchment px-5 py-4 shadow-sm">
+				<strong>2. Praktiskt prov</strong> — provslingan under uppsikt av en fadder.
+			</li>
+			<li class="rounded-xl bg-parchment px-5 py-4 shadow-sm">
+				<strong>3. Etikett &amp; hänsyn</strong> — bedöms löpande av faddern.
+			</li>
 		</ol>
-		<p>Klaras alla tre utfärdas ett numrerat Grönt Kort och ingångshandicap HCP 36.</p>
+		<p class="mt-4 text-sm text-club-900/70">
+			Klaras alla tre utfärdas ett numrerat Grönt Kort och ingångshandicap HCP 36.
+		</p>
 	</div>
 {/if}
