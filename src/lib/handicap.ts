@@ -28,12 +28,12 @@ export function netScore(gross: number, hcp: number): number {
 
 /**
  * Räkna ut nytt handikapp efter en runda.
- * Spelade spelaren bättre än sitt handikapp (net under scratch) sänks hcp,
- * annars höjs det något.
+ * `par` är banans totala par (ex 35 för en 9-håls coaster). Spelade spelaren
+ * bättre än sitt handikapp (net under par) sänks hcp, annars höjs det något.
  */
-export function nextHcp(hcpBefore: number, gross: number, holes: number): number {
+export function nextHcp(hcpBefore: number, gross: number, par: number): number {
 	const net = gross - hcpBefore;
-	const diff = net - scratchFor(holes); // negativ = spelade bättre än handikapp
+	const diff = net - par; // negativ = spelade bättre än handikapp
 	// Bättre än handikapp (diff < 0) => sänk hcp. Sämre => höj.
 	const adjust = diff * ADJUST_FACTOR;
 	return clampHcp(hcpBefore + adjust);

@@ -15,6 +15,13 @@
       "when": 1783628391120,
       "tag": "0001_clever_lockjaw",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1783629440546,
+      "tag": "0002_ordinary_flatman",
+      "breakpoints": true
     }
   ]
 }

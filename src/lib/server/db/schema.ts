@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { relations, sql } from 'drizzle-orm';
 
 // --- Roller ---------------------------------------------------------------
@@ -131,6 +131,44 @@ export const rounds = sqliteTable('rounds', {
 		.default(sql`(unixepoch())`)
 });
 
+// --- Virtuella Score Coasters (delade) --------------------------------------
+// En coaster är det delade "underlägget": 9 hål med par-rad och upp till
+// 6 spelarrader. Varje spelare fyller sin rad och signerar när rundan är
+// klar — signaturen låser raden och skapar en post i rounds (HCP-justering).
+export const MAX_COASTER_PLAYERS = 6;
+export const DEFAULT_PAR = [4, 4, 3, 4, 5, 3, 4, 3, 5];
+
+export const coasters = sqliteTable('coasters', {
+	id: text('id').primaryKey(),
+	name: text('name'), // valfritt, ex "Lördagsslingan"
+	par: text('par', { mode: 'json' }).$type<number[]>().notNull(), // 9 värden
+	createdBy: text('created_by')
+		.notNull()
+		.references(() => members.id),
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`(unixepoch())`)
+});
+
+export const coasterPlayers = sqliteTable(
+	'coaster_players',
+	{
+		id: text('id').primaryKey(),
+		coasterId: text('coaster_id')
+			.notNull()
+			.references(() => coasters.id, { onDelete: 'cascade' }),
+		memberId: text('member_id')
+			.notNull()
+			.references(() => members.id, { onDelete: 'cascade' }),
+		position: integer('position').notNull(), // radordning 1–6
+		// null = hålet ej spelat än ("You don't have to play nine at one time.")
+		scores: text('scores', { mode: 'json' }).$type<(number | null)[]>().notNull(),
+		signedAt: integer('signed_at', { mode: 'timestamp' }), // spelarens signatur
+		roundId: text('round_id').references(() => rounds.id) // sätts vid signering
+	},
+	(t) => [uniqueIndex('coaster_player_unique').on(t.coasterId, t.memberId)]
+);
+
 // --- Relationer -----------------------------------------------------------
 export const membersRelations = relations(members, ({ many }) => ({
 	sessions: many(sessions),
@@ -141,6 +179,17 @@ export const membersRelations = relations(members, ({ many }) => ({
 export const roundsRelations = relations(rounds, ({ one }) => ({
 	member: one(members, { fields: [rounds.memberId], references: [members.id] }),
 	tournament: one(tournaments, { fields: [rounds.tournamentId], references: [tournaments.id] })
+}));
+
+export const coastersRelations = relations(coasters, ({ one, many }) => ({
+	creator: one(members, { fields: [coasters.createdBy], references: [members.id] }),
+	players: many(coasterPlayers)
+}));
+
+export const coasterPlayersRelations = relations(coasterPlayers, ({ one }) => ({
+	coaster: one(coasters, { fields: [coasterPlayers.coasterId], references: [coasters.id] }),
+	member: one(members, { fields: [coasterPlayers.memberId], references: [members.id] }),
+	round: one(rounds, { fields: [coasterPlayers.roundId], references: [rounds.id] })
 }));
 
 export const certificationsRelations = relations(certifications, ({ one }) => ({
@@ -154,3 +203,5 @@ export type Invite = typeof invites.$inferSelect;
 export type Round = typeof rounds.$inferSelect;
 export type Tournament = typeof tournaments.$inferSelect;
 export type Certification = typeof certifications.$inferSelect;
+export type Coaster = typeof coasters.$inferSelect;
+export type CoasterPlayer = typeof coasterPlayers.$inferSelect;

@@ -34,7 +34,8 @@ DB-fil: `./data/beergolf.db` (via `DATABASE_URL` i `.env`, ej i git).
 - `src/lib/server/guard.ts` — rollhierarki + `requireMember` / `requireRole`.
   Roller: aspirant < member < fadder < captain < admin.
 - `src/lib/handicap.ts` — självjusterande handikapp. Lägre score = bättre.
-  Ny medlem HCP 36, justeras per runda mot `nextHcp()`.
+  Ny medlem HCP 36, justeras per runda mot `nextHcp(hcp, gross, par)` där par är
+  banans totala par (coasterns par-rad, eller `scratchFor(holes)` som fallback).
 - `src/hooks.server.ts` — fyller `locals.member` / `locals.session` per request.
 
 ## Konventioner
@@ -52,14 +53,18 @@ DB-fil: `./data/beergolf.db` (via `DATABASE_URL` i `.env`, ej i git).
 
 Klart → numrerat grönt kort + ingångshandicap HCP 36.
 
-## Byggt (iteration 1 — fundament)
+## Byggt
 
-Auth, invite-koder (`/join`), admin (medlemmar + invites), rundor/Score Coasters (`/rounds`)
-med handikappjustering. Schema för certifiering/quiz/turneringar finns men saknar UI ännu.
+- Iteration 1 (fundament): auth, invite-koder (`/join`, fristående koder utan e-post),
+  admin (medlemmar + invites), rundhistorik (`/rounds`) med handikappjustering.
+- Delade virtuella Score Coasters (`/coasters`): 9 hål, egen par-rad (default 4,4,3,4,5,3,4,3,5 = 35),
+  max 6 spelare per coaster. Skaparen blir spelare 1; spelare på coastern bjuder in fler.
+  Varje spelare fyller sin rad (partiellt OK), signerar när klar → raden låses,
+  runda skapas och HCP justeras mot coasterns par. Layout efter fysiska underlägget
+  (`tmp/score-coaster.png`).
 
 ## Kvar att bygga
 
 - Teoriprov-quiz-flöde (`quiz_questions`/`quiz_attempts` finns)
 - Certifieringsflöde för fadder (godkänn de tre delarna → utfärda grönt kort + membernr)
-- Turneringar (leaderboard, koppla rundor)
-- Snyggare virtuell Score Coaster-layout (inspiration: beergolf.shop)
+- Turneringar (leaderboard, koppla rundor/coasters)

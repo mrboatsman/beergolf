@@ -21,6 +21,11 @@
 				{#if member}
 					<a
 						class="hover:underline"
+						class:font-semibold={page.url.pathname.startsWith('/coasters')}
+						href="/coasters">Coasters</a
+					>
+					<a
+						class="hover:underline"
 						class:font-semibold={page.url.pathname === '/rounds'}
 						href="/rounds">Mina rundor</a
 					>

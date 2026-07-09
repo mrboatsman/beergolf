@@ -4,7 +4,7 @@ import { db } from '$lib/server/db';
 import { members, rounds } from '$lib/server/db/schema';
 import { requireMember } from '$lib/server/guard';
 import { newId } from '$lib/server/ids';
-import { nextHcp, netScore } from '$lib/handicap';
+import { nextHcp, netScore, scratchFor } from '$lib/handicap';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -41,7 +41,7 @@ export const actions: Actions = {
 		// Hämta färskt hcp från db (locals kan vara inaktuellt).
 		const current = await db.select().from(members).where(eq(members.id, me.id)).get();
 		const hcpBefore = current?.hcp ?? me.hcp;
-		const hcpAfter = nextHcp(hcpBefore, grossTotal, holes);
+		const hcpAfter = nextHcp(hcpBefore, grossTotal, scratchFor(holes));
 		const netTotal = netScore(grossTotal, hcpBefore);
 
 		// better-sqlite3 är synkront: transaction-callback får ej vara async.
