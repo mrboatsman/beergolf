@@ -1,5 +1,6 @@
 <script lang="ts">
 	import MemberDashboard from '$lib/components/MemberDashboard.svelte';
+	import logo from '$lib/assets/logo.png';
 	let { data } = $props();
 </script>
 
@@ -7,6 +8,11 @@
 	<MemberDashboard dashboard={data.dashboard} isSelf />
 {:else}
 	<section class="mx-auto max-w-2xl pt-8 text-center">
+		<img
+			src={logo}
+			alt="Tablers Beer Golf Society"
+			class="mx-auto mb-6 h-32 w-32 rounded-full shadow-lg"
+		/>
 		<p class="text-xs font-semibold tracking-[0.25em] text-gold-600 uppercase">estd · 2026</p>
 		<h1 class="font-display mt-2 text-5xl font-semibold sm:text-6xl">Tablers Beer Golf Society</h1>
 		<p class="mt-4 text-lg text-club-900/70">

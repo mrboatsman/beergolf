@@ -1,6 +1,7 @@
 <script lang="ts">
 	import './layout.css';
-	import favicon from '$lib/assets/favicon.svg';
+	import favicon from '$lib/assets/favicon.png';
+	import logo from '$lib/assets/logo.png';
 	import { page } from '$app/state';
 
 	let { children, data } = $props();
@@ -70,10 +71,7 @@
 			class="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-club-800 text-cream-200 lg:flex"
 		>
 			<a href="/" class="flex items-center gap-3 px-6 pt-7 pb-6">
-				<span
-					class="flex h-12 w-12 items-center justify-center rounded-full border-2 border-gold-400 font-display text-xl font-semibold text-gold-300"
-					>BG</span
-				>
+				<img src={logo} alt="" class="h-12 w-12 shrink-0 rounded-full" />
 				<span>
 					<span class="font-display block text-xl leading-tight font-semibold"
 						>Tablers Beer Golf Society</span
@@ -130,10 +128,7 @@
 			<header class="bg-club-800 text-cream-200 lg:hidden">
 				<div class="flex items-center justify-between px-4 py-3">
 					<a href="/" class="flex items-center gap-2">
-						<span
-							class="flex h-8 w-8 items-center justify-center rounded-full border border-gold-400 font-display text-sm font-semibold text-gold-300"
-							>BG</span
-						>
+						<img src={logo} alt="" class="h-8 w-8 shrink-0 rounded-full" />
 						<span class="font-display text-lg font-semibold">Tablers Beer Golf Society</span>
 					</a>
 					<form method="POST" action="/logout">
@@ -167,11 +162,8 @@
 		<header class="bg-club-800 text-cream-200">
 			<nav class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
 				<a href="/" class="flex items-center gap-2">
-					<span
-						class="flex h-9 w-9 items-center justify-center rounded-full border border-gold-400 font-display font-semibold text-gold-300"
-						>BG</span
-					>
-					<span class="font-display text-xl font-semibold">Beer Golf™</span>
+					<img src={logo} alt="" class="h-9 w-9 shrink-0 rounded-full" />
+					<span class="font-display text-xl font-semibold">Tablers Beer Golf Society</span>
 				</a>
 				<a href="/login" class="text-sm text-cream-200/80 hover:underline">Logga in</a>
 			</nav>
