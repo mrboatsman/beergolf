@@ -71,7 +71,10 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
 - Iteration 1 (fundament): auth, invite-koder (`/join`, fristående koder utan e-post),
   admin (medlemmar + invites).
 - Delade virtuella Score Coasters (`/coasters`): 9 hål, egen par-rad (default 4,4,3,4,5,3,4,3,5 = 35),
-  max 6 spelare per coaster. Skaparen blir spelare 1; spelare på coastern bjuder in fler.
+  max 6 spelare per coaster. **Grönt kort krävs för att spela**: skapa coaster (skaparen blir
+  spelare 1) och läggas till kräver `greenCardIssuedAt` — sökfältet visar bara medlemmar med
+  kort. Spelare läggs till via namnsök högst upp på sidan; alla på coastern kan ta bort en
+  ej signerad spelare (✕ vid namnet).
   Varje spelare fyller sin rad (partiellt OK), signerar när klar → raden låses,
   runda skapas och HCP justeras mot coasterns par. Layout efter fysiska underlägget
   (`tmp/score-coaster.png`).

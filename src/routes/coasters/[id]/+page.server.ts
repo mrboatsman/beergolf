@@ -1,5 +1,5 @@
 import { error, fail } from '@sveltejs/kit';
-import { and, asc, eq, ne, notInArray } from 'drizzle-orm';
+import { and, asc, eq, isNotNull, notInArray } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import {
 	coasters,
@@ -50,16 +50,15 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	const coaster = await getCoaster(params.id);
 	const players = await getPlayers(coaster.id);
 
-	// Certifierade medlemmar som kan läggas till (ej redan på coastern,
-	// aspiranter spelar inte officiella rundor)
+	// Bara spelare med grönt kort kan läggas till (och inte redan på coastern)
 	const taken = players.map((p) => p.memberId);
 	const addable = await db
 		.select({ id: members.id, name: members.name })
 		.from(members)
 		.where(
 			taken.length
-				? and(ne(members.status, 'aspirant'), notInArray(members.id, taken))
-				: ne(members.status, 'aspirant')
+				? and(isNotNull(members.greenCardIssuedAt), notInArray(members.id, taken))
+				: isNotNull(members.greenCardIssuedAt)
 		)
 		.orderBy(asc(members.name))
 		.all();
@@ -85,6 +84,9 @@ export const actions: Actions = {
 		const memberId = String(form.get('memberId') ?? '');
 		const target = await db.select().from(members).where(eq(members.id, memberId)).get();
 		if (!target) return fail(400, { error: 'Ogiltig medlem.' });
+		if (!target.greenCardIssuedAt) {
+			return fail(400, { error: `${target.name} har inget grönt kort ännu.` });
+		}
 		if (players.some((p) => p.memberId === memberId)) {
 			return fail(400, { error: `${target.name} är redan med på coastern.` });
 		}
@@ -97,6 +99,28 @@ export const actions: Actions = {
 			scores: Array(9).fill(null)
 		});
 		return { added: target.name };
+	},
+
+	// Ta bort en spelare under pågående spel — alla som lagts till på
+	// coastern (eller skaparen) kan göra det. Signerade rader är låsta.
+	removePlayer: async ({ request, locals, params }) => {
+		const me = requireMember(locals.member);
+		const coaster = await getCoaster(params.id);
+		const players = await getPlayers(coaster.id);
+
+		const amInvolved = coaster.createdBy === me.id || players.some((p) => p.memberId === me.id);
+		if (!amInvolved) return fail(403, { error: 'Bara spelare på coastern kan ta bort spelare.' });
+
+		const form = await request.formData();
+		const memberId = String(form.get('memberId') ?? '');
+		const row = players.find((p) => p.memberId === memberId);
+		if (!row) return fail(400, { error: 'Spelaren finns inte på coastern.' });
+		if (row.signedAt) {
+			return fail(400, { error: `${row.name} har signerat — raden är låst.` });
+		}
+
+		await db.delete(coasterPlayers).where(eq(coasterPlayers.id, row.id));
+		return { removed: row.name };
 	},
 
 	// Spara egna poäng (tomma hål tillåtna — man behöver inte spela nio på en gång)

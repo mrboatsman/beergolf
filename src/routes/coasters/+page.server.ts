@@ -33,6 +33,10 @@ export const load: PageServerLoad = async ({ locals }) => {
 export const actions: Actions = {
 	create: async ({ request, locals }) => {
 		const me = requireMember(locals.member);
+		// Skaparen blir spelare 1 — grönt kort krävs för att spela.
+		if (!me.greenCardIssuedAt) {
+			return fail(403, { error: 'Grönt kort krävs för att skapa en Score Coaster.' });
+		}
 		const form = await request.formData();
 		const name = String(form.get('name') ?? '').trim() || null;
 

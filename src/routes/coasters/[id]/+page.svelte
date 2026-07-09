@@ -7,6 +7,7 @@
 	let myRow = $derived(players.find((p) => p.memberId === data.meId));
 	let parTotal = $derived(coaster.par.reduce((a, b) => a + b, 0));
 	let signed = $derived(players.filter((p) => p.signedAt));
+	let amInvolved = $derived(coaster.createdBy === data.meId || !!myRow);
 
 	// Sök bland medlemmar att lägga till — lista funkar inte med 1000 st
 	let playerQuery = $state('');
@@ -41,6 +42,11 @@
 {/if}
 {#if form?.added}
 	<p class="mb-4 rounded bg-club-100 px-3 py-2 text-sm text-club-700">{form.added} tillagd.</p>
+{/if}
+{#if form?.removed}
+	<p class="mb-4 rounded bg-club-100 px-3 py-2 text-sm text-club-700">
+		{form.removed} borttagen från coastern.
+	</p>
 {/if}
 
 <!-- Lägg till spelare: sök bland medlemmar (högst upp) -->
@@ -190,7 +196,16 @@
 							<span class="font-hand text-xl leading-tight text-ink">{p.name}</span>
 							{#if p.signedAt}<span class="ml-1 align-middle text-xs text-print/70" title="Signerad"
 									>✓</span
-								>{/if}
+								>{:else if amInvolved}
+								<form method="POST" action="?/removePlayer" use:enhance class="inline">
+									<input type="hidden" name="memberId" value={p.memberId} />
+									<button
+										class="ml-1 align-middle text-xs text-print/50 hover:text-red-700"
+										title={`Ta bort ${p.name} från coastern`}
+										aria-label={`Ta bort ${p.name}`}>✕</button
+									>
+								</form>
+							{/if}
 						</td>
 						{#each p.scores as s, i (i)}
 							<td class="border-l border-print/60 p-0 text-center align-middle">
