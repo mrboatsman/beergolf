@@ -15,6 +15,7 @@
 			active: page.url.pathname.startsWith('/coasters')
 		},
 		{ href: '/rounds', label: 'Rundor', active: page.url.pathname === '/rounds' },
+		{ href: '/quiz', label: 'Teoriprov', active: page.url.pathname.startsWith('/quiz') },
 		{ href: '/members', label: 'Medlemmar', active: page.url.pathname.startsWith('/members') },
 		...(isStaff
 			? [{ href: '/admin', label: 'Admin', active: page.url.pathname.startsWith('/admin') }]

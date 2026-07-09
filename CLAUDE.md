@@ -81,8 +81,12 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   HCP-trendgraf (`HcpTrend.svelte`, ren SVG), matcher (pågående/avslutade coasters),
   senaste rundor. Alla medlemmar kan se varandras dashboards: `/members` → `/members/[id]`.
 
+- Teoriprov (`/quiz`): aktiva frågor i slumpad ordning (facit stannar på servern),
+  rättas server-side, godkänt vid ≥80 %. Försök sparas i `quiz_attempts`; första
+  godkända bokförs på `certifications.theoryPassed`. Admin hanterar frågor
+  (skapa/inaktivera/ta bort) på `/admin`.
+
 ## Kvar att bygga
 
-- Teoriprov-quiz-flöde (`quiz_questions`/`quiz_attempts` finns)
-- Certifieringsflöde för fadder (godkänn de tre delarna → utfärda grönt kort + membernr)
+- Certifieringsflöde för fadder (praktiskt prov + etikett → utfärda grönt kort + membernr)
 - Turneringar (leaderboard, koppla rundor/coasters)

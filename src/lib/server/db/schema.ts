@@ -93,7 +93,8 @@ export const quizAttempts = sqliteTable('quiz_attempts', {
 		.references(() => members.id, { onDelete: 'cascade' }),
 	score: real('score').notNull(), // andel rätt 0..1
 	passed: integer('passed', { mode: 'boolean' }).notNull(),
-	answers: text('answers', { mode: 'json' }).$type<number[]>().notNull(),
+	// frågeId → valt alternativ-index
+	answers: text('answers', { mode: 'json' }).$type<Record<string, number>>().notNull(),
 	takenAt: integer('taken_at', { mode: 'timestamp' })
 		.notNull()
 		.default(sql`(unixepoch())`)

@@ -1,7 +1,7 @@
 import { fail } from '@sveltejs/kit';
-import { desc, eq } from 'drizzle-orm';
+import { asc, desc, eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { invites, members, type Role } from '$lib/server/db/schema';
+import { invites, members, quizQuestions, type Role } from '$lib/server/db/schema';
 import { hashPassword } from '$lib/server/auth';
 import { newId, newInviteCode } from '$lib/server/ids';
 import { requireRole } from '$lib/server/guard';
@@ -10,13 +10,15 @@ import type { Actions, PageServerLoad } from './$types';
 const ROLES: Role[] = ['aspirant', 'member', 'fadder', 'captain', 'admin'];
 
 export const load: PageServerLoad = async () => {
-	const [memberList, inviteList] = await Promise.all([
+	const [memberList, inviteList, questionList] = await Promise.all([
 		db.select().from(members).orderBy(desc(members.createdAt)).all(),
-		db.select().from(invites).orderBy(desc(invites.createdAt)).all()
+		db.select().from(invites).orderBy(desc(invites.createdAt)).all(),
+		db.select().from(quizQuestions).orderBy(asc(quizQuestions.question)).all()
 	]);
 	return {
 		members: memberList.map(({ passwordHash: _drop, ...m }) => m),
-		invites: inviteList
+		invites: inviteList,
+		questions: questionList
 	};
 };
 
@@ -68,5 +70,49 @@ export const actions: Actions = {
 			passwordHash: await hashPassword(password)
 		});
 		return { memberCreated: true };
+	},
+
+	// --- Teoriprov-frågor ---------------------------------------------------
+	createQuestion: async ({ request, locals }) => {
+		requireRole(locals.member, 'captain');
+		const form = await request.formData();
+		const question = String(form.get('question') ?? '').trim();
+		const options = [0, 1, 2, 3]
+			.map((i) => String(form.get(`opt${i}`) ?? '').trim())
+			.filter(Boolean);
+		const correctIndex = Number(form.get('correctIndex') ?? -1);
+		const category = String(form.get('category') ?? 'regler') as 'regler' | 'säkerhet' | 'historia';
+
+		if (!question) return fail(400, { error: 'Frågetext krävs.' });
+		if (options.length < 2) return fail(400, { error: 'Minst två svarsalternativ.' });
+		if (!Number.isInteger(correctIndex) || correctIndex < 0 || correctIndex >= options.length) {
+			return fail(400, { error: 'Markera vilket alternativ som är rätt.' });
+		}
+		if (!['regler', 'säkerhet', 'historia'].includes(category)) {
+			return fail(400, { error: 'Ogiltig kategori.' });
+		}
+
+		await db
+			.insert(quizQuestions)
+			.values({ id: newId(), question, options, correctIndex, category, active: true });
+		return { questionCreated: true };
+	},
+
+	toggleQuestion: async ({ request, locals }) => {
+		requireRole(locals.member, 'captain');
+		const form = await request.formData();
+		const id = String(form.get('id') ?? '');
+		const q = await db.select().from(quizQuestions).where(eq(quizQuestions.id, id)).get();
+		if (!q) return fail(404, { error: 'Frågan finns inte.' });
+		await db.update(quizQuestions).set({ active: !q.active }).where(eq(quizQuestions.id, id));
+		return { questionToggled: true };
+	},
+
+	deleteQuestion: async ({ request, locals }) => {
+		requireRole(locals.member, 'captain');
+		const form = await request.formData();
+		const id = String(form.get('id') ?? '');
+		await db.delete(quizQuestions).where(eq(quizQuestions.id, id));
+		return { questionDeleted: true };
 	}
 };
