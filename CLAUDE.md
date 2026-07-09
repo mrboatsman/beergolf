@@ -86,7 +86,15 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   godkända bokförs på `certifications.theoryPassed`. Admin hanterar frågor
   (skapa/inaktivera/ta bort) på `/admin`.
 
+- **Certifieringsgate (kritisk)**: aspiranter (status `aspirant`) är utelåsta från allt
+  utom `/certification`, `/quiz` och `/logout` — hårt i `hooks.server.ts`, redirect 303.
+  Nav visar bara Grönt Kort + Teoriprov för aspiranter. Aspiranter kan inte läggas på coasters.
+- Certifiering (`/certification`, logik i `src/lib/server/certification.ts`): aspiranten ser
+  sina tre delar; certifierade medlemmar (vem som helst, inte bara rollen fadder) examinerar
+  aspiranter — godkänner praktiskt prov (valfri bevis-länk) och etikett. När alla tre delar
+  är klara utfärdas grönt kort automatiskt (`maybeIssueGreenCard`): nästa medlemsnummer,
+  status→active, role aspirant→member, HCP 36. Kortet visas på /certification.
+
 ## Kvar att bygga
 
-- Certifieringsflöde för fadder (praktiskt prov + etikett → utfärda grönt kort + membernr)
 - Turneringar (leaderboard, koppla rundor/coasters)

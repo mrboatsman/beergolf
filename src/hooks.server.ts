@@ -1,4 +1,4 @@
-import type { Handle } from '@sveltejs/kit';
+import { redirect, type Handle } from '@sveltejs/kit';
 import {
 	SESSION_COOKIE,
 	validateSessionToken,
@@ -6,6 +6,12 @@ import {
 	deleteSessionCookie,
 	toSafeMember
 } from '$lib/server/auth';
+
+// Ocertifierade (aspiranter) har bara tillgång till certifieringsflödet.
+// Grönt kort (teori + praktik + etikett) är obligatoriskt innan resten
+// av klubbhuset låses upp.
+const ASPIRANT_ALLOWED = ['/certification', '/quiz', '/logout'];
+const ALWAYS_ALLOWED = ['/_app', '/@', '/favicon', '/.well-known'];
 
 export const handle: Handle = async ({ event, resolve }) => {
 	const token = event.cookies.get(SESSION_COOKIE);
@@ -24,6 +30,14 @@ export const handle: Handle = async ({ event, resolve }) => {
 		deleteSessionCookie(event);
 		event.locals.member = null;
 		event.locals.session = null;
+	}
+
+	if (event.locals.member?.status === 'aspirant') {
+		const p = event.url.pathname;
+		const allowed =
+			ALWAYS_ALLOWED.some((a) => p.startsWith(a)) ||
+			ASPIRANT_ALLOWED.some((a) => p === a || p.startsWith(a + '/'));
+		if (!allowed) throw redirect(303, '/certification');
 	}
 
 	return resolve(event);

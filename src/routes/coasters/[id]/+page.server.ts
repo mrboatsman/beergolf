@@ -1,5 +1,5 @@
 import { error, fail } from '@sveltejs/kit';
-import { and, asc, eq, notInArray } from 'drizzle-orm';
+import { and, asc, eq, ne, notInArray } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import {
 	coasters,
@@ -50,12 +50,17 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	const coaster = await getCoaster(params.id);
 	const players = await getPlayers(coaster.id);
 
-	// Medlemmar som kan läggas till (ej redan på coastern)
+	// Certifierade medlemmar som kan läggas till (ej redan på coastern,
+	// aspiranter spelar inte officiella rundor)
 	const taken = players.map((p) => p.memberId);
 	const addable = await db
 		.select({ id: members.id, name: members.name })
 		.from(members)
-		.where(taken.length ? notInArray(members.id, taken) : undefined)
+		.where(
+			taken.length
+				? and(ne(members.status, 'aspirant'), notInArray(members.id, taken))
+				: ne(members.status, 'aspirant')
+		)
 		.orderBy(asc(members.name))
 		.all();
 

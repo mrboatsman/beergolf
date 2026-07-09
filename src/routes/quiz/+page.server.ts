@@ -3,6 +3,7 @@ import { desc, eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { certifications, quizAttempts, quizQuestions } from '$lib/server/db/schema';
 import { requireMember } from '$lib/server/guard';
+import { maybeIssueGreenCard } from '$lib/server/certification';
 import { newId } from '$lib/server/ids';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -106,6 +107,8 @@ export const actions: Actions = {
 					.set({ theoryPassed: true, theoryScore: score, theoryAt: new Date() })
 					.where(eq(certifications.id, cert.id));
 			}
+			// Sista delen på plats? Då utfärdas kortet direkt.
+			await maybeIssueGreenCard(me.id);
 		}
 
 		return {

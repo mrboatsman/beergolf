@@ -7,20 +7,41 @@
 	let member = $derived(data.member);
 	let isStaff = $derived(!!member && ['captain', 'admin'].includes(member.role));
 
-	let nav = $derived([
-		{ href: '/', label: 'Dashboard', active: page.url.pathname === '/' },
-		{
-			href: '/coasters',
-			label: 'Enter Scorecard',
-			active: page.url.pathname.startsWith('/coasters')
-		},
-		{ href: '/rounds', label: 'Rundor', active: page.url.pathname === '/rounds' },
-		{ href: '/quiz', label: 'Teoriprov', active: page.url.pathname.startsWith('/quiz') },
-		{ href: '/members', label: 'Medlemmar', active: page.url.pathname.startsWith('/members') },
-		...(isStaff
-			? [{ href: '/admin', label: 'Admin', active: page.url.pathname.startsWith('/admin') }]
-			: [])
-	]);
+	// Aspiranter ser bara certifieringsflödet tills grönt kort är utfärdat.
+	let nav = $derived(
+		member?.status === 'aspirant'
+			? [
+					{
+						href: '/certification',
+						label: 'Grönt Kort',
+						active: page.url.pathname.startsWith('/certification')
+					},
+					{ href: '/quiz', label: 'Teoriprov', active: page.url.pathname.startsWith('/quiz') }
+				]
+			: [
+					{ href: '/', label: 'Dashboard', active: page.url.pathname === '/' },
+					{
+						href: '/coasters',
+						label: 'Enter Scorecard',
+						active: page.url.pathname.startsWith('/coasters')
+					},
+					{ href: '/rounds', label: 'Rundor', active: page.url.pathname === '/rounds' },
+					{
+						href: '/certification',
+						label: 'Grönt Kort',
+						active: page.url.pathname.startsWith('/certification')
+					},
+					{ href: '/quiz', label: 'Teoriprov', active: page.url.pathname.startsWith('/quiz') },
+					{
+						href: '/members',
+						label: 'Medlemmar',
+						active: page.url.pathname.startsWith('/members')
+					},
+					...(isStaff
+						? [{ href: '/admin', label: 'Admin', active: page.url.pathname.startsWith('/admin') }]
+						: [])
+				]
+	);
 
 	let initials = $derived(
 		member
