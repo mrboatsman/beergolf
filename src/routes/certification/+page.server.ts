@@ -179,8 +179,17 @@ async function approve(locals: App.Locals, request: Request, part: 'practical' |
 		}
 	}
 
+	// Den som godkänner en aspirant blir fadder (uppgraderas från member;
+	// captain/admin behåller sin högre roll).
+	let promoted = false;
+	const meRow = await db.select().from(members).where(eq(members.id, me.id)).get();
+	if (meRow?.role === 'member') {
+		await db.update(members).set({ role: 'fadder' }).where(eq(members.id, me.id));
+		promoted = true;
+	}
+
 	const issued = await maybeIssueGreenCard(memberId);
-	return { approved: part, aspirantName: target.name, issued };
+	return { approved: part, aspirantName: target.name, issued, promoted };
 }
 
 export const actions: Actions = {

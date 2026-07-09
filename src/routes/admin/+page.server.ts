@@ -1,7 +1,7 @@
 import { fail } from '@sveltejs/kit';
-import { asc, desc, eq } from 'drizzle-orm';
+import { asc, desc, eq, isNotNull } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { invites, members, quizQuestions, type Role } from '$lib/server/db/schema';
+import { certifications, invites, members, quizQuestions, type Role } from '$lib/server/db/schema';
 import { hashPassword } from '$lib/server/auth';
 import { newId, newInviteCode } from '$lib/server/ids';
 import { requireRole } from '$lib/server/guard';
@@ -9,16 +9,69 @@ import type { Actions, PageServerLoad } from './$types';
 
 const ROLES: Role[] = ['aspirant', 'member', 'fadder', 'captain', 'admin'];
 
+// Fadderträdet: vem har godkänt vilka. Rekursiv struktur — en fadder kan
+// ha hur många skyddslingar som helst, och skyddslingarna kan i sin tur
+// bli faddrar.
+export type FadderNode = {
+	id: string;
+	name: string;
+	role: Role;
+	status: string;
+	children: FadderNode[];
+};
+
+function buildFadderTree(
+	all: Array<{ id: string; name: string; role: Role; status: string }>,
+	relations: Array<{ memberId: string; fadderId: string }>
+): FadderNode[] {
+	const childrenBy = new Map<string, string[]>();
+	const hasFadder = new Set<string>();
+	for (const r of relations) {
+		hasFadder.add(r.memberId);
+		childrenBy.set(r.fadderId, [...(childrenBy.get(r.fadderId) ?? []), r.memberId]);
+	}
+	const byId = new Map(all.map((m) => [m.id, m]));
+	const visited = new Set<string>();
+
+	function node(id: string): FadderNode | null {
+		const m = byId.get(id);
+		if (!m || visited.has(id)) return null;
+		visited.add(id);
+		return {
+			id: m.id,
+			name: m.name,
+			role: m.role,
+			status: m.status,
+			children: (childrenBy.get(id) ?? []).map(node).filter((n): n is FadderNode => n !== null)
+		};
+	}
+
+	return all
+		.filter((m) => !hasFadder.has(m.id))
+		.map((m) => node(m.id))
+		.filter((n): n is FadderNode => n !== null);
+}
+
 export const load: PageServerLoad = async () => {
-	const [memberList, inviteList, questionList] = await Promise.all([
+	const [memberList, inviteList, questionList, relations] = await Promise.all([
 		db.select().from(members).orderBy(desc(members.createdAt)).all(),
 		db.select().from(invites).orderBy(desc(invites.createdAt)).all(),
-		db.select().from(quizQuestions).orderBy(asc(quizQuestions.question)).all()
+		db.select().from(quizQuestions).orderBy(asc(quizQuestions.question)).all(),
+		db
+			.select({ memberId: certifications.memberId, fadderId: certifications.fadderId })
+			.from(certifications)
+			.where(isNotNull(certifications.fadderId))
+			.all()
 	]);
+	const fadderTree = buildFadderTree(
+		memberList.map((m) => ({ id: m.id, name: m.name, role: m.role, status: m.status })),
+		relations.filter((r): r is { memberId: string; fadderId: string } => r.fadderId !== null)
+	);
 	return {
 		members: memberList.map(({ passwordHash: _drop, ...m }) => m),
 		invites: inviteList,
-		questions: questionList
+		questions: questionList,
+		fadderTree
 	};
 };
 

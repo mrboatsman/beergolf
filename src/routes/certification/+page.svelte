@@ -11,6 +11,12 @@
 	// Modal: vilken aspirant etikett-godkännandet gäller (null = stängd)
 	let etiquetteFor = $state<{ id: string; name: string } | null>(null);
 
+	// Namnfilter — det kan bli många aspiranter samtidigt
+	let aspirantFilter = $state('');
+	let filteredAspirants = $derived(
+		data.aspirants.filter((a) => a.name.toLowerCase().includes(aspirantFilter.trim().toLowerCase()))
+	);
+
 	function fmtDate(d: Date | string) {
 		return new Date(d).toLocaleDateString('sv-SE');
 	}
@@ -27,6 +33,7 @@
 		{form.approved === 'practical' ? 'Praktiskt prov' : 'Etikett & hänsyn'} godkänt för
 		{form.aspirantName}.
 		{#if form.issued}<strong>Alla delar klara — Grönt Kort utfärdat! 🍺⛳</strong>{/if}
+		{#if form.promoted}<strong>Du är nu fadder.</strong>{/if}
 	</p>
 {/if}
 
@@ -177,12 +184,24 @@
 <!-- Fadder-vy: examinera aspiranter -->
 {#if !data.me.isAspirant}
 	<section class="mt-10">
-		<h2 class="font-display text-2xl font-semibold">Aspiranter</h2>
+		<div class="flex flex-wrap items-center justify-between gap-3">
+			<h2 class="font-display text-2xl font-semibold">Aspiranter ({data.aspirants.length})</h2>
+			{#if data.aspirants.length > 1}
+				<input
+					type="search"
+					bind:value={aspirantFilter}
+					placeholder="Filtrera på namn…"
+					class="w-56 rounded-lg border-cream-300 bg-white text-sm"
+				/>
+			{/if}
+		</div>
 		{#if data.aspirants.length === 0}
 			<p class="mt-2 text-sm text-club-900/60">Inga aspiranter väntar på examination.</p>
+		{:else if filteredAspirants.length === 0}
+			<p class="mt-2 text-sm text-club-900/60">Ingen aspirant matchar ”{aspirantFilter}”.</p>
 		{:else}
 			<div class="mt-3 space-y-3">
-				{#each data.aspirants as a (a.id)}
+				{#each filteredAspirants as a (a.id)}
 					<div class="rounded-2xl bg-parchment p-5 shadow-sm">
 						<div class="flex flex-wrap items-center justify-between gap-2">
 							<div class="font-semibold">{a.name}</div>
