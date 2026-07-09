@@ -7,8 +7,8 @@
 	<MemberDashboard dashboard={data.dashboard} isSelf />
 {:else}
 	<section class="mx-auto max-w-2xl pt-8 text-center">
-		<p class="text-xs font-semibold tracking-[0.25em] text-gold-600 uppercase">Herrklubben</p>
-		<h1 class="font-display mt-2 text-5xl font-semibold sm:text-6xl">Beer Golf™</h1>
+		<p class="text-xs font-semibold tracking-[0.25em] text-gold-600 uppercase">estd · 2026</p>
+		<h1 class="font-display mt-2 text-5xl font-semibold sm:text-6xl">Tablers Beer Golf Society</h1>
 		<p class="mt-4 text-lg text-club-900/70">
 			Medlemshantering, grönt kort och turneringar. Play Slow, räkna ärligt, håll hemresan löst.
 		</p>

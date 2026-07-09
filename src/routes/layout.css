@@ -5,7 +5,7 @@
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
 
-/* Beer Golf™ — grafisk profil "country club" (tmp/design.html)
+/* Tablers Beer Golf Society — grafisk profil "country club" (tmp/design.html)
    Mörk skogsgrön + guld + cream, serif-rubriker i Cormorant Garamond. */
 @theme {
 	/* Klubbgrönt (sidebar, hero-kort, knappar) */

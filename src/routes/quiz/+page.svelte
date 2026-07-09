@@ -26,12 +26,22 @@
 	)}&nbsp;% rätt. Hederssystemet gäller — inga hjälpmedel.
 </p>
 
+{#if form?.autoPassed}
+	<div class="mt-4 rounded-xl bg-club-800 px-4 py-3 text-sm text-cream-200">
+		<strong class="text-gold-300">Läxan är lärd.</strong> Teoriprovet är godkänt på heder — dina misslyckade
+		försök står kvar i historiken, precis som det ska.
+	</div>
+{/if}
+
 {#if data.theory.passed}
 	<div class="mt-4 flex items-center gap-3 rounded-xl bg-club-100 px-4 py-3 text-sm text-club-700">
 		<span class="text-lg">✓</span>
 		<span>
 			<strong>Teoriprovet är godkänt</strong>
-			{#if data.theory.score !== null}med {pct(data.theory.score)}{/if}
+			{#if data.theory.autoPassed}
+				på heder (autorättat efter {data.attempts.filter((a) => !a.passed).length} underkänt
+				{data.attempts.filter((a) => !a.passed).length === 1 ? 'försök' : 'försök'})
+			{:else if data.theory.score !== null}med {pct(data.theory.score)}{/if}
 			{#if data.theory.at}({fmtDate(data.theory.at)}){/if} — del 1 av grönt kort klar.
 		</span>
 	</div>
@@ -63,18 +73,46 @@
 			{#if result.passed}
 				<strong>Godkänt!</strong> Del 1 av grönt kort är klar. Nästa steg: provslingan med din fadder.
 			{:else}
-				<strong>Ej godkänt.</strong> Läs på reglerna och försök igen.
+				<strong>Ej godkänt.</strong> Så här skulle det ha varit — lär dig rätt:
 			{/if}
 		</p>
-		<a
-			href="/quiz"
-			data-sveltekit-reload
-			class="mt-4 inline-block rounded-lg px-4 py-2 text-sm font-semibold {result.passed
-				? 'bg-gold-500 text-club-900 hover:bg-gold-400'
-				: 'bg-club-700 text-cream-200 hover:bg-club-800'}"
-		>
-			{result.passed ? 'Tillbaka' : 'Försök igen'}
-		</a>
+
+		{#if !result.passed && result.mistakes.length > 0}
+			<!-- Felen med facit — det handlar om att lära sig rätt, inte klicka rätt -->
+			<div class="mt-4 space-y-3">
+				{#each result.mistakes as m, i (i)}
+					<div class="rounded-xl bg-white/70 p-4 shadow-sm">
+						<p class="font-semibold text-club-900">{m.question}</p>
+						<p class="mt-1 text-sm text-red-700">✗ Ditt svar: {m.yourAnswer}</p>
+						<p class="text-sm font-semibold text-club-700">✓ Rätt svar: {m.correctAnswer}</p>
+					</div>
+				{/each}
+			</div>
+		{/if}
+
+		<div class="mt-4 flex flex-wrap gap-2">
+			{#if result.passed}
+				<a
+					href="/quiz"
+					data-sveltekit-reload
+					class="inline-block rounded-lg bg-gold-500 px-4 py-2 text-sm font-semibold text-club-900 hover:bg-gold-400"
+					>Tillbaka</a
+				>
+			{:else}
+				<form method="POST" action="?/autoPass" use:enhance>
+					<button
+						class="rounded-lg bg-gold-500 px-4 py-2 text-sm font-semibold text-club-900 hover:bg-gold-400"
+						>Jag har lärt mig läxan — autorätta</button
+					>
+				</form>
+				<a
+					href="/quiz"
+					data-sveltekit-reload
+					class="inline-block rounded-lg bg-club-700 px-4 py-2 text-sm font-semibold text-cream-200 hover:bg-club-800"
+					>Försök igen</a
+				>
+			{/if}
+		</div>
 	</div>
 {:else if data.questions.length === 0}
 	<p class="mt-6 text-sm text-club-900/60">Inga frågor upplagda ännu — hör av dig till admin.</p>

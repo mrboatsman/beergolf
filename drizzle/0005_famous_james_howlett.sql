@@ -1,0 +1,1 @@
+ALTER TABLE `certifications` ADD `theory_auto_passed` integer DEFAULT false NOT NULL;

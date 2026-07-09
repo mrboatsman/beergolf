@@ -186,6 +186,42 @@
 	{/if}
 </div>
 
+<!-- Teoriprov: status + försökshistorik (misslyckanden visas öppet) -->
+<div class="mt-8">
+	<h2 class="font-display text-2xl font-semibold">Teoriprov</h2>
+	<div class="mt-3 rounded-2xl bg-parchment p-5 shadow-sm">
+		{#if d.theory.passed}
+			<p class="text-sm text-club-700">
+				<span class="font-semibold">✓ Godkänt</span>
+				{#if d.theory.autoPassed}
+					<span
+						class="ml-1 rounded-full bg-gold-400/25 px-2.5 py-0.5 text-xs font-semibold text-gold-600"
+						>Autorättat på heder</span
+					>
+				{/if}
+				{#if d.theory.at}<span class="text-club-900/60"> · {fmtDate(d.theory.at)}</span>{/if}
+			</p>
+		{:else}
+			<p class="text-sm text-club-900/60">Teoriprovet är inte godkänt ännu.</p>
+		{/if}
+		{#if d.theory.attempts.length > 0}
+			<ul class="mt-3 space-y-1 border-t border-cream-300 pt-3 text-sm">
+				{#each d.theory.attempts as a (a.id)}
+					<li class="flex items-center justify-between">
+						<span class="text-club-900/60">{fmtDate(a.takenAt)}</span>
+						<span class="font-semibold">{Math.round(a.score * 100)} %</span>
+						{#if a.passed}
+							<span class="font-semibold text-club-700">Godkänt</span>
+						{:else}
+							<span class="text-red-700/70">Underkänt</span>
+						{/if}
+					</li>
+				{/each}
+			</ul>
+		{/if}
+	</div>
+</div>
+
 <!-- Senaste rundor -->
 <div class="mt-8">
 	<div class="flex items-baseline justify-between">

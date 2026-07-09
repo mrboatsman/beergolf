@@ -69,9 +69,11 @@
 					>BG</span
 				>
 				<span>
-					<span class="font-display block text-xl leading-tight font-semibold">Beer Golf™</span>
+					<span class="font-display block text-xl leading-tight font-semibold"
+						>Tablers Beer Golf Society</span
+					>
 					<span class="block text-[10px] tracking-[0.25em] text-gold-400 uppercase"
-						>Herrklubben</span
+						>estd · 2026</span
 					>
 				</span>
 			</a>
@@ -126,7 +128,7 @@
 							class="flex h-8 w-8 items-center justify-center rounded-full border border-gold-400 font-display text-sm font-semibold text-gold-300"
 							>BG</span
 						>
-						<span class="font-display text-lg font-semibold">Beer Golf™</span>
+						<span class="font-display text-lg font-semibold">Tablers Beer Golf Society</span>
 					</a>
 					<form method="POST" action="/logout">
 						<button class="text-xs text-cream-200/70 hover:underline">Logga ut</button>
@@ -149,7 +151,7 @@
 			</main>
 
 			<footer class="px-4 py-6 text-center text-xs text-club-900/50">
-				Beer Golf™ — Play Slow. Hederssystemet gäller.
+				Tablers Beer Golf Society — Färre slag. Fler skål.
 			</footer>
 		</div>
 	</div>
@@ -172,7 +174,7 @@
 			{@render children()}
 		</main>
 		<footer class="px-4 py-6 text-center text-xs text-club-900/50">
-			Beer Golf™ — Play Slow. Hederssystemet gäller.
+			Tablers Beer Golf Society — Färre slag. Fler skål.
 		</footer>
 	</div>
 {/if}

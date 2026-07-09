@@ -85,6 +85,10 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   rättas server-side, godkänt vid ≥80 %. Försök sparas i `quiz_attempts`; första
   godkända bokförs på `certifications.theoryPassed`. Admin hanterar frågor
   (skapa/inaktivera/ta bort) på `/admin`.
+- Underkänt visar felen med facit i resultatvyn (lära sig rätt, inte klicka rätt) +
+  knappen "Jag har lärt mig läxan — autorätta": godkänner teorin på heder
+  (`certifications.theoryAutoPassed`), misslyckade försök står kvar i historiken och
+  visas öppet i profilen (dashboard-sektionen Teoriprov, badge "Autorättat på heder").
 
 - **Certifieringsgate (kritisk)**: aspiranter (status `aspirant`) är utelåsta från allt
   utom `/certification`, `/quiz` och `/logout` — hårt i `hooks.server.ts`, redirect 303.

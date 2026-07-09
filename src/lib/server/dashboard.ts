@@ -1,6 +1,13 @@
 import { desc, eq, sql } from 'drizzle-orm';
 import { db } from './db';
-import { coasters, coasterPlayers, members, rounds } from './db/schema';
+import {
+	certifications,
+	coasters,
+	coasterPlayers,
+	members,
+	quizAttempts,
+	rounds
+} from './db/schema';
 
 const FALLBACK_PAR = 35; // äldre rundor utan coaster-koppling
 
@@ -126,6 +133,29 @@ export async function getDashboard(memberId: string) {
 			};
 		});
 
+	// Teoriprov: status + hela försökshistoriken. Misslyckanden visas öppet
+	// i profilen även efter godkänt — hederssystemet.
+	const cert = await db
+		.select({
+			passed: certifications.theoryPassed,
+			autoPassed: certifications.theoryAutoPassed,
+			at: certifications.theoryAt
+		})
+		.from(certifications)
+		.where(eq(certifications.memberId, memberId))
+		.get();
+	const theoryAttempts = await db
+		.select({
+			id: quizAttempts.id,
+			score: quizAttempts.score,
+			passed: quizAttempts.passed,
+			takenAt: quizAttempts.takenAt
+		})
+		.from(quizAttempts)
+		.where(eq(quizAttempts.memberId, memberId))
+		.orderBy(desc(quizAttempts.takenAt))
+		.all();
+
 	return {
 		member,
 		seasonYear,
@@ -139,7 +169,13 @@ export async function getDashboard(memberId: string) {
 		trend,
 		recent: allRounds.slice(0, 4),
 		bestNetRoundId,
-		matches
+		matches,
+		theory: {
+			passed: cert?.passed ?? false,
+			autoPassed: cert?.autoPassed ?? false,
+			at: cert?.at ?? null,
+			attempts: theoryAttempts
+		}
 	};
 }
 

@@ -50,6 +50,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		attempts,
 		theory: {
 			passed: cert?.theoryPassed ?? false,
+			autoPassed: cert?.theoryAutoPassed ?? false,
 			score: cert?.theoryScore ?? null,
 			at: cert?.theoryAt ?? null
 		},
@@ -79,12 +80,22 @@ export const actions: Actions = {
 			answers[q.id] = idx;
 		}
 
-		const wrongIds = questions.filter((q) => answers[q.id] !== q.correctIndex).map((q) => q.id);
-		const correctCount = questions.length - wrongIds.length;
+		const wrong = questions.filter((q) => answers[q.id] !== q.correctIndex);
+		const correctCount = questions.length - wrong.length;
 		const score = Math.round((correctCount / questions.length) * 100) / 100;
 		const passed = score >= PASS_THRESHOLD;
 
 		await db.insert(quizAttempts).values({ id: newId(), memberId: me.id, score, passed, answers });
+
+		// Vid underkänt: visa felen med facit — det handlar om att lära sig
+		// rätt, inte klicka rätt. Därefter kan man autorätta på heder.
+		const mistakes = passed
+			? []
+			: wrong.map((q) => ({
+					question: q.question,
+					yourAnswer: q.options[answers[q.id]],
+					correctAnswer: q.options[q.correctIndex]
+				}));
 
 		// Godkänt teoriprov bokförs på certifieringen (första gången).
 		if (passed) {
@@ -112,7 +123,56 @@ export const actions: Actions = {
 		}
 
 		return {
-			result: { score, passed, correctCount, total: questions.length, wrongIds }
+			result: { score, passed, correctCount, total: questions.length, mistakes }
 		};
+	},
+
+	// "Jag har lärt mig läxan" — godkänner teorin på heder efter underkänt
+	// försök. Misslyckandena finns kvar i historiken och visas i profilen.
+	autoPass: async ({ locals }) => {
+		const me = requireMember(locals.member);
+
+		const failed = await db
+			.select()
+			.from(quizAttempts)
+			.where(eq(quizAttempts.memberId, me.id))
+			.all()
+			.filter((a) => !a.passed);
+		if (failed.length === 0) {
+			return fail(400, { error: 'Autorättning kräver ett underkänt försök.' });
+		}
+
+		const cert = await db
+			.select()
+			.from(certifications)
+			.where(eq(certifications.memberId, me.id))
+			.get();
+		if (cert?.theoryPassed) return fail(400, { error: 'Teoriprovet är redan godkänt.' });
+
+		const latest = failed.sort((a, b) => b.takenAt.getTime() - a.takenAt.getTime())[0];
+		const now = new Date();
+		if (!cert) {
+			await db.insert(certifications).values({
+				id: newId(),
+				memberId: me.id,
+				theoryPassed: true,
+				theoryAutoPassed: true,
+				theoryScore: latest.score,
+				theoryAt: now
+			});
+		} else {
+			await db
+				.update(certifications)
+				.set({
+					theoryPassed: true,
+					theoryAutoPassed: true,
+					theoryScore: latest.score,
+					theoryAt: now
+				})
+				.where(eq(certifications.id, cert.id));
+		}
+		await maybeIssueGreenCard(me.id);
+
+		return { autoPassed: true };
 	}
 };

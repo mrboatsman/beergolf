@@ -60,6 +60,9 @@ export const certifications = sqliteTable('certifications', {
 	theoryPassed: integer('theory_passed', { mode: 'boolean' }).notNull().default(false),
 	theoryScore: real('theory_score'), // andel rätt 0..1
 	theoryAt: integer('theory_at', { mode: 'timestamp' }),
+	// Godkänt via "jag har lärt mig läxan" efter underkänt försök —
+	// hederssystemet: det handlar om att lära sig rätt, inte klicka rätt.
+	theoryAutoPassed: integer('theory_auto_passed', { mode: 'boolean' }).notNull().default(false),
 	// Del 2 – Praktiskt prov (provslingan)
 	practicalPassed: integer('practical_passed', { mode: 'boolean' }).notNull().default(false),
 	practicalComment: text('practical_comment'), // fadderns omdöme
