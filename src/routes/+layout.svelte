@@ -8,6 +8,12 @@
 	let isStaff = $derived(!!member && ['captain', 'admin'].includes(member.role));
 
 	// Aspiranter ser bara certifieringsflödet tills grönt kort är utfärdat.
+	// Avklarat teoriprov plockar bort Teoriprov ur menyn.
+	let quizItem = $derived(
+		data.theoryPassed
+			? []
+			: [{ href: '/quiz', label: 'Teoriprov', active: page.url.pathname.startsWith('/quiz') }]
+	);
 	let nav = $derived(
 		member?.status === 'aspirant'
 			? [
@@ -16,7 +22,7 @@
 						label: 'Grönt Kort',
 						active: page.url.pathname.startsWith('/certification')
 					},
-					{ href: '/quiz', label: 'Teoriprov', active: page.url.pathname.startsWith('/quiz') }
+					...quizItem
 				]
 			: [
 					{ href: '/', label: 'Dashboard', active: page.url.pathname === '/' },
@@ -31,7 +37,7 @@
 						label: 'Grönt Kort',
 						active: page.url.pathname.startsWith('/certification')
 					},
-					{ href: '/quiz', label: 'Teoriprov', active: page.url.pathname.startsWith('/quiz') },
+					...quizItem,
 					{
 						href: '/members',
 						label: 'Medlemmar',
