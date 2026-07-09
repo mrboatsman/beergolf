@@ -60,6 +60,9 @@
 					.toUpperCase()
 			: ''
 	);
+
+	// Om sällskapet — öppnas när man klickar på emblemet
+	let showAbout = $state(false);
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
@@ -70,17 +73,25 @@
 		<aside
 			class="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-club-800 text-cream-200 lg:flex"
 		>
-			<a href="/" class="flex items-center gap-3 px-6 pt-7 pb-6">
-				<img src={logo} alt="" class="h-12 w-12 shrink-0 rounded-full" />
-				<span>
+			<div class="flex items-center gap-3 px-6 pt-7 pb-6">
+				<button
+					type="button"
+					onclick={() => (showAbout = true)}
+					title="Om sällskapet"
+					aria-label="Om sällskapet"
+					class="shrink-0 rounded-full transition-transform hover:scale-105"
+				>
+					<img src={logo} alt="" class="h-12 w-12 rounded-full" />
+				</button>
+				<a href="/">
 					<span class="font-display block text-xl leading-tight font-semibold"
 						>Tablers Beer Golf Society</span
 					>
 					<span class="block text-[10px] tracking-[0.25em] text-gold-400 uppercase"
 						>estd · 2026</span
 					>
-				</span>
-			</a>
+				</a>
+			</div>
 
 			<p
 				class="px-6 pt-4 pb-2 text-[10px] font-semibold tracking-[0.3em] text-cream-200/40 uppercase"
@@ -133,10 +144,17 @@
 		<div class="flex min-w-0 flex-1 flex-col">
 			<header class="bg-club-800 text-cream-200 lg:hidden">
 				<div class="flex items-center justify-between px-4 py-3">
-					<a href="/" class="flex items-center gap-2">
-						<img src={logo} alt="" class="h-8 w-8 shrink-0 rounded-full" />
-						<span class="font-display text-lg font-semibold">Tablers Beer Golf Society</span>
-					</a>
+					<div class="flex items-center gap-2">
+						<button
+							type="button"
+							onclick={() => (showAbout = true)}
+							aria-label="Om sällskapet"
+							class="shrink-0 rounded-full"
+						>
+							<img src={logo} alt="" class="h-8 w-8 rounded-full" />
+						</button>
+						<a href="/" class="font-display text-lg font-semibold">Tablers Beer Golf Society</a>
+					</div>
 					<form method="POST" action="/logout">
 						<button class="text-xs text-cream-200/70 hover:underline">Logga ut</button>
 					</form>
@@ -167,10 +185,17 @@
 	<div class="flex min-h-screen flex-col">
 		<header class="bg-club-800 text-cream-200">
 			<nav class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-				<a href="/" class="flex items-center gap-2">
-					<img src={logo} alt="" class="h-9 w-9 shrink-0 rounded-full" />
-					<span class="font-display text-xl font-semibold">Tablers Beer Golf Society</span>
-				</a>
+				<div class="flex items-center gap-2">
+					<button
+						type="button"
+						onclick={() => (showAbout = true)}
+						aria-label="Om sällskapet"
+						class="shrink-0 rounded-full"
+					>
+						<img src={logo} alt="" class="h-9 w-9 rounded-full" />
+					</button>
+					<a href="/" class="font-display text-xl font-semibold">Tablers Beer Golf Society</a>
+				</div>
 				<a href="/login" class="text-sm text-cream-200/80 hover:underline">Logga in</a>
 			</nav>
 		</header>
@@ -180,5 +205,47 @@
 		<footer class="px-4 py-6 text-center text-xs text-club-900/50">
 			Tablers Beer Golf Society — Färre slag. Fler skål.
 		</footer>
+	</div>
+{/if}
+
+<!-- Om sällskapet -->
+{#if showAbout}
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-club-950/70 p-4"
+		role="presentation"
+		onclick={(e) => {
+			if (e.target === e.currentTarget) showAbout = false;
+		}}
+	>
+		<div
+			class="w-full max-w-md rounded-2xl bg-parchment p-8 text-center shadow-xl"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="about-title"
+		>
+			<img
+				src={logo}
+				alt="Tablers Beer Golf Society"
+				class="mx-auto h-48 w-48 rounded-full shadow-lg"
+			/>
+			<p class="mt-5 text-xs font-semibold tracking-[0.25em] text-gold-600 uppercase">
+				estd · september 2026
+			</p>
+			<h2 id="about-title" class="font-display mt-1 text-3xl font-semibold text-club-900">
+				Tablers Beer Golf Society
+			</h2>
+			<p class="mt-3 text-sm leading-relaxed text-club-900/70">
+				Sällskapet grundades i september 2026 av den svenska Old Tablers-klubben
+				<strong>OT109</strong>. I Old Tablers-anda förenar vi kamratskap, hederssystem och ädel
+				tävlan på provslingan.
+			</p>
+			<p class="font-display mt-3 text-lg text-club-700 italic">Färre slag. Fler skål.</p>
+			<button
+				type="button"
+				onclick={() => (showAbout = false)}
+				class="mt-5 rounded-lg bg-club-700 px-5 py-2 text-sm font-semibold text-cream-200 hover:bg-club-800"
+				>Stäng</button
+			>
+		</div>
 	</div>
 {/if}
