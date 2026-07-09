@@ -95,9 +95,13 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   Nav visar bara Grönt Kort + Teoriprov för aspiranter. Aspiranter kan inte läggas på coasters.
 - Certifiering (`/certification`, logik i `src/lib/server/certification.ts`): aspiranten ser
   sina tre delar; certifierade medlemmar (vem som helst, inte bara rollen fadder) examinerar
-  aspiranter — godkänner praktiskt prov med omdöme (kommentar) och bevis (video/bilder,
-  valfritt antal) samt etikett. När alla tre delar är klara utfärdas grönt kort automatiskt
-  (`maybeIssueGreenCard`): nästa medlemsnummer, status→active, role aspirant→member, HCP 36.
+  aspiranter — godkänner praktiskt prov med omdöme (kommentar) och bevis samt etikett.
+  **Praktiskt prov kräver minst en bild/film** (server-side + required i UI) — missat bevis
+  = rekonstruera situationen. Etikett godkänns via bekräftelsemodal som listar kriterierna
+  (`src/lib/etiquette.ts`, `ETIQUETTE_CRITERIA`); aspiranten ser samma kriterier i Del 3-kortet
+  när teoriprovet är inlämnat (≥1 försök eller godkänt). När alla tre delar är klara utfärdas
+  grönt kort automatiskt (`maybeIssueGreenCard`): nästa medlemsnummer, status→active,
+  role aspirant→member, HCP 36.
 - Fil-lagring: `src/lib/server/storage.ts` — interface `FileStorage`, `STORAGE_DRIVER=fs`
   (dev, skriver till `UPLOAD_DIR`, default ./data/uploads) eller `s3` (produktion — drivern
   är en stub som ska implementeras med @aws-sdk/client-s3). Bevis i `certification_proofs`

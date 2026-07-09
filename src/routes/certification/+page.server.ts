@@ -1,8 +1,8 @@
 import { fail } from '@sveltejs/kit';
-import { asc, eq } from 'drizzle-orm';
+import { asc, eq, sql } from 'drizzle-orm';
 import { extname } from 'node:path';
 import { db } from '$lib/server/db';
-import { certificationProofs, certifications, members } from '$lib/server/db/schema';
+import { certificationProofs, certifications, members, quizAttempts } from '$lib/server/db/schema';
 import { requireMember } from '$lib/server/guard';
 import { getCertStatus, maybeIssueGreenCard } from '$lib/server/certification';
 import { storage } from '$lib/server/storage';
@@ -22,6 +22,15 @@ function extFor(f: File): string {
 export const load: PageServerLoad = async ({ locals }) => {
 	const me = requireMember(locals.member);
 	const status = await getCertStatus(me.id);
+
+	// Etikett-kriterierna visas för aspiranten när teoriprovet är inlämnat.
+	const theorySubmitted =
+		status.theory.passed ||
+		((await db
+			.select({ n: sql<number>`count(*)` })
+			.from(quizAttempts)
+			.where(eq(quizAttempts.memberId, me.id))
+			.get()?.n) ?? 0) > 0;
 
 	// Certifierade medlemmar agerar fadder: se och godkänn aspiranter.
 	let aspirants: Array<{
@@ -57,6 +66,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	return {
 		status,
 		aspirants,
+		theorySubmitted,
 		me: {
 			isAspirant: me.status === 'aspirant',
 			memberNumber: me.memberNumber,
@@ -95,6 +105,15 @@ async function approve(locals: App.Locals, request: Request, part: 'practical' |
 		const files = form
 			.getAll('files')
 			.filter((f): f is File => f instanceof File && f.size > 0 && f.name !== '');
+
+		// Inget bevis, inget godkännande — missade ni att dokumentera får
+		// situationen rekonstrueras.
+		if (files.length === 0) {
+			return fail(400, {
+				error:
+					'Bevis krävs: ladda upp minst en bild eller film. Missade ni att ta bevis? Rekonstruera situationen.'
+			});
+		}
 
 		for (const f of files) {
 			if (!f.type.startsWith('image/') && !f.type.startsWith('video/')) {

@@ -1,11 +1,15 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { ETIQUETTE_CRITERIA } from '$lib/etiquette';
 	let { data, form } = $props();
 
 	let s = $derived(data.status);
 	let doneCount = $derived(
 		[s.theory.passed, s.practical.passed, s.etiquette.passed].filter(Boolean).length
 	);
+
+	// Modal: vilken aspirant etikett-godkännandet gäller (null = stängd)
+	let etiquetteFor = $state<{ id: string; name: string } | null>(null);
 
 	function fmtDate(d: Date | string) {
 		return new Date(d).toLocaleDateString('sv-SE');
@@ -154,10 +158,16 @@
 			<h2 class="font-display mt-1 text-2xl font-semibold">Etikett &amp; hänsyn</h2>
 			{#if s.etiquette.passed}
 				<p class="mt-2 text-sm text-club-700">Godkänd av fadder.</p>
+			{:else if data.theorySubmitted}
+				<p class="mt-2 text-sm text-club-900/70">Faddern bedömer löpande under provslingan:</p>
+				<ul class="mt-2 space-y-1 text-sm text-club-900/70">
+					{#each ETIQUETTE_CRITERIA as c (c)}
+						<li class="flex gap-2"><span class="text-club-700">·</span>{c}</li>
+					{/each}
+				</ul>
 			{:else}
 				<p class="mt-2 text-sm text-club-900/70">
-					Bedöms löpande under provslingan: punktlighet, tystnad vid utslag, ärlig självräkning,
-					lugnt tempo och ansvarsfullhet.
+					Bedöms löpande under provslingan. Kriterierna visas när du lämnat in teoriprovet.
 				</p>
 			{/if}
 		</div>
@@ -213,12 +223,15 @@
 											class="mt-1 w-full rounded-lg border-cream-300 bg-white text-sm"></textarea>
 									</label>
 									<label class="block text-xs">
-										<span class="text-club-900/60">Bevis — video eller bilder (valfritt antal)</span
+										<span class="text-club-900/60"
+											>Bevis — minst en bild eller film krävs. Missade ni att ta bevis? Rekonstruera
+											situationen.</span
 										>
 										<input
 											name="files"
 											type="file"
 											multiple
+											required
 											accept="image/*,video/*"
 											class="mt-1 block w-full text-sm text-club-900/70 file:mr-3 file:rounded-lg file:border-0 file:bg-club-100 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-club-700"
 										/>
@@ -230,13 +243,12 @@
 								</form>
 							{/if}
 							{#if !a.etiquette}
-								<form method="POST" action="?/approveEtiquette" use:enhance>
-									<input type="hidden" name="memberId" value={a.id} />
-									<button
-										class="rounded-lg bg-gold-500 px-3 py-2 text-sm font-semibold text-club-900 hover:bg-gold-400"
-										>Godkänn etikett &amp; hänsyn</button
-									>
-								</form>
+								<button
+									type="button"
+									onclick={() => (etiquetteFor = { id: a.id, name: a.name })}
+									class="rounded-lg bg-gold-500 px-3 py-2 text-sm font-semibold text-club-900 hover:bg-gold-400"
+									>Godkänn etikett &amp; hänsyn</button
+								>
 							{/if}
 							{#if !a.theory}
 								<span class="text-xs text-club-900/50">Teoriprovet gör aspiranten själv.</span>
@@ -247,4 +259,59 @@
 			</div>
 		{/if}
 	</section>
+{/if}
+
+<!-- Modal: bekräfta etikett & hänsyn mot kriterierna -->
+{#if etiquetteFor}
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-club-950/60 p-4"
+		role="presentation"
+		onclick={(e) => {
+			if (e.target === e.currentTarget) etiquetteFor = null;
+		}}
+	>
+		<div
+			class="w-full max-w-md rounded-2xl bg-parchment p-6 shadow-xl"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="etiquette-title"
+		>
+			<p class="text-xs font-semibold tracking-[0.2em] text-gold-600 uppercase">
+				Etikett &amp; hänsyn
+			</p>
+			<h3 id="etiquette-title" class="font-display mt-1 text-2xl font-semibold">
+				{etiquetteFor.name}
+			</h3>
+			<p class="mt-2 text-sm text-club-900/70">
+				Genom att godkänna intygar du att aspiranten under provslingan visat:
+			</p>
+			<ul class="mt-3 space-y-2 text-sm">
+				{#each ETIQUETTE_CRITERIA as c (c)}
+					<li class="flex gap-2"><span class="font-semibold text-club-700">✓</span>{c}</li>
+				{/each}
+			</ul>
+			<div class="mt-5 flex justify-end gap-2">
+				<button
+					type="button"
+					onclick={() => (etiquetteFor = null)}
+					class="rounded-lg px-4 py-2 text-sm font-semibold text-club-900/70 hover:bg-cream-300"
+					>Avbryt</button
+				>
+				<form
+					method="POST"
+					action="?/approveEtiquette"
+					use:enhance={() => {
+						etiquetteFor = null;
+						return async ({ update }) => update();
+					}}
+				>
+					<input type="hidden" name="memberId" value={etiquetteFor.id} />
+					<button
+						class="rounded-lg bg-gold-500 px-4 py-2 text-sm font-semibold text-club-900 hover:bg-gold-400"
+						>OK — godkänn</button
+					>
+				</form>
+			</div>
+		</div>
+	</div>
 {/if}
