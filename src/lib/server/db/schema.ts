@@ -1,0 +1,157 @@
+import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+import { relations, sql } from 'drizzle-orm';
+
+// --- Roller ---------------------------------------------------------------
+// aspirant  = under upplärning, ej grönt kort
+// member    = certifierad medlem med grönt kort
+// fadder     = får examinera aspiranter (praktiskt + etikett)
+// captain    = klubbmästare, håller i turneringar
+// admin      = full åtkomst (skapa medlemmar, invites, allt)
+export type Role = 'aspirant' | 'member' | 'fadder' | 'captain' | 'admin';
+
+// Ingångshandicap för nya certifierade medlemmar
+export const START_HCP = 36;
+
+export const members = sqliteTable('members', {
+	id: text('id').primaryKey(), // uuid
+	memberNumber: integer('member_number'), // sätts vid certifiering (grönt kort-nr)
+	name: text('name').notNull(),
+	email: text('email').notNull().unique(),
+	passwordHash: text('password_hash'), // null tills aspiranten satt lösenord
+	role: text('role').$type<Role>().notNull().default('aspirant'),
+	status: text('status').$type<'aspirant' | 'active' | 'inactive'>().notNull().default('aspirant'),
+	hcp: real('hcp').notNull().default(START_HCP),
+	greenCardIssuedAt: integer('green_card_issued_at', { mode: 'timestamp' }),
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`(unixepoch())`)
+});
+
+export const sessions = sqliteTable('sessions', {
+	id: text('id').primaryKey(), // sha256 av token
+	memberId: text('member_id')
+		.notNull()
+		.references(() => members.id, { onDelete: 'cascade' }),
+	expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull()
+});
+
+// Engångskoder för invald (skapade av admin/captain)
+export const invites = sqliteTable('invites', {
+	id: text('id').primaryKey(),
+	code: text('code').notNull().unique(), // slumpad kort kod, delas med aspiranten
+	email: text('email'), // valfritt förifyllt
+	role: text('role').$type<Role>().notNull().default('aspirant'),
+	createdBy: text('created_by').references(() => members.id),
+	usedBy: text('used_by').references(() => members.id),
+	usedAt: integer('used_at', { mode: 'timestamp' }),
+	expiresAt: integer('expires_at', { mode: 'timestamp' }),
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`(unixepoch())`)
+});
+
+// Certifiering av grönt kort — de tre delarna
+export const certifications = sqliteTable('certifications', {
+	id: text('id').primaryKey(),
+	memberId: text('member_id')
+		.notNull()
+		.references(() => members.id, { onDelete: 'cascade' }),
+	fadderId: text('fadder_id').references(() => members.id), // examinator
+	// Del 1 – Teoriprov
+	theoryPassed: integer('theory_passed', { mode: 'boolean' }).notNull().default(false),
+	theoryScore: real('theory_score'), // andel rätt 0..1
+	theoryAt: integer('theory_at', { mode: 'timestamp' }),
+	// Del 2 – Praktiskt prov (provslingan)
+	practicalPassed: integer('practical_passed', { mode: 'boolean' }).notNull().default(false),
+	practicalProofUrl: text('practical_proof_url'), // bevis bifogat av fadder
+	practicalAt: integer('practical_at', { mode: 'timestamp' }),
+	// Del 3 – Etikett & hänsyn
+	etiquettePassed: integer('etiquette_passed', { mode: 'boolean' }).notNull().default(false),
+	// Slutförande
+	certifiedAt: integer('certified_at', { mode: 'timestamp' }),
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`(unixepoch())`)
+});
+
+// --- Teoriprov (quiz) -----------------------------------------------------
+export const quizQuestions = sqliteTable('quiz_questions', {
+	id: text('id').primaryKey(),
+	question: text('question').notNull(),
+	options: text('options', { mode: 'json' }).$type<string[]>().notNull(),
+	correctIndex: integer('correct_index').notNull(),
+	category: text('category')
+		.$type<'regler' | 'säkerhet' | 'historia'>()
+		.notNull()
+		.default('regler'),
+	active: integer('active', { mode: 'boolean' }).notNull().default(true)
+});
+
+export const quizAttempts = sqliteTable('quiz_attempts', {
+	id: text('id').primaryKey(),
+	memberId: text('member_id')
+		.notNull()
+		.references(() => members.id, { onDelete: 'cascade' }),
+	score: real('score').notNull(), // andel rätt 0..1
+	passed: integer('passed', { mode: 'boolean' }).notNull(),
+	answers: text('answers', { mode: 'json' }).$type<number[]>().notNull(),
+	takenAt: integer('taken_at', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`(unixepoch())`)
+});
+
+// --- Turneringar ----------------------------------------------------------
+export const tournaments = sqliteTable('tournaments', {
+	id: text('id').primaryKey(),
+	name: text('name').notNull(),
+	startsAt: integer('starts_at', { mode: 'timestamp' }),
+	holes: integer('holes').notNull().default(18),
+	status: text('status').$type<'draft' | 'open' | 'finished'>().notNull().default('draft'),
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`(unixepoch())`)
+});
+
+// --- Rundor (virtuella Score Coasters) ------------------------------------
+// scores lagras som json-array (ett tal per hål). hcpBefore/After ger
+// handikapp-historik runda för runda.
+export const rounds = sqliteTable('rounds', {
+	id: text('id').primaryKey(),
+	memberId: text('member_id')
+		.notNull()
+		.references(() => members.id, { onDelete: 'cascade' }),
+	tournamentId: text('tournament_id').references(() => tournaments.id, { onDelete: 'set null' }),
+	holes: integer('holes').notNull().default(18),
+	scores: text('scores', { mode: 'json' }).$type<number[]>().notNull(),
+	grossTotal: integer('gross_total').notNull(),
+	hcpBefore: real('hcp_before').notNull(),
+	hcpAfter: real('hcp_after').notNull(),
+	netTotal: real('net_total').notNull(),
+	playedAt: integer('played_at', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`(unixepoch())`)
+});
+
+// --- Relationer -----------------------------------------------------------
+export const membersRelations = relations(members, ({ many }) => ({
+	sessions: many(sessions),
+	rounds: many(rounds),
+	certifications: many(certifications)
+}));
+
+export const roundsRelations = relations(rounds, ({ one }) => ({
+	member: one(members, { fields: [rounds.memberId], references: [members.id] }),
+	tournament: one(tournaments, { fields: [rounds.tournamentId], references: [tournaments.id] })
+}));
+
+export const certificationsRelations = relations(certifications, ({ one }) => ({
+	member: one(members, { fields: [certifications.memberId], references: [members.id] }),
+	fadder: one(members, { fields: [certifications.fadderId], references: [members.id] })
+}));
+
+export type Member = typeof members.$inferSelect;
+export type Session = typeof sessions.$inferSelect;
+export type Invite = typeof invites.$inferSelect;
+export type Round = typeof rounds.$inferSelect;
+export type Tournament = typeof tournaments.$inferSelect;
+export type Certification = typeof certifications.$inferSelect;

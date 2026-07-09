@@ -1,0 +1,24 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/forms';
+@plugin '@tailwindcss/typography';
+
+/* Beer Golf™ palett — inspirerad av öl (amber/skum) och golf (grön) */
+@theme {
+	--color-beer-50: #fdf8ed;
+	--color-beer-100: #f9ecca;
+	--color-beer-200: #f2d894;
+	--color-beer-300: #e9bd54;
+	--color-beer-400: #e2a52f;
+	--color-beer-500: #c9861f;
+	--color-beer-600: #a7661a;
+	--color-beer-700: #854a1a;
+	--color-beer-800: #6d3c1c;
+	--color-beer-900: #5c331b;
+	--color-turf-500: #2f855a;
+	--color-turf-600: #276749;
+	--color-turf-700: #22543d;
+}
+
+body {
+	@apply bg-beer-50 text-beer-900 antialiased;
+}
