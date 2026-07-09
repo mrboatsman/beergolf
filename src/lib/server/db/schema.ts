@@ -39,7 +39,6 @@ export const sessions = sqliteTable('sessions', {
 export const invites = sqliteTable('invites', {
 	id: text('id').primaryKey(),
 	code: text('code').notNull().unique(), // slumpad kort kod, delas med aspiranten
-	email: text('email'), // valfritt förifyllt
 	role: text('role').$type<Role>().notNull().default('aspirant'),
 	createdBy: text('created_by').references(() => members.id),
 	usedBy: text('used_by').references(() => members.id),

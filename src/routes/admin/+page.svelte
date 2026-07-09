@@ -24,10 +24,6 @@
 		<h2 class="font-semibold text-beer-800">Skapa invalskod</h2>
 		<form method="POST" action="?/createInvite" use:enhance class="mt-3 space-y-3">
 			<label class="block text-sm">
-				<span class="text-beer-700">E-post (valfritt)</span>
-				<input name="email" type="email" class="mt-1 w-full rounded-lg border-beer-300" />
-			</label>
-			<label class="block text-sm">
 				<span class="text-beer-700">Roll</span>
 				<select name="role" class="mt-1 w-full rounded-lg border-beer-300">
 					{#each roles as r (r)}<option value={r}>{r}</option>{/each}
@@ -108,7 +104,6 @@
 				<tr>
 					<th class="px-3 py-2">Kod</th>
 					<th class="px-3 py-2">Roll</th>
-					<th class="px-3 py-2">E-post</th>
 					<th class="px-3 py-2">Status</th>
 				</tr>
 			</thead>
@@ -117,7 +112,6 @@
 					<tr class="border-t border-beer-100">
 						<td class="px-3 py-2 font-mono font-bold">{i.code}</td>
 						<td class="px-3 py-2 capitalize">{i.role}</td>
-						<td class="px-3 py-2 text-beer-600">{i.email ?? '—'}</td>
 						<td class="px-3 py-2">
 							{#if i.usedBy}
 								<span class="text-beer-500">använd</span>

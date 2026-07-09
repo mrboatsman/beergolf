@@ -26,10 +26,6 @@ export const actions: Actions = {
 		const me = requireRole(locals.member, 'captain');
 		const form = await request.formData();
 		const role = String(form.get('role') ?? 'aspirant') as Role;
-		const email =
-			String(form.get('email') ?? '')
-				.trim()
-				.toLowerCase() || null;
 		if (!ROLES.includes(role)) return fail(400, { error: 'Ogiltig roll.' });
 
 		const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 dagar
@@ -37,7 +33,6 @@ export const actions: Actions = {
 		await db.insert(invites).values({
 			id: newId(),
 			code,
-			email,
 			role,
 			createdBy: me.id,
 			expiresAt
