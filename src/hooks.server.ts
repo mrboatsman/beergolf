@@ -10,7 +10,7 @@ import {
 // Ocertifierade (aspiranter) har bara tillgång till certifieringsflödet.
 // Grönt kort (teori + praktik + etikett) är obligatoriskt innan resten
 // av klubbhuset låses upp.
-const ASPIRANT_ALLOWED = ['/certification', '/quiz', '/logout'];
+const ASPIRANT_ALLOWED = ['/certification', '/quiz', '/logout', '/files'];
 const ALWAYS_ALLOWED = ['/_app', '/@', '/favicon', '/.well-known'];
 
 export const handle: Handle = async ({ event, resolve }) => {

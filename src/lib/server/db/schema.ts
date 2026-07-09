@@ -62,12 +62,30 @@ export const certifications = sqliteTable('certifications', {
 	theoryAt: integer('theory_at', { mode: 'timestamp' }),
 	// Del 2 – Praktiskt prov (provslingan)
 	practicalPassed: integer('practical_passed', { mode: 'boolean' }).notNull().default(false),
-	practicalProofUrl: text('practical_proof_url'), // bevis bifogat av fadder
+	practicalComment: text('practical_comment'), // fadderns omdöme
 	practicalAt: integer('practical_at', { mode: 'timestamp' }),
 	// Del 3 – Etikett & hänsyn
 	etiquettePassed: integer('etiquette_passed', { mode: 'boolean' }).notNull().default(false),
 	// Slutförande
 	certifiedAt: integer('certified_at', { mode: 'timestamp' }),
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`(unixepoch())`)
+});
+
+// Bevis för praktiska provet: video/bilder uppladdade av faddern.
+// Lagras via storage-abstraktionen (fs i dev, S3 i produktion) — storageKey
+// är nyckeln i respektive backend.
+export const certificationProofs = sqliteTable('certification_proofs', {
+	id: text('id').primaryKey(),
+	certificationId: text('certification_id')
+		.notNull()
+		.references(() => certifications.id, { onDelete: 'cascade' }),
+	storageKey: text('storage_key').notNull().unique(),
+	filename: text('filename').notNull(), // ursprungligt filnamn
+	contentType: text('content_type').notNull(),
+	size: integer('size').notNull(),
+	uploadedBy: text('uploaded_by').references(() => members.id),
 	createdAt: integer('created_at', { mode: 'timestamp' })
 		.notNull()
 		.default(sql`(unixepoch())`)
@@ -206,3 +224,4 @@ export type Tournament = typeof tournaments.$inferSelect;
 export type Certification = typeof certifications.$inferSelect;
 export type Coaster = typeof coasters.$inferSelect;
 export type CoasterPlayer = typeof coasterPlayers.$inferSelect;
+export type CertificationProof = typeof certificationProofs.$inferSelect;

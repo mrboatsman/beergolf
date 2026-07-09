@@ -1,6 +1,6 @@
-import { eq, sql } from 'drizzle-orm';
+import { asc, eq, sql } from 'drizzle-orm';
 import { db } from './db';
-import { certifications, members, START_HCP } from './db/schema';
+import { certificationProofs, certifications, members, START_HCP } from './db/schema';
 
 /** Certifieringsstatus för en medlem — de tre delarna av grönt kort. */
 export async function getCertStatus(memberId: string) {
@@ -18,6 +18,20 @@ export async function getCertStatus(memberId: string) {
 				.get()
 		: null;
 
+	const proofs = cert
+		? await db
+				.select({
+					id: certificationProofs.id,
+					storageKey: certificationProofs.storageKey,
+					filename: certificationProofs.filename,
+					contentType: certificationProofs.contentType
+				})
+				.from(certificationProofs)
+				.where(eq(certificationProofs.certificationId, cert.id))
+				.orderBy(asc(certificationProofs.createdAt))
+				.all()
+		: [];
+
 	return {
 		theory: {
 			passed: cert?.theoryPassed ?? false,
@@ -27,7 +41,13 @@ export async function getCertStatus(memberId: string) {
 		practical: {
 			passed: cert?.practicalPassed ?? false,
 			at: cert?.practicalAt ?? null,
-			proofUrl: cert?.practicalProofUrl ?? null
+			comment: cert?.practicalComment ?? null,
+			proofs: proofs.map((p) => ({
+				id: p.id,
+				url: `/files/${p.storageKey}`,
+				filename: p.filename,
+				contentType: p.contentType
+			}))
 		},
 		etiquette: { passed: cert?.etiquettePassed ?? false },
 		fadderName: fadder?.name ?? null,

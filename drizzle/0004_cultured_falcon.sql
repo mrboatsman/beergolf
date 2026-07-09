@@ -1,0 +1,1 @@
+ALTER TABLE `certifications` ADD `practical_comment` text;

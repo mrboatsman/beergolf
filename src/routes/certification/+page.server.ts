@@ -1,11 +1,23 @@
 import { fail } from '@sveltejs/kit';
 import { asc, eq } from 'drizzle-orm';
+import { extname } from 'node:path';
 import { db } from '$lib/server/db';
-import { certifications, members } from '$lib/server/db/schema';
+import { certificationProofs, certifications, members } from '$lib/server/db/schema';
 import { requireMember } from '$lib/server/guard';
 import { getCertStatus, maybeIssueGreenCard } from '$lib/server/certification';
+import { storage } from '$lib/server/storage';
 import { newId } from '$lib/server/ids';
 import type { Actions, PageServerLoad } from './$types';
+
+const MAX_FILE_SIZE = 200 * 1024 * 1024; // 200 MB — video från provslingan
+
+function extFor(f: File): string {
+	const e = extname(f.name).toLowerCase();
+	if (/^\.[a-z0-9]{1,5}$/.test(e)) return e;
+	// fallback från mime-typen
+	const sub = f.type.split('/')[1] ?? 'bin';
+	return `.${sub.replace(/[^a-z0-9]/gi, '').slice(0, 5) || 'bin'}`;
+}
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const me = requireMember(locals.member);
@@ -77,16 +89,33 @@ async function approve(locals: App.Locals, request: Request, part: 'practical' |
 		.get();
 
 	if (part === 'practical') {
-		const proofUrl = String(form.get('proofUrl') ?? '').trim() || null;
 		if (cert?.practicalPassed) return fail(400, { error: 'Praktiska provet är redan godkänt.' });
+
+		const comment = String(form.get('comment') ?? '').trim() || null;
+		const files = form
+			.getAll('files')
+			.filter((f): f is File => f instanceof File && f.size > 0 && f.name !== '');
+
+		for (const f of files) {
+			if (!f.type.startsWith('image/') && !f.type.startsWith('video/')) {
+				return fail(400, { error: `${f.name}: endast bilder och video tillåts.` });
+			}
+			if (f.size > MAX_FILE_SIZE) {
+				return fail(400, { error: `${f.name}: max ${MAX_FILE_SIZE / 1024 / 1024} MB per fil.` });
+			}
+		}
+
+		// Se till att cert-raden finns innan filerna knyts till den.
+		let certId = cert?.id;
 		if (!cert) {
+			certId = newId();
 			await db.insert(certifications).values({
-				id: newId(),
+				id: certId,
 				memberId,
 				fadderId: me.id,
 				practicalPassed: true,
 				practicalAt: now,
-				practicalProofUrl: proofUrl
+				practicalComment: comment
 			});
 		} else {
 			await db
@@ -94,10 +123,25 @@ async function approve(locals: App.Locals, request: Request, part: 'practical' |
 				.set({
 					practicalPassed: true,
 					practicalAt: now,
-					practicalProofUrl: proofUrl,
+					practicalComment: comment,
 					fadderId: me.id
 				})
 				.where(eq(certifications.id, cert.id));
+		}
+
+		for (const f of files) {
+			const ext = extFor(f);
+			const key = `proofs/${certId}/${newId()}${ext}`;
+			await storage.put(key, new Uint8Array(await f.arrayBuffer()), f.type);
+			await db.insert(certificationProofs).values({
+				id: newId(),
+				certificationId: certId!,
+				storageKey: key,
+				filename: f.name,
+				contentType: f.type,
+				size: f.size,
+				uploadedBy: me.id
+			});
 		}
 	} else {
 		if (cert?.etiquettePassed) return fail(400, { error: 'Etikett är redan godkänd.' });

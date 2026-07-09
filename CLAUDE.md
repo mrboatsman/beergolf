@@ -91,9 +91,15 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   Nav visar bara Grönt Kort + Teoriprov för aspiranter. Aspiranter kan inte läggas på coasters.
 - Certifiering (`/certification`, logik i `src/lib/server/certification.ts`): aspiranten ser
   sina tre delar; certifierade medlemmar (vem som helst, inte bara rollen fadder) examinerar
-  aspiranter — godkänner praktiskt prov (valfri bevis-länk) och etikett. När alla tre delar
-  är klara utfärdas grönt kort automatiskt (`maybeIssueGreenCard`): nästa medlemsnummer,
-  status→active, role aspirant→member, HCP 36. Kortet visas på /certification.
+  aspiranter — godkänner praktiskt prov med omdöme (kommentar) och bevis (video/bilder,
+  valfritt antal) samt etikett. När alla tre delar är klara utfärdas grönt kort automatiskt
+  (`maybeIssueGreenCard`): nästa medlemsnummer, status→active, role aspirant→member, HCP 36.
+- Fil-lagring: `src/lib/server/storage.ts` — interface `FileStorage`, `STORAGE_DRIVER=fs`
+  (dev, skriver till `UPLOAD_DIR`, default ./data/uploads) eller `s3` (produktion — drivern
+  är en stub som ska implementeras med @aws-sdk/client-s3). Bevis i `certification_proofs`
+  (storageKey/contentType/size), serveras auth-skyddat via `/files/[...key]` (nyckel måste
+  finnas i db — ingen path traversal). `BODY_SIZE_LIMIT` i .env höjer adapter-nodes
+  body-gräns för videouppladdning; max 200 MB/fil valideras i actionen.
 
 ## Kvar att bygga
 

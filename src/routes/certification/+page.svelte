@@ -110,12 +110,29 @@
 					Godkänt{#if s.practical.at}
 						({fmtDate(s.practical.at)}){/if}{#if s.fadderName}
 						av {s.fadderName}{/if}.
-					{#if s.practical.proofUrl}
-						<a class="underline" href={s.practical.proofUrl} target="_blank" rel="noreferrer"
-							>Bevis</a
-						>
-					{/if}
 				</p>
+				{#if s.practical.comment}
+					<p class="mt-2 text-sm text-club-900/70 italic">”{s.practical.comment}”</p>
+				{/if}
+				{#if s.practical.proofs.length > 0}
+					<div class="mt-3 grid grid-cols-2 gap-2">
+						{#each s.practical.proofs as p (p.id)}
+							{#if p.contentType.startsWith('image/')}
+								<a href={p.url} target="_blank" rel="noreferrer">
+									<img
+										src={p.url}
+										alt={p.filename}
+										class="h-24 w-full rounded-lg object-cover shadow-sm"
+									/>
+								</a>
+							{:else}
+								<!-- svelte-ignore a11y_media_has_caption -->
+								<video src={p.url} controls class="h-24 w-full rounded-lg bg-black shadow-sm"
+								></video>
+							{/if}
+						{/each}
+					</div>
+				{/if}
 			{:else}
 				<p class="mt-2 text-sm text-club-900/70">
 					Provslingan under uppsikt av fadder: korrekt fyllning, kontrollerad klunk per hål, godkänt
@@ -182,17 +199,28 @@
 								<form
 									method="POST"
 									action="?/approvePractical"
+									enctype="multipart/form-data"
 									use:enhance
-									class="flex flex-wrap items-end gap-2"
+									class="w-full space-y-2"
 								>
 									<input type="hidden" name="memberId" value={a.id} />
 									<label class="block text-xs">
-										<span class="text-club-900/60">Bevis-länk (valfritt)</span>
+										<span class="text-club-900/60">Omdöme från provslingan (valfritt)</span>
+										<textarea
+											name="comment"
+											rows="2"
+											placeholder="Fyllde korrekt, kontrollerad klunk per hål, fint utslag på hål 2…"
+											class="mt-1 w-full rounded-lg border-cream-300 bg-white text-sm"></textarea>
+									</label>
+									<label class="block text-xs">
+										<span class="text-club-900/60">Bevis — video eller bilder (valfritt antal)</span
+										>
 										<input
-											name="proofUrl"
-											type="url"
-											placeholder="https://…"
-											class="mt-1 w-56 rounded-lg border-cream-300 bg-white text-sm"
+											name="files"
+											type="file"
+											multiple
+											accept="image/*,video/*"
+											class="mt-1 block w-full text-sm text-club-900/70 file:mr-3 file:rounded-lg file:border-0 file:bg-club-100 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-club-700"
 										/>
 									</label>
 									<button
