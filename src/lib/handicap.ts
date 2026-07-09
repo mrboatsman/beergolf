@@ -7,12 +7,7 @@
 
 export const MIN_HCP = 0;
 export const MAX_HCP = 54;
-export const PAR_PER_HOLE = 3; // "scratch"-referens per hål
 export const ADJUST_FACTOR = 0.2; // hur snabbt hcp rör sig mot formen
-
-export function scratchFor(holes: number): number {
-	return holes * PAR_PER_HOLE;
-}
 
 export function round1(n: number): number {
 	return Math.round(n * 10) / 10;

@@ -13,10 +13,13 @@
 
 {#if member}
 	<div class="mt-8 grid gap-4 sm:grid-cols-3">
-		<a href="/rounds" class="rounded-xl border border-beer-200 bg-white p-5 shadow-sm hover:shadow">
+		<a
+			href="/coasters"
+			class="rounded-xl border border-beer-200 bg-white p-5 shadow-sm hover:shadow"
+		>
 			<div class="text-2xl">🍺</div>
-			<div class="mt-2 font-semibold text-beer-800">Mina rundor</div>
-			<p class="text-sm text-beer-600">Registrera Score Coasters och följ ditt handikapp.</p>
+			<div class="mt-2 font-semibold text-beer-800">Score Coasters</div>
+			<p class="text-sm text-beer-600">Skapa en coaster, spela och signera din runda.</p>
 		</a>
 		<div class="rounded-xl border border-beer-200 bg-white p-5 shadow-sm">
 			<div class="text-2xl">⛳</div>
