@@ -1,52 +1,10 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import type { FadderNode } from './+page.server';
+	import FadderTree from '$lib/components/FadderTree.svelte';
 	let { data, form } = $props();
 
 	const roles = ['aspirant', 'member', 'fadder', 'captain', 'admin'];
-
-	const roleLabel: Record<string, string> = {
-		aspirant: 'Aspirant',
-		member: 'Medlem',
-		fadder: 'Fadder',
-		captain: 'Klubbmästare',
-		admin: 'Admin'
-	};
 </script>
-
-{#snippet fadderNode(node: FadderNode)}
-	<li>
-		<div class="flex items-center gap-2 py-1">
-			<span
-				class="flex h-7 w-7 items-center justify-center rounded-full bg-club-800 text-[10px] font-bold text-gold-300"
-				>{node.name
-					.split(/\s+/)
-					.map((w) => w[0])
-					.slice(0, 2)
-					.join('')
-					.toUpperCase()}</span
-			>
-			<a href={`/members/${node.id}`} class="font-medium hover:underline">{node.name}</a>
-			<span class="text-xs text-club-900/50">{roleLabel[node.role] ?? node.role}</span>
-			{#if node.status === 'aspirant'}
-				<span
-					class="rounded-full bg-gold-400/20 px-2 py-0.5 text-[10px] font-semibold text-gold-600"
-					>aspirant</span
-				>
-			{/if}
-			{#if node.children.length > 0}
-				<span class="text-[10px] text-club-900/40">fadder åt {node.children.length}</span>
-			{/if}
-		</div>
-		{#if node.children.length > 0}
-			<ul class="ml-3.5 border-l-2 border-club-700/20 pl-5">
-				{#each node.children as child (child.id)}
-					{@render fadderNode(child)}
-				{/each}
-			</ul>
-		{/if}
-	</li>
-{/snippet}
 
 <h1 class="font-display text-4xl font-semibold text-club-900">Admin</h1>
 
@@ -188,11 +146,7 @@
 		{#if data.fadderTree.length === 0}
 			<p class="text-sm text-club-900/60">Inga medlemmar än.</p>
 		{:else}
-			<ul class="space-y-1">
-				{#each data.fadderTree as node (node.id)}
-					{@render fadderNode(node)}
-				{/each}
-			</ul>
+			<FadderTree forest={data.fadderTree} />
 		{/if}
 	</div>
 </section>

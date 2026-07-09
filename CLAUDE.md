@@ -100,8 +100,11 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   sina tre delar; certifierade medlemmar (vem som helst, inte bara rollen fadder) examinerar
   aspiranter — godkänner praktiskt prov med omdöme (kommentar) och bevis samt etikett.
   Aspirantlistan har namnfilter. Den som godkänner en aspirant uppgraderas automatiskt
-  member→fadder (captain/admin behåller sin roll); admin visar fadderträdet (vem godkände
-  vilka, rekursivt — byggs i `buildFadderTree` från `certifications.fadderId`).
+  member→fadder (captain/admin behåller sin roll); admin visar fadderträdet som interaktiv
+  d3-visualisering (`FadderTree.svelte`: d3-hierarchy-layout, zoom/pan, namnsök → visar bara
+  medlemmens relaterade träd = fadder-kedjan uppåt + skyddslingar neråt, skalar till 1000+).
+  Träd-logiken (ren, delad server/klient) i `src/lib/fadder-tree.ts`: `buildFadderTree`,
+  `flattenForest`, `focusForest` — relationerna kommer från `certifications.fadderId`.
   **Praktiskt prov kräver minst en bild/film** (server-side + required i UI) — missat bevis
   = rekonstruera situationen. Etikett godkänns via bekräftelsemodal som listar kriterierna
   (`src/lib/etiquette.ts`, `ETIQUETTE_CRITERIA`); aspiranten ser samma kriterier i Del 3-kortet

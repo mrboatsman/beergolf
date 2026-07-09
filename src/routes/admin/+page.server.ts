@@ -5,52 +5,10 @@ import { certifications, invites, members, quizQuestions, type Role } from '$lib
 import { hashPassword } from '$lib/server/auth';
 import { newId, newInviteCode } from '$lib/server/ids';
 import { requireRole } from '$lib/server/guard';
+import { buildFadderTree } from '$lib/fadder-tree';
 import type { Actions, PageServerLoad } from './$types';
 
 const ROLES: Role[] = ['aspirant', 'member', 'fadder', 'captain', 'admin'];
-
-// Fadderträdet: vem har godkänt vilka. Rekursiv struktur — en fadder kan
-// ha hur många skyddslingar som helst, och skyddslingarna kan i sin tur
-// bli faddrar.
-export type FadderNode = {
-	id: string;
-	name: string;
-	role: Role;
-	status: string;
-	children: FadderNode[];
-};
-
-function buildFadderTree(
-	all: Array<{ id: string; name: string; role: Role; status: string }>,
-	relations: Array<{ memberId: string; fadderId: string }>
-): FadderNode[] {
-	const childrenBy = new Map<string, string[]>();
-	const hasFadder = new Set<string>();
-	for (const r of relations) {
-		hasFadder.add(r.memberId);
-		childrenBy.set(r.fadderId, [...(childrenBy.get(r.fadderId) ?? []), r.memberId]);
-	}
-	const byId = new Map(all.map((m) => [m.id, m]));
-	const visited = new Set<string>();
-
-	function node(id: string): FadderNode | null {
-		const m = byId.get(id);
-		if (!m || visited.has(id)) return null;
-		visited.add(id);
-		return {
-			id: m.id,
-			name: m.name,
-			role: m.role,
-			status: m.status,
-			children: (childrenBy.get(id) ?? []).map(node).filter((n): n is FadderNode => n !== null)
-		};
-	}
-
-	return all
-		.filter((m) => !hasFadder.has(m.id))
-		.map((m) => node(m.id))
-		.filter((n): n is FadderNode => n !== null);
-}
 
 export const load: PageServerLoad = async () => {
 	const [memberList, inviteList, questionList, relations] = await Promise.all([
