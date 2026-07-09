@@ -35,6 +35,7 @@ export async function getCertStatus(memberId: string) {
 	return {
 		theory: {
 			passed: cert?.theoryPassed ?? false,
+			autoPassed: cert?.theoryAutoPassed ?? false,
 			score: cert?.theoryScore ?? null,
 			at: cert?.theoryAt ?? null
 		},

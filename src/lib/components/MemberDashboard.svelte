@@ -15,6 +15,12 @@
 
 	let ongoing = $derived(d.matches.filter((m) => !m.finished));
 	let finished = $derived(d.matches.filter((m) => m.finished));
+	let certDone = $derived(
+		[d.cert.theory.passed, d.cert.practical.passed, d.cert.etiquette.passed].filter(Boolean).length
+	);
+
+	// Info-modal: bevismaterial, teoriprov-resultat och fadderns omdöme
+	let showCertInfo = $state(false);
 
 	function fmtDate(dt: Date | string) {
 		return new Date(dt).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
@@ -186,41 +192,174 @@
 	{/if}
 </div>
 
-<!-- Teoriprov: status + försökshistorik (misslyckanden visas öppet) -->
+<!-- Grönt Kort: som på /certification, med info-knapp för underlaget -->
 <div class="mt-8">
-	<h2 class="font-display text-2xl font-semibold">Teoriprov</h2>
-	<div class="mt-3 rounded-2xl bg-parchment p-5 shadow-sm">
-		{#if d.theory.passed}
-			<p class="text-sm text-club-700">
-				<span class="font-semibold">✓ Godkänt</span>
-				{#if d.theory.autoPassed}
-					<span
-						class="ml-1 rounded-full bg-gold-400/25 px-2.5 py-0.5 text-xs font-semibold text-gold-600"
-						>Autorättat på heder</span
-					>
-				{/if}
-				{#if d.theory.at}<span class="text-club-900/60"> · {fmtDate(d.theory.at)}</span>{/if}
-			</p>
-		{:else}
-			<p class="text-sm text-club-900/60">Teoriprovet är inte godkänt ännu.</p>
-		{/if}
-		{#if d.theory.attempts.length > 0}
-			<ul class="mt-3 space-y-1 border-t border-cream-300 pt-3 text-sm">
-				{#each d.theory.attempts as a (a.id)}
-					<li class="flex items-center justify-between">
-						<span class="text-club-900/60">{fmtDate(a.takenAt)}</span>
-						<span class="font-semibold">{Math.round(a.score * 100)} %</span>
-						{#if a.passed}
-							<span class="font-semibold text-club-700">Godkänt</span>
-						{:else}
-							<span class="text-red-700/70">Underkänt</span>
-						{/if}
-					</li>
-				{/each}
-			</ul>
-		{/if}
-	</div>
+	<h2 class="font-display text-2xl font-semibold">Grönt Kort</h2>
+	{#if d.member.greenCardIssuedAt}
+		<div class="relative mt-3 max-w-md rounded-2xl bg-club-800 p-6 text-cream-200 shadow-md">
+			<div class="flex items-start justify-between">
+				<span class="text-xs font-semibold tracking-[0.2em] text-gold-400 uppercase">
+					Grönt Kort
+				</span>
+				<span class="font-display text-2xl font-semibold text-gold-300"
+					>Nr {d.member.memberNumber}</span
+				>
+			</div>
+			<div class="font-display mt-3 text-3xl font-semibold">{d.member.name}</div>
+			<div class="mt-1 text-sm text-cream-200/70">
+				Certifierad {fmtDate(d.member.greenCardIssuedAt)}
+				{#if d.cert.fadderName}· Fadder: {d.cert.fadderName}{/if}
+			</div>
+			<div class="mt-4 border-t border-cream-200/15 pt-3 pr-8 text-xs text-cream-200/60">
+				Play Slow. En klunk per hål. Hederssystemet gäller.
+			</div>
+			<button
+				type="button"
+				onclick={() => (showCertInfo = true)}
+				title="Bevismaterial, teoriprov och fadderns omdöme"
+				aria-label="Visa certifieringsunderlag"
+				class="absolute right-4 bottom-4 flex h-7 w-7 items-center justify-center rounded-full border border-gold-400/60 text-sm text-gold-300 hover:bg-club-700"
+				>i</button
+			>
+		</div>
+	{:else}
+		<div class="relative mt-3 max-w-md rounded-2xl bg-parchment p-6 shadow-sm">
+			{#if d.member.status === 'aspirant'}
+				<p class="text-sm text-club-900/70">
+					Under certifiering — <strong>{certDone} av 3</strong> delar klara.
+				</p>
+			{:else}
+				<p class="text-sm text-club-900/70">Certifierad urmedlem — före grönt kort-systemet.</p>
+			{/if}
+			{#if d.theoryAttempts.length > 0 || d.cert.practical.passed}
+				<button
+					type="button"
+					onclick={() => (showCertInfo = true)}
+					title="Bevismaterial, teoriprov och fadderns omdöme"
+					aria-label="Visa certifieringsunderlag"
+					class="absolute right-4 bottom-4 flex h-7 w-7 items-center justify-center rounded-full border border-club-700/40 text-sm text-club-700 hover:bg-club-100"
+					>i</button
+				>
+			{/if}
+		</div>
+	{/if}
 </div>
+
+<!-- Modal: certifieringsunderlaget -->
+{#if showCertInfo}
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-club-950/60 p-4"
+		role="presentation"
+		onclick={(e) => {
+			if (e.target === e.currentTarget) showCertInfo = false;
+		}}
+	>
+		<div
+			class="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-parchment p-6 shadow-xl"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="certinfo-title"
+		>
+			<div class="flex items-start justify-between">
+				<div>
+					<p class="text-xs font-semibold tracking-[0.2em] text-gold-600 uppercase">
+						Certifieringsunderlag
+					</p>
+					<h3 id="certinfo-title" class="font-display mt-1 text-2xl font-semibold">
+						{d.member.name}
+					</h3>
+				</div>
+				<button
+					type="button"
+					onclick={() => (showCertInfo = false)}
+					aria-label="Stäng"
+					class="rounded-full px-2 text-xl text-club-900/50 hover:text-club-900">×</button
+				>
+			</div>
+
+			<!-- Teoriprov -->
+			<h4 class="mt-5 text-xs font-semibold tracking-[0.18em] text-club-900/60 uppercase">
+				Teoriprov
+			</h4>
+			{#if d.cert.theory.passed}
+				<p class="mt-1 text-sm text-club-700">
+					<span class="font-semibold">✓ Godkänt</span>
+					{#if d.cert.theory.autoPassed}
+						<span
+							class="ml-1 rounded-full bg-gold-400/25 px-2.5 py-0.5 text-xs font-semibold text-gold-600"
+							>Autorättat på heder</span
+						>
+					{:else if d.cert.theory.score !== null}
+						med {Math.round(d.cert.theory.score * 100)} %
+					{/if}
+					{#if d.cert.theory.at}<span class="text-club-900/60">
+							· {fmtDate(d.cert.theory.at)}</span
+						>{/if}
+				</p>
+			{:else}
+				<p class="mt-1 text-sm text-club-900/60">Inte godkänt ännu.</p>
+			{/if}
+			{#if d.theoryAttempts.length > 0}
+				<ul class="mt-2 space-y-1 text-sm">
+					{#each d.theoryAttempts as a (a.id)}
+						<li class="flex items-center justify-between">
+							<span class="text-club-900/60">{fmtDate(a.takenAt)}</span>
+							<span class="font-semibold">{Math.round(a.score * 100)} %</span>
+							{#if a.passed}
+								<span class="font-semibold text-club-700">Godkänt</span>
+							{:else}
+								<span class="text-red-700/70">Underkänt</span>
+							{/if}
+						</li>
+					{/each}
+				</ul>
+			{/if}
+
+			<!-- Fadderns omdöme -->
+			<h4 class="mt-5 text-xs font-semibold tracking-[0.18em] text-club-900/60 uppercase">
+				Fadderns omdöme
+			</h4>
+			{#if d.cert.practical.comment}
+				<p class="mt-1 text-sm text-club-900/80 italic">”{d.cert.practical.comment}”</p>
+				{#if d.cert.fadderName}
+					<p class="mt-1 text-xs text-club-900/60">— {d.cert.fadderName}</p>
+				{/if}
+			{:else if d.cert.practical.passed}
+				<p class="mt-1 text-sm text-club-900/60">
+					Godkänt{#if d.cert.fadderName}
+						av {d.cert.fadderName}{/if} utan skriftligt omdöme.
+				</p>
+			{:else}
+				<p class="mt-1 text-sm text-club-900/60">Praktiska provet är inte genomfört ännu.</p>
+			{/if}
+
+			<!-- Bevismaterial -->
+			<h4 class="mt-5 text-xs font-semibold tracking-[0.18em] text-club-900/60 uppercase">
+				Bevismaterial
+			</h4>
+			{#if d.cert.practical.proofs.length > 0}
+				<div class="mt-2 grid grid-cols-2 gap-2">
+					{#each d.cert.practical.proofs as p (p.id)}
+						{#if p.contentType.startsWith('image/')}
+							<a href={p.url} target="_blank" rel="noreferrer">
+								<img
+									src={p.url}
+									alt={p.filename}
+									class="h-28 w-full rounded-lg object-cover shadow-sm"
+								/>
+							</a>
+						{:else}
+							<!-- svelte-ignore a11y_media_has_caption -->
+							<video src={p.url} controls class="h-28 w-full rounded-lg bg-black shadow-sm"></video>
+						{/if}
+					{/each}
+				</div>
+			{:else}
+				<p class="mt-1 text-sm text-club-900/60">Inget bevismaterial uppladdat.</p>
+			{/if}
+		</div>
+	</div>
+{/if}
 
 <!-- Senaste rundor -->
 <div class="mt-8">

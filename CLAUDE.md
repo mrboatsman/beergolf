@@ -87,8 +87,11 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   (skapa/inaktivera/ta bort) på `/admin`.
 - Underkänt visar felen med facit i resultatvyn (lära sig rätt, inte klicka rätt) +
   knappen "Jag har lärt mig läxan — autorätta": godkänner teorin på heder
-  (`certifications.theoryAutoPassed`), misslyckade försök står kvar i historiken och
-  visas öppet i profilen (dashboard-sektionen Teoriprov, badge "Autorättat på heder").
+  (`certifications.theoryAutoPassed`), misslyckade försök står kvar i historiken.
+- Profilen (dashboard) visar Grönt Kort-kortet (som på /certification) med en (i)-knapp
+  i hörnet → modal "Certifieringsunderlag": teoriprov-resultat + försökshistorik
+  (inkl. "Autorättat på heder"-badge), fadderns omdöme och bevismaterialet.
+  Ej certifierad: statuskort ("Under certifiering — x av 3" / "urmedlem").
 
 - **Certifieringsgate (kritisk)**: aspiranter (status `aspirant`) är utelåsta från allt
   utom `/certification`, `/quiz` och `/logout` — hårt i `hooks.server.ts`, redirect 303.

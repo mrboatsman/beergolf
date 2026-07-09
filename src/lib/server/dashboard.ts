@@ -1,13 +1,7 @@
 import { desc, eq, sql } from 'drizzle-orm';
 import { db } from './db';
-import {
-	certifications,
-	coasters,
-	coasterPlayers,
-	members,
-	quizAttempts,
-	rounds
-} from './db/schema';
+import { coasters, coasterPlayers, members, quizAttempts, rounds } from './db/schema';
+import { getCertStatus } from './certification';
 
 const FALLBACK_PAR = 35; // äldre rundor utan coaster-koppling
 
@@ -44,6 +38,7 @@ export async function getDashboard(memberId: string) {
 			status: members.status,
 			hcp: members.hcp,
 			memberNumber: members.memberNumber,
+			greenCardIssuedAt: members.greenCardIssuedAt,
 			createdAt: members.createdAt
 		})
 		.from(members)
@@ -133,17 +128,10 @@ export async function getDashboard(memberId: string) {
 			};
 		});
 
-	// Teoriprov: status + hela försökshistoriken. Misslyckanden visas öppet
-	// i profilen även efter godkänt — hederssystemet.
-	const cert = await db
-		.select({
-			passed: certifications.theoryPassed,
-			autoPassed: certifications.theoryAutoPassed,
-			at: certifications.theoryAt
-		})
-		.from(certifications)
-		.where(eq(certifications.memberId, memberId))
-		.get();
+	// Grönt kort: full certifieringsstatus (teori/praktik/etikett, bevis,
+	// fadderns omdöme) + teoriprovets försökshistorik. Misslyckanden visas
+	// öppet i profilen även efter godkänt — hederssystemet.
+	const cert = await getCertStatus(memberId);
 	const theoryAttempts = await db
 		.select({
 			id: quizAttempts.id,
@@ -170,12 +158,8 @@ export async function getDashboard(memberId: string) {
 		recent: allRounds.slice(0, 4),
 		bestNetRoundId,
 		matches,
-		theory: {
-			passed: cert?.passed ?? false,
-			autoPassed: cert?.autoPassed ?? false,
-			at: cert?.at ?? null,
-			attempts: theoryAttempts
-		}
+		cert,
+		theoryAttempts
 	};
 }
 
