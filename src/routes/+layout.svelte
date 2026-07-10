@@ -218,7 +218,7 @@
 		}}
 	>
 		<div
-			class="w-full max-w-md rounded-2xl bg-parchment p-8 text-center shadow-xl"
+			class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-parchment p-8 shadow-xl"
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="about-title"
@@ -226,26 +226,55 @@
 			<img
 				src={logo}
 				alt="Tablers Beer Golf Society"
-				class="mx-auto h-48 w-48 rounded-full shadow-lg"
+				class="mx-auto h-44 w-44 rounded-full shadow-lg"
 			/>
-			<p class="mt-5 text-xs font-semibold tracking-[0.25em] text-gold-600 uppercase">
+			<p class="mt-5 text-center text-xs font-semibold tracking-[0.25em] text-gold-600 uppercase">
 				estd · september 2026
 			</p>
-			<h2 id="about-title" class="font-display mt-1 text-3xl font-semibold text-club-900">
+			<h2
+				id="about-title"
+				class="font-display mt-1 text-center text-3xl font-semibold text-club-900"
+			>
 				Tablers Beer Golf Society
 			</h2>
-			<p class="mt-3 text-sm leading-relaxed text-club-900/70">
-				Sällskapet grundades i september 2026 av den svenska Old Tablers-klubben
-				<strong>OT109</strong>. I Old Tablers-anda förenar vi kamratskap, hederssystem och ädel
-				tävlan på provslingan.
+
+			<div class="mt-4 space-y-3 text-sm leading-relaxed text-club-900/80">
+				<p>
+					Allt började en sen kväll vid <strong>OT109:s</strong> bord, där samtalet gled in på
+					ölvärldens stora utmaningar. <em>Split the G</em> hade ingen av oss någonsin vågat sig på
+					— Guinness förlåter inga darrhänta. Birra Morettis
+					<em>Setting the Table</em> avfärdades under viss bitterhet: ingen kunde på fullt allvar
+					förklara hur man lägger ölets nivå i linje med ett <em>runt</em> bord. Och Neknomination? Vi
+					är för gamla — och dessutom kräver den varken träffsäkerhet eller heder. Ingen precision, ingen
+					utmaning.
+				</p>
+				<p>
+					Mitt i denna genomgång pekade en av bröderna på kvällens mest övermodiga glas, fyllt långt
+					över 50 cl-strecket, och sade till dess ägare:
+				</p>
+				<p class="font-display border-l-2 border-gold-400 pl-4 text-base text-club-800 italic">
+					”Du som är så duktig på golf — dig vill jag se lägga ölen närmast pinnen. Du kommer inte
+					ens <strong>pin high</strong> på 50 cl-strecket.”
+				</p>
+				<p>
+					Utmaningen antogs på stående fot. Klunk för klunk, hål för hål, föddes Beer Golf: konsten
+					att med kontrollerade klunkar landa ölens nivå exakt på strecket. I september 2026
+					stadfäste OT109 sällskapet, och i Old Tablers-anda förenar vi sedan dess kamratskap,
+					hederssystem och ädel tävlan på provslingan.
+				</p>
+			</div>
+
+			<p class="font-display mt-4 text-center text-lg text-club-700 italic">
+				Färre slag. Fler skål.
 			</p>
-			<p class="font-display mt-3 text-lg text-club-700 italic">Färre slag. Fler skål.</p>
-			<button
-				type="button"
-				onclick={() => (showAbout = false)}
-				class="mt-5 rounded-lg bg-club-700 px-5 py-2 text-sm font-semibold text-cream-200 hover:bg-club-800"
-				>Stäng</button
-			>
+			<div class="mt-5 text-center">
+				<button
+					type="button"
+					onclick={() => (showAbout = false)}
+					class="rounded-lg bg-club-700 px-5 py-2 text-sm font-semibold text-cream-200 hover:bg-club-800"
+					>Stäng</button
+				>
+			</div>
 		</div>
 	</div>
 {/if}
