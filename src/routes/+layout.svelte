@@ -240,26 +240,24 @@
 
 			<div class="mt-4 space-y-3 text-sm leading-relaxed text-club-900/80">
 				<p>
-					Allt började en sen kväll vid <strong>OT109:s</strong> bord, där samtalet gled in på
-					ölvärldens stora utmaningar. <em>Split the G</em> hade ingen av oss någonsin vågat sig på
-					— Guinness förlåter inga darrhänta. Birra Morettis
-					<em>Setting the Table</em> avfärdades under viss bitterhet: ingen kunde på fullt allvar
-					förklara hur man lägger ölets nivå i linje med ett <em>runt</em> bord. Och Neknomination? Vi
-					är för gamla — och dessutom kräver den varken träffsäkerhet eller heder. Ingen precision, ingen
-					utmaning.
+					Allt började en sen kväll runt bordet hos <strong>OT109</strong>, när samtalet kom in på
+					ölutmaningar. <em>Split the G</em> i all ära, men ingen av oss hade vågat försöka.
+					Guinness förlåter inga darrhänta. Birra Morettis <em>Setting the Table</em> gick bort direkt,
+					för hur lägger man ölets nivå i linje med ett runt bord? Och Neknomination kändes mest fånigt.
+					Vi är för gamla för sånt, och någon utmaning är det ju inte heller.
 				</p>
 				<p>
-					Mitt i denna genomgång pekade en av bröderna på kvällens mest övermodiga glas, fyllt långt
-					över 50 cl-strecket, och sade till dess ägare:
+					Mitt i allt detta pekade en av bröderna på kvällens mest välfyllda glas, en bra bit över
+					50 cl-strecket, och sa till ägaren:
 				</p>
 				<p class="font-display border-l-2 border-gold-400 pl-4 text-base text-club-800 italic">
-					”Du som är så duktig på golf — dig vill jag se lägga ölen närmast pinnen. Du kommer inte
+					”Du som är så duktig på golf. Dig vill jag se lägga ölen närmast pinnen. Du kommer inte
 					ens <strong>pin high</strong> på 50 cl-strecket.”
 				</p>
 				<p>
-					Utmaningen antogs på stående fot. Klunk för klunk, hål för hål, föddes Beer Golf: konsten
-					att med kontrollerade klunkar landa ölens nivå exakt på strecket. I september 2026
-					stadfäste OT109 sällskapet, och i Old Tablers-anda förenar vi sedan dess kamratskap,
+					Utmaningen antogs på stående fot. Klunk för klunk och hål för hål växte Beer Golf fram,
+					konsten att med kontrollerade klunkar landa ölen exakt på strecket. I september 2026
+					stadfäste OT109 sällskapet. Sedan dess spelar vi i Old Tablers-anda, med kamratskap,
 					hederssystem och ädel tävlan på provslingan.
 				</p>
 			</div>
