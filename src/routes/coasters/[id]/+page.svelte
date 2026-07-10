@@ -29,6 +29,18 @@
 	}
 </script>
 
+{#if data.tournament}
+	<div class="mx-auto mb-4 max-w-2xl">
+		<a
+			href={`/tournaments/${data.tournament.id}`}
+			class="block rounded-xl bg-club-800 px-4 py-2 text-sm text-cream-200 shadow-sm hover:bg-club-700"
+		>
+			🏆 Turneringscoaster: <strong>{data.tournament.name}</strong> — signerade rundor räknas på turneringens
+			leaderboard
+		</a>
+	</div>
+{/if}
+
 {#if form?.error}
 	<p class="mb-4 rounded bg-red-100 px-3 py-2 text-sm text-red-700">{form.error}</p>
 {/if}
@@ -80,7 +92,7 @@
 							>
 								<input type="hidden" name="memberId" value={m.id} />
 								<button class="w-full px-3 py-2 text-left text-sm hover:bg-club-100"
-									>{m.name}</button
+									>{m.name}{'isGuest' in m && m.isGuest ? ' (gäst)' : ''}</button
 								>
 							</form>
 						</li>
@@ -194,11 +206,15 @@
 						<td class="h-12 py-1 pr-2 align-top">
 							<span class="block text-[9px] leading-none text-print/80">Player {p.position}</span>
 							<span class="font-hand text-xl leading-tight text-ink">{p.name}</span>
+							{#if !p.memberId}<span
+									class="ml-1 rounded-full bg-print/10 px-1.5 align-middle text-[10px] font-bold text-print/70"
+									>GÄST</span
+								>{/if}
 							{#if p.signedAt}<span class="ml-1 align-middle text-xs text-print/70" title="Signerad"
 									>✓</span
 								>{:else if amInvolved}
 								<form method="POST" action="?/removePlayer" use:enhance class="inline">
-									<input type="hidden" name="memberId" value={p.memberId} />
+									<input type="hidden" name="rowId" value={p.id} />
 									<button
 										class="ml-1 align-middle text-xs text-print/50 hover:text-red-700"
 										title={`Ta bort ${p.name} från coastern`}

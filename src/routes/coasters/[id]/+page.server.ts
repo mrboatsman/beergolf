@@ -1,16 +1,19 @@
 import { error, fail } from '@sveltejs/kit';
-import { and, asc, eq, isNotNull, notInArray } from 'drizzle-orm';
+import { and, asc, eq, isNotNull, isNull, notInArray, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import {
 	coasters,
 	coasterPlayers,
 	members,
 	rounds,
+	tournaments,
+	tournamentParticipants,
 	MAX_COASTER_PLAYERS
 } from '$lib/server/db/schema';
 import { requireMember } from '$lib/server/guard';
 import { newId } from '$lib/server/ids';
 import { nextHcp, netScore } from '$lib/handicap';
+import { maybeDecideMatch } from '$lib/server/tournaments';
 import type { Actions, PageServerLoad } from './$types';
 
 async function getCoaster(id: string) {
@@ -27,19 +30,23 @@ function getMyRow(coasterId: string, memberId: string) {
 		.get();
 }
 
+// leftJoin: gästrader (turneringar) har memberId = null — namnet kommer då
+// från turneringsdeltagaren.
 function getPlayers(coasterId: string) {
 	return db
 		.select({
 			id: coasterPlayers.id,
 			memberId: coasterPlayers.memberId,
+			participantId: coasterPlayers.participantId,
 			position: coasterPlayers.position,
 			scores: coasterPlayers.scores,
 			signedAt: coasterPlayers.signedAt,
-			name: members.name,
+			name: sql<string>`coalesce(${members.name}, ${tournamentParticipants.guestName}, '?')`,
 			hcp: members.hcp
 		})
 		.from(coasterPlayers)
-		.innerJoin(members, eq(coasterPlayers.memberId, members.id))
+		.leftJoin(members, eq(coasterPlayers.memberId, members.id))
+		.leftJoin(tournamentParticipants, eq(coasterPlayers.participantId, tournamentParticipants.id))
 		.where(eq(coasterPlayers.coasterId, coasterId))
 		.orderBy(asc(coasterPlayers.position))
 		.all();
@@ -50,20 +57,62 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	const coaster = await getCoaster(params.id);
 	const players = await getPlayers(coaster.id);
 
-	// Bara spelare med grönt kort kan läggas till (och inte redan på coastern)
-	const taken = players.map((p) => p.memberId);
-	const addable = await db
-		.select({ id: members.id, name: members.name })
-		.from(members)
-		.where(
-			taken.length
-				? and(isNotNull(members.greenCardIssuedAt), notInArray(members.id, taken))
-				: isNotNull(members.greenCardIssuedAt)
-		)
-		.orderBy(asc(members.name))
-		.all();
+	let addable: { id: string; name: string; isGuest?: boolean }[];
+	let tournament: { id: string; name: string } | null = null;
+	if (coaster.tournamentId) {
+		// Turneringscoaster: bara betalda deltagare utan coaster-rad kan läggas
+		// till (medlemmar och gäster) — id här är participantId. Matchspel:
+		// raderna är låsta till matchens två spelare, inget läggs till.
+		const t = await db
+			.select({ id: tournaments.id, name: tournaments.name, format: tournaments.format })
+			.from(tournaments)
+			.where(eq(tournaments.id, coaster.tournamentId))
+			.get();
+		tournament = t ?? null;
+		addable =
+			t?.format === 'match'
+				? []
+				: db
+						.select({
+							id: tournamentParticipants.id,
+							name: sql<string>`coalesce(${members.name}, ${tournamentParticipants.guestName}, '?')`,
+							isGuest: sql<boolean>`${tournamentParticipants.memberId} is null`
+						})
+						.from(tournamentParticipants)
+						.leftJoin(members, eq(tournamentParticipants.memberId, members.id))
+						.leftJoin(coasterPlayers, eq(coasterPlayers.participantId, tournamentParticipants.id))
+						.where(
+							and(
+								eq(tournamentParticipants.tournamentId, coaster.tournamentId),
+								eq(tournamentParticipants.status, 'paid'),
+								isNull(coasterPlayers.id)
+							)
+						)
+						.orderBy(asc(tournamentParticipants.createdAt))
+						.all();
+	} else {
+		// Bara spelare med grönt kort kan läggas till (och inte redan på coastern)
+		const taken = players.map((p) => p.memberId).filter((x): x is string => !!x);
+		addable = await db
+			.select({ id: members.id, name: members.name })
+			.from(members)
+			.where(
+				taken.length
+					? and(isNotNull(members.greenCardIssuedAt), notInArray(members.id, taken))
+					: isNotNull(members.greenCardIssuedAt)
+			)
+			.orderBy(asc(members.name))
+			.all();
+	}
 
-	return { coaster, players, addable, meId: me.id, maxPlayers: MAX_COASTER_PLAYERS };
+	return {
+		coaster,
+		tournament,
+		players,
+		addable,
+		meId: me.id,
+		maxPlayers: MAX_COASTER_PLAYERS
+	};
 };
 
 export const actions: Actions = {
@@ -81,20 +130,76 @@ export const actions: Actions = {
 		}
 
 		const form = await request.formData();
-		const memberId = String(form.get('memberId') ?? '');
-		const target = await db.select().from(members).where(eq(members.id, memberId)).get();
+		const targetId = String(form.get('memberId') ?? '');
+
+		// Turneringscoaster: targetId är participantId — betalda deltagare
+		// (medlem eller gäst) läggs till; gäster är undantagna grönt kort-kravet.
+		if (coaster.tournamentId) {
+			const t = await db
+				.select({ format: tournaments.format })
+				.from(tournaments)
+				.where(eq(tournaments.id, coaster.tournamentId))
+				.get();
+			if (t?.format === 'match') {
+				return fail(400, { error: 'Matchcoasterns spelare är låsta till matchen.' });
+			}
+			const participant = await db
+				.select()
+				.from(tournamentParticipants)
+				.where(
+					and(
+						eq(tournamentParticipants.id, targetId),
+						eq(tournamentParticipants.tournamentId, coaster.tournamentId)
+					)
+				)
+				.get();
+			if (!participant) return fail(400, { error: 'Ogiltig turneringsdeltagare.' });
+			if (participant.status !== 'paid') {
+				return fail(400, { error: 'Deltagaren har inte betalat anmälningsavgiften.' });
+			}
+			const existing = await db
+				.select({ id: coasterPlayers.id })
+				.from(coasterPlayers)
+				.where(eq(coasterPlayers.participantId, participant.id))
+				.get();
+			if (existing) {
+				return fail(400, { error: 'Deltagaren har redan en rad i turneringen.' });
+			}
+			const name =
+				participant.guestName ??
+				(participant.memberId
+					? ((
+							await db
+								.select({ name: members.name })
+								.from(members)
+								.where(eq(members.id, participant.memberId))
+								.get()
+						)?.name ?? 'Deltagaren')
+					: 'Deltagaren');
+			await db.insert(coasterPlayers).values({
+				id: newId(),
+				coasterId: coaster.id,
+				memberId: participant.memberId,
+				participantId: participant.id,
+				position: Math.max(0, ...players.map((p) => p.position)) + 1,
+				scores: Array(9).fill(null)
+			});
+			return { added: name || 'Deltagaren' };
+		}
+
+		const target = await db.select().from(members).where(eq(members.id, targetId)).get();
 		if (!target) return fail(400, { error: 'Ogiltig medlem.' });
 		if (!target.greenCardIssuedAt) {
 			return fail(400, { error: `${target.name} har inget grönt kort ännu.` });
 		}
-		if (players.some((p) => p.memberId === memberId)) {
+		if (players.some((p) => p.memberId === targetId)) {
 			return fail(400, { error: `${target.name} är redan med på coastern.` });
 		}
 
 		await db.insert(coasterPlayers).values({
 			id: newId(),
 			coasterId: coaster.id,
-			memberId,
+			memberId: targetId,
 			position: Math.max(0, ...players.map((p) => p.position)) + 1,
 			scores: Array(9).fill(null)
 		});
@@ -112,11 +217,23 @@ export const actions: Actions = {
 		if (!amInvolved) return fail(403, { error: 'Bara spelare på coastern kan ta bort spelare.' });
 
 		const form = await request.formData();
+		const rowId = String(form.get('rowId') ?? '');
+		// Bakåtkompatibelt: äldre formulär skickar memberId
 		const memberId = String(form.get('memberId') ?? '');
-		const row = players.find((p) => p.memberId === memberId);
+		const row = players.find((p) => (rowId ? p.id === rowId : p.memberId === memberId));
 		if (!row) return fail(400, { error: 'Spelaren finns inte på coastern.' });
 		if (row.signedAt) {
 			return fail(400, { error: `${row.name} har signerat — raden är låst.` });
+		}
+		if (coaster.tournamentId) {
+			const t = await db
+				.select({ format: tournaments.format })
+				.from(tournaments)
+				.where(eq(tournaments.id, coaster.tournamentId))
+				.get();
+			if (t?.format === 'match') {
+				return fail(400, { error: 'Matchcoasterns spelare är låsta till matchen.' });
+			}
 		}
 
 		await db.delete(coasterPlayers).where(eq(coasterPlayers.id, row.id));
@@ -177,6 +294,7 @@ export const actions: Actions = {
 				.values({
 					id: roundId,
 					memberId: me.id,
+					tournamentId: coaster.tournamentId,
 					holes: 9,
 					scores,
 					grossTotal,
@@ -191,6 +309,9 @@ export const actions: Actions = {
 				.where(eq(coasterPlayers.id, row.id))
 				.run();
 		});
+
+		// Matchspel: avgör matchen om båda spelarna nu signerat (lägst netto vinner)
+		if (coaster.tournamentId) maybeDecideMatch(coaster.id);
 
 		return { signed: true, hcpBefore, hcpAfter };
 	}

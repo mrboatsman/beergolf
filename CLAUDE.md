@@ -141,6 +141,43 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   (länk i sidebarens användarkort), loggar ut övriga sessioner.
 - Profilens HCP-kort visar global leaderboard-placering ("#N av M", länkad till /members).
 
+- **Turneringar = välgörenhetsinsamlingar** (`/tournaments`, logik i
+  `src/lib/server/tournaments.ts`): innan öppning deklareras välgörenhet,
+  anmälningsavgift och prisupplägg (inga/fasta/procent av potten, max 3 nivåer).
+  Alla belopp i heltal **ören** (`src/lib/money.ts`: formatKr/parseKr).
+  Livscykel draft→open→finished (+cancelled); avgift/priser/synlighet/format
+  låses vid open. Skapas av captain+; captain-panelen bor på detaljsidan.
+  - **Format**: `stroke` (slagspel — netto-leaderboard, brutto-flik vid sidan av;
+    en coaster-rad per deltagare) eller `match` (cup: slumpad lottning med byes i
+    `tournament_matches`, vinnare i (round,slot) → (round+1, floor(slot/2)); egen
+    matchcoaster per match, lägst netto vinner när båda signerat
+    (`maybeDecideMatch` anropas från båda sign-flödena), captain kan sätta vinnare
+    manuellt; `MatchBracket.svelte` visualiserar stegen med finalen/mästaren i mitten).
+  - **Synlighet**: open (alla medlemmar), closed (captain bjuder in via namnsök),
+    public (helt publik sida `/t/[slug]` — gäster anmäler sig utan konto).
+  - **Betalning**: Stripe Checkout (`src/lib/server/stripe.ts`, lazy init;
+    STRIPE_SECRET_KEY/STRIPE_WEBHOOK_SECRET i .env). Webhook
+    `/api/stripe/webhook` (signaturverifierad, idempotent) + success-fallback på
+    `?session_id` om webhooken tappas — båda via `settleCheckoutSession` som även
+    hämtar faktisk Stripe-avgift (balance transaction). Gratis turnering → paid
+    direkt (`paidVia: 'free'`); captain kan markera manuellt betald (kontant) och
+    markera återbetald (själva återbetalningen görs i Stripe-dashboarden).
+  - **Gäster** (publika turneringar): självdeklarerat HCP (default 36, clamp 0–54),
+    bearer-tokenlänk `/t/[slug]/gast/[token]` för egen scoreinmatning.
+    **INVARIANT: gästrader skapar aldrig rounds och rör aldrig members.hcp** —
+    gästresultat bor i `coaster_players.scores` + `signedAt` (memberId null,
+    participantId satt). `/t` + `/api/stripe` är öppna i hooks-gaterna.
+  - **Transparensrapport** (`getReport`): intäkter − Stripe-avgifter − kostnadsbok
+    (`tournament_expenses`, kvittobilder via storage) − priser = till välgörenhet;
+    utbetalning markeras manuellt (avvikelse ⇒ varning, blockerar ej). Medlemsvyn
+    visar kvittolänkar; publika vyn (`/t/[slug]`) visar bara siffror, aldrig
+    e-post. Delad komponent `TournamentReport.svelte`.
+  - Turneringscoasters: `coasters.tournamentId` sätts vid skapande (från
+    turneringssidan, standardpar för jämförbart brutto), kopieras till
+    `rounds.tournamentId` vid signering; medlemsrundor justerar HCP som vanligt.
+    `coaster_players.memberId` är nullable (gästrad) + `participantId`; unik per
+    (coasterId, participantId) — slagspel håller en-rad-per-deltagare i appkod.
+
 ## Kvar att bygga
 
-- Turneringar (leaderboard, koppla rundor/coasters)
+- (tomt — säg till när nästa idé kommer)

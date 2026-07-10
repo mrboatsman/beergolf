@@ -34,6 +34,11 @@
 					},
 					{ href: '/rounds', label: 'Rundor', active: page.url.pathname === '/rounds' },
 					{
+						href: '/tournaments',
+						label: 'Turneringar',
+						active: page.url.pathname.startsWith('/tournaments')
+					},
+					{
 						href: '/certification',
 						label: 'Grönt Kort',
 						active: page.url.pathname.startsWith('/certification')

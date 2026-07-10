@@ -11,8 +11,10 @@ import {
 // Ocertifierade (aspiranter) har bara tillgång till certifieringsflödet.
 // Grönt kort (teori + praktik + etikett) är obligatoriskt innan resten
 // av klubbhuset låses upp.
-const ASPIRANT_ALLOWED = ['/certification', '/quiz', '/logout', '/files', '/password'];
-const ALWAYS_ALLOWED = ['/_app', '/@', '/favicon', '/.well-known'];
+const ASPIRANT_ALLOWED = ['/certification', '/quiz', '/logout', '/files', '/password', '/t'];
+// /t = publika turneringssidor, /api/stripe = webhook — öppna även för
+// inloggade aspiranter/lösenordsbytare (oinloggade passerar redan).
+const ALWAYS_ALLOWED = ['/_app', '/@', '/favicon', '/.well-known', '/t/', '/api/stripe'];
 
 export const handle: Handle = async ({ event, resolve }) => {
 	const token = event.cookies.get(SESSION_COOKIE);
