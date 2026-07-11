@@ -1,0 +1,862 @@
+<!doctype html>
+<html lang="sv">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Tablers Beer Golf Society — Klubbsystemet</title>
+
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css" />
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/theme/black.css" />
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link
+		href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600&display=swap"
+		rel="stylesheet"
+	/>
+
+	<style>
+		:root {
+			--club-950: #0d211a;
+			--club-900: #122b21;
+			--club-800: #17382b;
+			--club-700: #1d4636;
+			--club-600: #275b45;
+			--club-100: #dbe5dc;
+			--gold-300: #dcc08a;
+			--gold-400: #cfa964;
+			--gold-500: #c19a4f;
+			--gold-600: #a98336;
+			--cream-200: #ede6d3;
+			--parchment: #faf6eb;
+			--r-main-font: 'Inter', sans-serif;
+			--r-heading-font: 'Cormorant Garamond', Georgia, serif;
+		}
+
+		.reveal-viewport {
+			background: radial-gradient(circle at 30% 20%, var(--club-800) 0%, var(--club-950) 70%);
+		}
+
+		.reveal {
+			font-family: var(--r-main-font);
+			font-size: 30px;
+			color: var(--cream-200);
+		}
+
+		.reveal h1,
+		.reveal h2,
+		.reveal h3 {
+			font-family: var(--r-heading-font);
+			color: var(--parchment);
+			text-transform: none;
+			letter-spacing: 0.01em;
+		}
+
+		.reveal h1 { font-size: 2.6em; font-weight: 700; }
+		.reveal h2 { font-size: 1.8em; font-weight: 600; }
+		.reveal h3 { font-size: 1.2em; font-weight: 600; }
+
+		.reveal .gold { color: var(--gold-400); }
+		.reveal .muted { color: var(--club-100); opacity: 0.75; }
+		.reveal strong { color: var(--gold-300); font-weight: 600; }
+
+		.reveal .kicker {
+			font-family: var(--r-main-font);
+			font-size: 0.55em;
+			font-weight: 600;
+			letter-spacing: 0.25em;
+			text-transform: uppercase;
+			color: var(--gold-400);
+			margin-bottom: 0.4em;
+		}
+
+		.reveal .hr {
+			width: 90px;
+			height: 2px;
+			background: var(--gold-500);
+			margin: 0.6em auto 0.9em;
+			border: 0;
+		}
+
+		.reveal ul { list-style: none; margin-left: 0; }
+		.reveal ul li {
+			margin: 0.45em 0;
+			padding-left: 1.2em;
+			position: relative;
+			line-height: 1.35;
+		}
+		.reveal ul li::before {
+			content: '⛳';
+			position: absolute;
+			left: 0;
+			font-size: 0.7em;
+			top: 0.25em;
+		}
+		.reveal ul.plain li::before { content: none; }
+		.reveal ul.plain li { padding-left: 0; }
+
+		.reveal .small { font-size: 0.65em; }
+		.reveal .tiny { font-size: 0.5em; }
+
+		/* Kortgrid för funktionsöversikt */
+		.grid {
+			display: grid;
+			grid-template-columns: repeat(4, 1fr);
+			gap: 0.5em;
+			margin-top: 0.6em;
+		}
+		.card {
+			background: rgba(250, 246, 235, 0.06);
+			border: 1px solid rgba(193, 154, 79, 0.35);
+			border-radius: 10px;
+			padding: 0.6em 0.45em;
+			text-align: center;
+		}
+		.card .icon { font-size: 1.5em; display: block; margin-bottom: 0.15em; }
+		.card .name {
+			font-family: var(--r-heading-font);
+			font-size: 0.75em;
+			font-weight: 600;
+			color: var(--parchment);
+			display: block;
+		}
+		.card .desc {
+			font-size: 0.48em;
+			color: var(--club-100);
+			opacity: 0.8;
+			display: block;
+			margin-top: 0.3em;
+			line-height: 1.3;
+		}
+
+		/* Tvåkolumnsslides */
+		.cols { display: flex; gap: 1em; align-items: center; text-align: left; }
+		.cols > div { flex: 1; }
+
+		.reveal svg { max-width: 100%; height: auto; }
+		.reveal svg text { font-family: 'Inter', sans-serif; }
+		.reveal svg .serif { font-family: 'Cormorant Garamond', Georgia, serif; }
+
+		.reveal .logo-title { width: 260px; filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.45)); border-radius: 12px; }
+
+		.stepbadge {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 1.6em;
+			height: 1.6em;
+			border-radius: 50%;
+			background: var(--gold-500);
+			color: var(--club-950);
+			font-weight: 600;
+			font-size: 0.8em;
+			margin-right: 0.4em;
+		}
+
+		.reveal .footnote {
+			position: absolute;
+			bottom: -1.5em;
+			left: 0;
+			right: 0;
+			font-size: 0.45em;
+			color: var(--club-100);
+			opacity: 0.55;
+		}
+
+		.reveal .progress { color: var(--gold-500); }
+		.reveal .controls { color: var(--gold-400); }
+
+		/* Riktiga skärmdumpar från appen */
+		.shot {
+			border-radius: 10px;
+			border: 1px solid rgba(193, 154, 79, 0.4);
+			box-shadow: 0 18px 45px rgba(0, 0, 0, 0.5);
+			overflow: hidden;
+			background: var(--parchment);
+		}
+		.shot img { display: block; width: 100%; margin: 0; }
+		.shot .chrome {
+			display: flex;
+			gap: 6px;
+			align-items: center;
+			padding: 8px 12px;
+			background: var(--club-900);
+			border-bottom: 1px solid rgba(193, 154, 79, 0.3);
+		}
+		.shot .chrome i {
+			width: 10px;
+			height: 10px;
+			border-radius: 50%;
+			background: rgba(237, 230, 211, 0.25);
+		}
+		.shot .chrome span {
+			font-size: 0.4em;
+			color: var(--club-100);
+			opacity: 0.7;
+			margin-left: 8px;
+			font-family: ui-monospace, monospace;
+		}
+		.caption {
+			font-size: 0.5em;
+			color: var(--club-100);
+			opacity: 0.7;
+			margin-top: 0.6em;
+		}
+	</style>
+</head>
+<body>
+	<div class="reveal">
+		<div class="slides">
+
+			<!-- ═══════════ 1. TITEL ═══════════ -->
+			<section>
+				<img class="logo-title" src="logo.png" alt="Tablers Beer Golf Society" />
+				<h1 style="margin-top: 0.3em">Tablers Beer Golf Society</h1>
+				<p class="kicker">Beer Golf™ · Klubbsystemet</p>
+				<hr class="hr" />
+				<p class="small muted">
+					Medlemskap · Grönt kort · Handikapp · Turneringar<br />
+					En digital klubb med papperskänsla
+				</p>
+			</section>
+
+			<!-- ═══════════ 2. AGENDA ═══════════ -->
+			<section>
+				<h2>Ikväll</h2>
+				<hr class="hr" />
+				<div class="cols" style="justify-content: center; max-width: 900px; margin: 0 auto">
+					<div class="card" style="padding: 1em">
+						<span class="icon">🏌️</span>
+						<span class="name" style="font-size: 1.1em">Del 1</span>
+						<span class="desc" style="font-size: 0.6em">Alla funktioner — från coaster till välgörenhetsturnering</span>
+					</div>
+					<div class="card" style="padding: 1em">
+						<span class="icon">🎟️</span>
+						<span class="name" style="font-size: 1.1em">Del 2</span>
+						<span class="desc" style="font-size: 0.6em">Onboarding: från engångskod till grönt kort, steg för steg</span>
+					</div>
+				</div>
+			</section>
+
+			<!-- ═══════════ 3. FUNKTIONSÖVERSIKT ═══════════ -->
+			<section>
+				<h2>Allt klubben behöver</h2>
+				<hr class="hr" />
+				<div class="grid">
+					<div class="card"><span class="icon">👥</span><span class="name">Medlemmar</span><span class="desc">Roller: aspirant → member → fadder → captain → admin</span></div>
+					<div class="card"><span class="icon">🟩</span><span class="name">Grönt kort</span><span class="desc">Certifiering i tre delar innan man får spela</span></div>
+					<div class="card"><span class="icon">🍺</span><span class="name">Score Coasters</span><span class="desc">Digitala ölunderlägg — enda sättet att registrera rundor</span></div>
+					<div class="card"><span class="icon">📉</span><span class="name">Handikapp</span><span class="desc">Självjusterande efter varje signerad runda</span></div>
+					<div class="card"><span class="icon">🏆</span><span class="name">Leaderboard</span><span class="desc">Global ranking på HCP + personlig dashboard</span></div>
+					<div class="card"><span class="icon">🌳</span><span class="name">Fadderträd</span><span class="desc">Vem examinerade vem — interaktiv släktkarta</span></div>
+					<div class="card"><span class="icon">❤️</span><span class="name">Turneringar</span><span class="desc">Välgörenhetsinsamlingar med Stripe-betalning</span></div>
+					<div class="card"><span class="icon">🔒</span><span class="name">Admin &amp; GDPR</span><span class="desc">Lösenordsreset, inaktivering, anonymisering</span></div>
+				</div>
+			</section>
+
+			<!-- ═══════════ 4. SCORE COASTER ═══════════ -->
+			<section>
+				<h2>Score Coastern <span class="gold">🍺</span></h2>
+				<hr class="hr" />
+				<div class="cols">
+					<div style="flex: 1.3">
+						<div class="shot">
+							<div class="chrome"><i></i><i></i><i></i><span>/coasters — direkt ur appen</span></div>
+							<img src="screenshots/coaster.png" alt="Score Coaster i appen" />
+						</div>
+					</div>
+					<div class="small">
+						<ul>
+							<li>Digitalt <strong>ölunderlägg</strong> efter det fysiska — 9 hål, egen par-rad, max 6 spelare</li>
+							<li>Alla fyller sin egen rad, i egen takt</li>
+							<li><strong>Signera</strong> när klar → raden låses, rundan bokförs, HCP justeras</li>
+							<li>Grönt kort krävs för att vara med</li>
+							<li>Enda vägen in i rundhistoriken — inga manuella efterhandsregistreringar</li>
+						</ul>
+					</div>
+				</div>
+			</section>
+
+			<!-- (ritad coaster-mockup behållen som referens, visas ej) -->
+			<section data-visibility="hidden">
+				<div class="cols">
+					<div>
+						<svg viewBox="0 0 420 320" role="img" aria-label="Score coaster">
+							<rect x="10" y="10" width="400" height="300" rx="18" fill="#fcfbf6" stroke="#4a7a5e" stroke-width="3" />
+							<text x="210" y="52" text-anchor="middle" class="serif" font-size="26" fill="#4a7a5e" font-weight="700">BEER GOLF™</text>
+							<text x="210" y="74" text-anchor="middle" font-size="11" fill="#4a7a5e" letter-spacing="3">SCORE COASTER · 9 HÅL</text>
+							<!-- rutnät -->
+							<g stroke="#4a7a5e" stroke-width="1.2" opacity="0.8">
+								<line x1="30" y1="95" x2="390" y2="95" />
+								<line x1="30" y1="125" x2="390" y2="125" />
+								<line x1="30" y1="160" x2="390" y2="160" />
+								<line x1="30" y1="195" x2="390" y2="195" />
+								<line x1="30" y1="230" x2="390" y2="230" />
+							</g>
+							<g font-size="12" fill="#4a7a5e">
+								<text x="36" y="115">PAR</text>
+								<text x="36" y="150">Nisse</text>
+								<text x="36" y="185">Bosse</text>
+								<text x="36" y="220">Lasse</text>
+							</g>
+							<!-- par-rad -->
+							<g font-size="12" fill="#4a7a5e" text-anchor="middle">
+								<text x="120" y="115">4</text><text x="150" y="115">4</text><text x="180" y="115">3</text>
+								<text x="210" y="115">4</text><text x="240" y="115">5</text><text x="270" y="115">3</text>
+								<text x="300" y="115">4</text><text x="330" y="115">3</text><text x="360" y="115">5</text>
+							</g>
+							<!-- handskrivna scores -->
+							<g font-size="16" fill="#221f1a" text-anchor="middle" font-family="'Bradley Hand','Segoe Print',cursive">
+								<text x="120" y="151">5</text><text x="150" y="149">4</text><text x="180" y="152">3</text>
+								<text x="210" y="150">6</text><text x="240" y="151">5</text><text x="270" y="149">4</text>
+								<text x="300" y="151">4</text><text x="330" y="150">3</text><text x="360" y="152">6</text>
+								<text x="120" y="186">4</text><text x="150" y="184">5</text><text x="180" y="187">4</text>
+								<text x="210" y="185">4</text>
+							</g>
+							<!-- signering -->
+							<text x="330" y="186" font-size="11" fill="#a98336" font-style="italic">…spelar än</text>
+							<text x="36" y="262" font-size="13" fill="#221f1a" font-family="'Bradley Hand','Segoe Print',cursive">Nisse ✓ signerad</text>
+							<text x="36" y="288" font-size="11" fill="#4a7a5e">→ runda skapad · HCP justerat</text>
+						</svg>
+					</div>
+					<div class="small">
+						<ul>
+							<li>Digitalt <strong>ölunderlägg</strong> efter det fysiska — 9 hål, egen par-rad, max 6 spelare</li>
+							<li>Alla fyller sin egen rad, i egen takt</li>
+							<li><strong>Signera</strong> när klar → raden låses, rundan bokförs, HCP justeras</li>
+							<li>Grönt kort krävs för att vara med</li>
+							<li>Enda vägen in i rundhistoriken — inga manuella efterhandsregistreringar</li>
+						</ul>
+					</div>
+				</div>
+			</section>
+
+			<!-- ═══════════ 5. HANDIKAPP ═══════════ -->
+			<section>
+				<h2>Självjusterande handikapp</h2>
+				<hr class="hr" />
+				<div class="cols">
+					<div class="small">
+						<ul>
+							<li>Alla startar på <strong>HCP 36</strong> med nytt grönt kort</li>
+							<li>Varje signerad runda justerar HCP mot coasterns totala par</li>
+							<li>Bra runda → ner. Tung kväll → upp. <span class="muted">Systemet dömer, inte kompisarna.</span></li>
+							<li>Trendgraf på dashboarden — se säsongens resa</li>
+						</ul>
+					</div>
+					<div>
+						<!-- HCP-trendgraf -->
+						<svg viewBox="0 0 420 260" role="img" aria-label="HCP-trend">
+							<rect x="0" y="0" width="420" height="260" rx="14" fill="rgba(250,246,235,0.05)" stroke="rgba(193,154,79,0.3)" />
+							<g stroke="rgba(219,229,220,0.15)" stroke-width="1">
+								<line x1="50" y1="60" x2="390" y2="60" /><line x1="50" y1="110" x2="390" y2="110" />
+								<line x1="50" y1="160" x2="390" y2="160" /><line x1="50" y1="210" x2="390" y2="210" />
+							</g>
+							<g font-size="12" fill="#dbe5dc" opacity="0.6" text-anchor="end">
+								<text x="42" y="64">36</text><text x="42" y="114">30</text>
+								<text x="42" y="164">24</text><text x="42" y="214">18</text>
+							</g>
+							<polyline points="60,60 105,72 150,66 195,105 240,120 285,112 330,148 380,165"
+								fill="none" stroke="#cfa964" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+							<g fill="#dcc08a">
+								<circle cx="60" cy="60" r="5" /><circle cx="150" cy="66" r="5" />
+								<circle cx="240" cy="120" r="5" /><circle cx="380" cy="165" r="6" stroke="#faf6eb" stroke-width="2" />
+							</g>
+							<text x="60" y="42" font-size="13" fill="#dcc08a">Start: 36</text>
+							<text x="380" y="195" font-size="14" fill="#dcc08a" text-anchor="end" font-weight="600">Nu: 23,4</text>
+							<text x="220" y="245" font-size="12" fill="#dbe5dc" opacity="0.6" text-anchor="middle">rundor under säsongen →</text>
+						</svg>
+					</div>
+				</div>
+			</section>
+
+			<!-- ═══════════ 6. DASHBOARD & LEADERBOARD ═══════════ -->
+			<section>
+				<h2>Dashboard &amp; Leaderboard</h2>
+				<hr class="hr" />
+				<div class="cols" style="align-items: flex-start">
+					<div>
+						<div class="shot">
+							<div class="chrome"><i></i><i></i><i></i><span>/ — din dashboard</span></div>
+							<img src="screenshots/dashboard.png" alt="Dashboard" />
+						</div>
+						<p class="caption">HCP-hero, säsongsstatistik, trendgraf, matcher &amp; grönt kort-status</p>
+					</div>
+					<div>
+						<div class="shot">
+							<div class="chrome"><i></i><i></i><i></i><span>/members — leaderboard</span></div>
+							<img src="screenshots/leaderboard.png" alt="Leaderboard" />
+						</div>
+						<p class="caption">Hela klubben rankad på HCP — 🏆 på förstaplats, alla ser allas profiler</p>
+					</div>
+				</div>
+			</section>
+
+			<!-- ═══════════ 7. FADDERTRÄD ═══════════ -->
+			<section>
+				<h2>Fadderträdet 🌳</h2>
+				<hr class="hr" />
+				<div class="cols">
+					<div>
+						<svg viewBox="0 0 420 280" role="img" aria-label="Fadderträd">
+							<defs>
+								<g id="node"><circle r="16" fill="#17382b" stroke="#c19a4f" stroke-width="2" /></g>
+							</defs>
+							<g stroke="#275b45" stroke-width="2" fill="none">
+								<path d="M210,50 C210,90 120,90 120,125" /><path d="M210,50 C210,90 300,90 300,125" />
+								<path d="M120,145 C120,180 65,180 65,210" /><path d="M120,145 C120,180 175,180 175,210" />
+								<path d="M300,145 C300,180 245,180 245,210" /><path d="M300,145 C300,180 355,180 355,210" />
+							</g>
+							<g>
+								<use href="#node" x="210" y="40" /><text x="210" y="45" text-anchor="middle" font-size="13" fill="#dcc08a">👑</text>
+								<use href="#node" x="120" y="135" /><text x="120" y="140" text-anchor="middle" font-size="12" fill="#ede6d3">N</text>
+								<use href="#node" x="300" y="135" /><text x="300" y="140" text-anchor="middle" font-size="12" fill="#ede6d3">B</text>
+								<use href="#node" x="65" y="220" /><text x="65" y="225" text-anchor="middle" font-size="12" fill="#ede6d3">L</text>
+								<use href="#node" x="175" y="220" /><text x="175" y="225" text-anchor="middle" font-size="12" fill="#ede6d3">S</text>
+								<use href="#node" x="245" y="220" /><text x="245" y="225" text-anchor="middle" font-size="12" fill="#ede6d3">P</text>
+								<use href="#node" x="355" y="220" /><text x="355" y="225" text-anchor="middle" font-size="12" fill="#ede6d3">K</text>
+							</g>
+							<text x="210" y="14" text-anchor="middle" font-size="12" fill="#dbe5dc" opacity="0.7">urmedlem</text>
+							<text x="210" y="265" text-anchor="middle" font-size="12" fill="#dbe5dc" opacity="0.7">…och trädet växer för varje examination</text>
+						</svg>
+					</div>
+					<div class="small">
+						<ul>
+							<li>Varje aspirant examineras av en <strong>fadder</strong> — relationen sparas för evigt</li>
+							<li>Interaktiv d3-karta i admin: zoom, pan, namnsök</li>
+							<li>Sök en medlem → se hela fadder-kedjan uppåt och skyddslingar neråt</li>
+							<li>Skalar till 1000+ medlemmar</li>
+							<li>Klubbens släktträd — traditionen synliggjord</li>
+						</ul>
+					</div>
+				</div>
+			</section>
+
+			<!-- ═══════════ 8. TURNERINGAR ═══════════ -->
+			<section>
+				<h2>Turneringar = välgörenhet ❤️</h2>
+				<hr class="hr" />
+				<div class="cols">
+					<div class="small">
+						<ul>
+							<li>Captain skapar: <strong>välgörenhetsmål</strong>, anmälningsavgift, prisupplägg deklareras innan öppning</li>
+							<li>Livscykel: <span class="gold">utkast → öppen → avslutad</span> — regler låses vid öppning</li>
+							<li>Två format: <strong>slagspel</strong> (netto-leaderboard) eller <strong>cup</strong> (slumpad lottning, matchstege)</li>
+							<li>Synlighet: öppen för klubben, sluten (inbjudan) eller <strong>helt publik</strong></li>
+						</ul>
+					</div>
+					<div>
+						<!-- Cupstege -->
+						<svg viewBox="0 0 420 260" role="img" aria-label="Cupstege">
+							<g font-size="12" fill="#ede6d3">
+								<rect x="15" y="30" width="90" height="26" rx="6" fill="#17382b" stroke="#275b45" /><text x="60" y="47" text-anchor="middle">Nisse</text>
+								<rect x="15" y="70" width="90" height="26" rx="6" fill="#17382b" stroke="#275b45" /><text x="60" y="87" text-anchor="middle">Bosse</text>
+								<rect x="15" y="150" width="90" height="26" rx="6" fill="#17382b" stroke="#275b45" /><text x="60" y="167" text-anchor="middle">Lasse</text>
+								<rect x="15" y="190" width="90" height="26" rx="6" fill="#17382b" stroke="#275b45" /><text x="60" y="207" text-anchor="middle">Sigge</text>
+								<rect x="150" y="50" width="90" height="26" rx="6" fill="#1d4636" stroke="#c19a4f" /><text x="195" y="67" text-anchor="middle">Nisse</text>
+								<rect x="150" y="170" width="90" height="26" rx="6" fill="#1d4636" stroke="#c19a4f" /><text x="195" y="187" text-anchor="middle">Sigge</text>
+								<rect x="285" y="110" width="110" height="30" rx="8" fill="#c19a4f" /><text x="340" y="130" text-anchor="middle" fill="#0d211a" font-weight="600">🏆 Nisse</text>
+							</g>
+							<g stroke="#275b45" stroke-width="2" fill="none">
+								<path d="M105,43 h20 v20 h25" /><path d="M105,83 h20 v-20 h25" />
+								<path d="M105,163 h20 v20 h25" /><path d="M105,203 h20 v-20 h25" />
+								<path d="M240,63 h20 v62 h25" /><path d="M240,183 h20 v-58 h25" />
+							</g>
+							<text x="210" y="245" text-anchor="middle" font-size="12" fill="#dbe5dc" opacity="0.7">egen matchcoaster per match — lägst netto vinner</text>
+						</svg>
+					</div>
+				</div>
+			</section>
+
+			<!-- ═══════════ 8b. TURNERINGAR I APPEN ═══════════ -->
+			<section>
+				<h2>Turneringarna i appen ❤️</h2>
+				<hr class="hr" />
+				<div class="shot" style="max-width: 820px; margin: 0 auto">
+					<div class="chrome"><i></i><i></i><i></i><span>/tournaments — captain skapar en turnering</span></div>
+					<img src="screenshots/tournaments.png" alt="Turneringar i appen" />
+				</div>
+				<p class="caption">Synlighet och spelformat väljs direkt — välgörenhet, avgift och priser sätts innan turneringen öppnas</p>
+			</section>
+
+			<!-- ═══════════ 9. PENGAFLÖDET ═══════════ -->
+			<section>
+				<h2>Varje krona redovisad</h2>
+				<hr class="hr" />
+				<!-- Pengaflöde -->
+				<svg viewBox="0 0 900 300" role="img" aria-label="Pengaflöde" style="max-width: 850px">
+					<g font-size="17" text-anchor="middle">
+						<rect x="20" y="90" width="160" height="80" rx="12" fill="#1d4636" stroke="#c19a4f" stroke-width="2" />
+						<text x="100" y="122" fill="#ede6d3">Anmälnings-</text><text x="100" y="144" fill="#ede6d3">avgifter 💳</text>
+						<text x="100" y="190" font-size="12" fill="#dbe5dc" opacity="0.7">Stripe Checkout</text>
+						<text x="100" y="208" font-size="12" fill="#dbe5dc" opacity="0.7">eller kontant</text>
+
+						<g fill="#ede6d3">
+							<rect x="250" y="30" width="150" height="54" rx="10" fill="#17382b" stroke="#275b45" />
+							<text x="325" y="52" font-size="14">− Stripe-avgifter</text><text x="325" y="71" font-size="12" opacity="0.7">faktisk avgift hämtas</text>
+							<rect x="250" y="104" width="150" height="54" rx="10" fill="#17382b" stroke="#275b45" />
+							<text x="325" y="126" font-size="14">− Kostnader</text><text x="325" y="145" font-size="12" opacity="0.7">kvittobilder bifogas</text>
+							<rect x="250" y="178" width="150" height="54" rx="10" fill="#17382b" stroke="#275b45" />
+							<text x="325" y="200" font-size="14">− Priser</text><text x="325" y="219" font-size="12" opacity="0.7">inga / fasta / % av pott</text>
+						</g>
+
+						<rect x="480" y="90" width="170" height="80" rx="12" fill="#c19a4f" />
+						<text x="565" y="122" fill="#0d211a" font-weight="600">Till välgörenhet</text>
+						<text x="565" y="148" fill="#122b21" font-size="14">❤️ hela resten</text>
+
+						<rect x="720" y="90" width="160" height="80" rx="12" fill="rgba(250,246,235,0.07)" stroke="rgba(193,154,79,0.4)" stroke-dasharray="6 4" />
+						<text x="800" y="118" fill="#ede6d3" font-size="15">Transparens-</text>
+						<text x="800" y="138" fill="#ede6d3" font-size="15">rapport 📜</text>
+						<text x="800" y="160" font-size="12" fill="#dbe5dc" opacity="0.7">öppen för alla</text>
+					</g>
+					<g stroke="#cfa964" stroke-width="3" fill="none" marker-end="url(#arr)">
+						<defs><marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="none" stroke="#cfa964" stroke-width="1.5" /></marker></defs>
+						<path d="M185,130 h55" /><path d="M405,130 h65" /><path d="M655,130 h55" />
+					</g>
+				</svg>
+				<p class="tiny muted">Webhook + fallback = ingen betalning tappas · avvikelse vid utbetalning varnar men blockerar inte</p>
+			</section>
+
+			<!-- ═══════════ 10. GÄSTER ═══════════ -->
+			<section>
+				<h2>Publika turneringar — gäster välkomna</h2>
+				<hr class="hr" />
+				<div class="cols">
+					<div class="small">
+						<ul>
+							<li>Publik sida <strong>/t/[slug]</strong> — inget konto behövs</li>
+							<li>Gästen anmäler sig, betalar via Stripe, självdeklarerar HCP</li>
+							<li>Personlig <strong>tokenlänk</strong> för egen scoreinmatning</li>
+							<li>Gästresultat rör aldrig medlemmarnas handikapp eller rundhistorik</li>
+							<li>Publika vyn visar siffror — aldrig e-postadresser</li>
+						</ul>
+					</div>
+					<div>
+						<svg viewBox="0 0 380 240" role="img" aria-label="Gästflöde">
+							<g font-size="14" text-anchor="middle" fill="#ede6d3">
+								<rect x="90" y="15" width="200" height="44" rx="10" fill="#17382b" stroke="#275b45" />
+								<text x="190" y="42">🌍 /t/sommarcupen</text>
+								<rect x="90" y="95" width="200" height="44" rx="10" fill="#17382b" stroke="#275b45" />
+								<text x="190" y="122">💳 Anmälan + betalning</text>
+								<rect x="90" y="175" width="200" height="44" rx="10" fill="#1d4636" stroke="#c19a4f" stroke-width="2" />
+								<text x="190" y="202">🔗 Egen scorelänk</text>
+							</g>
+							<g stroke="#cfa964" stroke-width="2.5" fill="none">
+								<path d="M190,59 v30" /><path d="M190,139 v30" />
+								<path d="M184,83 l6,8 l6,-8" /><path d="M184,163 l6,8 l6,-8" />
+							</g>
+						</svg>
+					</div>
+				</div>
+			</section>
+
+			<!-- ═══════════ 11. SEKTION: ONBOARDING ═══════════ -->
+			<section>
+				<p class="kicker">Del 2</p>
+				<h1>Från engångskod<br />till grönt kort</h1>
+				<hr class="hr" />
+				<p class="small muted">Så blir man medlem — hela resan i fem steg</p>
+			</section>
+
+			<!-- ═══════════ 12. ÖVERSIKTSFLÖDE ═══════════ -->
+			<section>
+				<h2>Resan i en bild</h2>
+				<hr class="hr" />
+				<svg viewBox="0 0 960 300" role="img" aria-label="Onboardingflöde" style="max-width: 920px">
+					<defs>
+						<marker id="arrow2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+							<path d="M0,0 L8,3 L0,6" fill="none" stroke="#cfa964" stroke-width="1.5" />
+						</marker>
+					</defs>
+					<g font-size="15" text-anchor="middle">
+						<!-- Steg 1 -->
+						<circle cx="90" cy="110" r="52" fill="#17382b" stroke="#c19a4f" stroke-width="2" />
+						<text x="90" y="104" font-size="26">🎟️</text><text x="90" y="132" fill="#ede6d3" font-size="13">KOD</text>
+						<!-- Steg 2 -->
+						<circle cx="290" cy="110" r="52" fill="#17382b" stroke="#c19a4f" stroke-width="2" />
+						<text x="290" y="104" font-size="26">📝</text><text x="290" y="132" fill="#ede6d3" font-size="13">KONTO</text>
+						<!-- Steg 3 -->
+						<circle cx="490" cy="110" r="52" fill="#17382b" stroke="#c19a4f" stroke-width="2" />
+						<text x="490" y="104" font-size="26">🔒</text><text x="490" y="132" fill="#ede6d3" font-size="13">ASPIRANT</text>
+						<!-- Steg 4 -->
+						<circle cx="690" cy="110" r="52" fill="#17382b" stroke="#c19a4f" stroke-width="2" />
+						<text x="690" y="104" font-size="26">🎓</text><text x="690" y="132" fill="#ede6d3" font-size="13">3 DELAR</text>
+						<!-- Steg 5 -->
+						<circle cx="880" cy="110" r="56" fill="#c19a4f" />
+						<text x="880" y="104" font-size="28">🟩</text><text x="880" y="134" fill="#0d211a" font-size="13" font-weight="600">GRÖNT KORT</text>
+					</g>
+					<g stroke="#cfa964" stroke-width="3" fill="none" marker-end="url(#arrow2)">
+						<path d="M147,110 h85" /><path d="M347,110 h85" /><path d="M547,110 h85" /><path d="M747,110 h68" />
+					</g>
+					<g font-size="13" fill="#dbe5dc" opacity="0.75" text-anchor="middle">
+						<text x="90" y="200">Fadder delar ut</text><text x="90" y="218">engångskod</text>
+						<text x="290" y="200">Registrering</text><text x="290" y="218">på /join</text>
+						<text x="490" y="200">Utelåst från allt</text><text x="490" y="218">utom certifieringen</text>
+						<text x="690" y="200">Teori · Praktik</text><text x="690" y="218">· Etikett</text>
+						<text x="880" y="200">Automatiskt!</text><text x="880" y="218">Nummer + HCP 36</text>
+					</g>
+				</svg>
+			</section>
+
+			<!-- ═══════════ 13. STEG 1: KODEN ═══════════ -->
+			<section>
+				<h2><span class="stepbadge">1</span>Engångskoden 🎟️</h2>
+				<hr class="hr" />
+				<div class="cols">
+					<div>
+						<!-- Biljett -->
+						<svg viewBox="0 0 400 220" role="img" aria-label="Invalskod">
+							<path d="M20,30 h360 a0,0 0 0 1 0,0 v50 a15,15 0 0 0 0,30 v80 h-360 v-80 a15,15 0 0 0 0,-30 z"
+								fill="#faf6eb" stroke="#c19a4f" stroke-width="3" />
+							<line x1="20" y1="95" x2="380" y2="95" stroke="#c19a4f" stroke-width="1.5" stroke-dasharray="7 6" />
+							<text x="200" y="65" text-anchor="middle" class="serif" font-size="22" fill="#122b21" font-weight="700">INVALSKOD</text>
+							<text x="200" y="145" text-anchor="middle" font-size="30" fill="#0d211a" font-weight="600" letter-spacing="6" font-family="ui-monospace, monospace">BGS-K7F2M9</text>
+							<text x="200" y="178" text-anchor="middle" font-size="12" fill="#a98336">gäller en (1) blivande gentleman</text>
+						</svg>
+					</div>
+					<div class="small">
+						<ul>
+							<li>Admin skapar <strong>fristående engångskoder</strong> — ingen e-post krävs i förväg</li>
+							<li>Koden lämnas över personligen: på klubbkvällen, i handen, som sig bör</li>
+							<li>En kod = ett medlemskap. Förbrukad kod syns i admin med vem den blev</li>
+							<li>Sök bland koder, se vem varje kod blev — full spårbarhet</li>
+						</ul>
+						<div class="shot" style="max-width: 340px; margin-top: 0.8em">
+							<div class="chrome"><i></i><i></i><i></i><span>/admin</span></div>
+							<img src="screenshots/invalskod.png" alt="Skapa invalskod i admin" />
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- ═══════════ 14. STEG 2: KONTO ═══════════ -->
+			<section>
+				<h2><span class="stepbadge">2</span>Registrering på /join 📝</h2>
+				<hr class="hr" />
+				<div class="cols">
+					<div class="small">
+						<ul>
+							<li>Aspiranten går till <strong>/join</strong> och anger sin kod</li>
+							<li>Namn + e-post + lösenord — klart på en minut</li>
+							<li>Kontot skapas med status <strong>aspirant</strong></li>
+							<li>Koden förbrukas i samma ögonblick — kan aldrig återanvändas</li>
+						</ul>
+					</div>
+					<div>
+						<svg viewBox="0 0 360 250" role="img" aria-label="Join-formulär">
+							<rect x="30" y="15" width="300" height="220" rx="14" fill="#faf6eb" />
+							<text x="180" y="52" text-anchor="middle" class="serif" font-size="20" fill="#122b21" font-weight="700">Bli medlem</text>
+							<g font-size="12" fill="#6b6455">
+								<rect x="60" y="70" width="240" height="30" rx="6" fill="#fff" stroke="#dcc08a" /><text x="70" y="89">BGS-K7F2M9</text>
+								<rect x="60" y="110" width="240" height="30" rx="6" fill="#fff" stroke="#e3dac2" /><text x="70" y="129">Nisse Nyman</text>
+								<rect x="60" y="150" width="240" height="30" rx="6" fill="#fff" stroke="#e3dac2" /><text x="70" y="169">nisse@example.se</text>
+							</g>
+							<rect x="60" y="192" width="240" height="32" rx="8" fill="#1d4636" />
+							<text x="180" y="213" text-anchor="middle" font-size="14" fill="#ede6d3">Skapa konto</text>
+						</svg>
+					</div>
+				</div>
+			</section>
+
+			<!-- ═══════════ 15. STEG 3: ASPIRANTLÄGE ═══════════ -->
+			<section>
+				<h2><span class="stepbadge">3</span>Aspirantläget 🔒</h2>
+				<hr class="hr" />
+				<div class="cols">
+					<div>
+						<svg viewBox="0 0 400 260" role="img" aria-label="Aspirantgate">
+							<g font-size="14" text-anchor="middle">
+								<!-- öppna dörrar -->
+								<rect x="30" y="30" width="160" height="42" rx="9" fill="#1d4636" stroke="#c19a4f" stroke-width="2" />
+								<text x="110" y="57" fill="#ede6d3">✅ Grönt kort</text>
+								<rect x="30" y="86" width="160" height="42" rx="9" fill="#1d4636" stroke="#c19a4f" stroke-width="2" />
+								<text x="110" y="113" fill="#ede6d3">✅ Teoriprov</text>
+								<!-- stängda dörrar -->
+								<g opacity="0.45">
+									<rect x="210" y="30" width="160" height="42" rx="9" fill="#17382b" stroke="#275b45" />
+									<text x="290" y="57" fill="#dbe5dc">🚫 Coasters</text>
+									<rect x="210" y="86" width="160" height="42" rx="9" fill="#17382b" stroke="#275b45" />
+									<text x="290" y="113" fill="#dbe5dc">🚫 Leaderboard</text>
+									<rect x="210" y="142" width="160" height="42" rx="9" fill="#17382b" stroke="#275b45" />
+									<text x="290" y="169" fill="#dbe5dc">🚫 Turneringar</text>
+									<rect x="210" y="198" width="160" height="42" rx="9" fill="#17382b" stroke="#275b45" />
+									<text x="290" y="225" fill="#dbe5dc">🚫 Rundor</text>
+								</g>
+								<text x="110" y="180" font-size="40">🔐</text>
+								<text x="110" y="225" font-size="12" fill="#dbe5dc" opacity="0.7">gaten sitter i servern,</text>
+								<text x="110" y="242" font-size="12" fill="#dbe5dc" opacity="0.7">inte i menyn</text>
+							</g>
+						</svg>
+					</div>
+					<div class="small">
+						<ul>
+							<li>Aspiranten ser <strong>bara</strong> Grönt Kort och Teoriprov i menyn</li>
+							<li>Alla andra sidor → omdirigering, hårt på servern — ingen kan smyga runt</li>
+							<li>Aspiranter kan inte läggas på coasters — inget spel utan kort</li>
+							<li>Fokus: klara certifieringen. Sen öppnas klubben.</li>
+						</ul>
+					</div>
+				</div>
+			</section>
+
+			<!-- ═══════════ 16. STEG 4: TRE DELAR ═══════════ -->
+			<section>
+				<h2><span class="stepbadge">4</span>Certifieringens tre delar 🎓</h2>
+				<hr class="hr" />
+				<div class="grid" style="grid-template-columns: repeat(3, 1fr); max-width: 920px; margin: 0.6em auto 0">
+					<div class="card" style="padding: 0.9em 0.7em">
+						<span class="icon">📖</span>
+						<span class="name" style="font-size: 0.9em">1 · Teoriprov</span>
+						<span class="desc" style="font-size: 0.55em">Quiz med slumpad frågeordning, rättas på servern. Godkänt vid <strong>≥ 80 %</strong>. Underkänd? Facit visas — och hedersknappen ”Jag har lärt mig läxan” finns för den ödmjuke.</span>
+					</div>
+					<div class="card" style="padding: 0.9em 0.7em">
+						<span class="icon">🏌️</span>
+						<span class="name" style="font-size: 0.9em">2 · Praktiskt prov</span>
+						<span class="desc" style="font-size: 0.55em">Provslingan spelas inför en certifierad medlem som examinerar. Omdöme skrivs och <strong>bevis krävs</strong> — minst en bild eller film. Inget bevis? Rekonstruera situationen.</span>
+					</div>
+					<div class="card" style="padding: 0.9em 0.7em">
+						<span class="icon">🎩</span>
+						<span class="name" style="font-size: 0.9em">3 · Etikett &amp; hänsyn</span>
+						<span class="desc" style="font-size: 0.55em">Faddern bedömer uppförandet löpande och godkänner via bekräftelsemodal med klubbens etikettkriterier. Aspiranten ser samma kriterier — inga överraskningar.</span>
+					</div>
+				</div>
+				<p class="tiny muted" style="margin-top: 1em">Vilken certifierad medlem som helst kan examinera — inte bara de med rollen fadder</p>
+			</section>
+
+			<!-- ═══════════ CERTIFIERINGEN I APPEN ═══════════ -->
+			<section>
+				<h2>Certifieringen i appen 🎓</h2>
+				<hr class="hr" />
+				<div class="shot" style="max-width: 820px; margin: 0 auto">
+					<div class="chrome"><i></i><i></i><i></i><span>/certification — grönt kort &amp; examination</span></div>
+					<img src="screenshots/certification.png" alt="Certifieringssidan i appen" />
+				</div>
+				<p class="caption">Examinatorsvyn: certifierade medlemmar ser aspiranterna som väntar — och godkänner praktik &amp; etikett här</p>
+			</section>
+
+			<!-- ═══════════ TEORIPROVET I APPEN ═══════════ -->
+			<section>
+				<h2>Teoriprovet i appen 📖</h2>
+				<hr class="hr" />
+				<div class="shot" style="max-width: 820px; margin: 0 auto">
+					<div class="chrome"><i></i><i></i><i></i><span>/quiz — grönt kort · del 1</span></div>
+					<img src="screenshots/quiz.png" alt="Teoriprovet i appen" />
+				</div>
+				<p class="caption">Slumpad frågeordning, facit stannar på servern — regelkunskap, säkerhet och klubbhistoria</p>
+			</section>
+
+			<!-- ═══════════ 17. STEG 5: GRÖNT KORT ═══════════ -->
+			<section>
+				<h2><span class="stepbadge">5</span>Grönt kort — automatiskt 🟩</h2>
+				<hr class="hr" />
+				<div class="cols">
+					<div>
+						<!-- Grönt kort -->
+						<svg viewBox="0 0 400 240" role="img" aria-label="Grönt kort">
+							<rect x="25" y="20" width="350" height="200" rx="16" fill="#1d4636" stroke="#c19a4f" stroke-width="3" />
+							<rect x="25" y="20" width="350" height="52" rx="16" fill="#122b21" />
+							<rect x="25" y="56" width="350" height="16" fill="#122b21" />
+							<text x="200" y="54" text-anchor="middle" class="serif" font-size="21" fill="#dcc08a" font-weight="700">GRÖNT KORT</text>
+							<text x="55" y="105" font-size="13" fill="#dbe5dc" opacity="0.7">MEDLEM Nº</text>
+							<text x="55" y="140" class="serif" font-size="34" fill="#faf6eb" font-weight="700">047</text>
+							<text x="55" y="175" font-size="15" fill="#ede6d3">Nisse Nyman</text>
+							<text x="55" y="198" font-size="11" fill="#dbe5dc" opacity="0.6">Tablers Beer Golf Society</text>
+							<g text-anchor="end">
+								<text x="345" y="105" font-size="13" fill="#dbe5dc" opacity="0.7">HANDICAP</text>
+								<text x="345" y="140" class="serif" font-size="34" fill="#dcc08a" font-weight="700">36</text>
+								<text x="345" y="198" font-size="24">⛳</text>
+							</g>
+						</svg>
+					</div>
+					<div class="small">
+						<p>När tredje delen godkänns händer allt av sig självt:</p>
+						<ul>
+							<li>Nästa lediga <strong>medlemsnummer</strong> utfärdas</li>
+							<li>Status → aktiv, roll → <strong>member</strong></li>
+							<li>Ingångshandicap <strong>HCP 36</strong></li>
+							<li>Alla dörrar öppnas: coasters, leaderboard, turneringar</li>
+						</ul>
+						<p class="tiny muted">Certifieringsunderlaget (provhistorik, omdöme, bevis) följer med profilen för alltid.</p>
+					</div>
+				</div>
+			</section>
+
+			<!-- ═══════════ 18. FADDER-EFFEKTEN ═══════════ -->
+			<section>
+				<h2>…och examinatorn då?</h2>
+				<hr class="hr" />
+				<div class="cols" style="max-width: 900px; margin: 0 auto">
+					<div>
+						<svg viewBox="0 0 360 220" role="img" aria-label="Fadder-uppgradering">
+							<g font-size="15" text-anchor="middle">
+								<circle cx="110" cy="80" r="44" fill="#17382b" stroke="#275b45" stroke-width="2" />
+								<text x="110" y="74" font-size="24">🧔</text><text x="110" y="100" fill="#dbe5dc" font-size="11">member</text>
+								<circle cx="250" cy="80" r="48" fill="#1d4636" stroke="#c19a4f" stroke-width="3" />
+								<text x="250" y="72" font-size="24">🧔</text><text x="250" y="98" fill="#dcc08a" font-size="11" font-weight="600">FADDER</text>
+								<path d="M160,80 h35" stroke="#cfa964" stroke-width="3" fill="none" />
+								<path d="M188,73 l10,7 l-10,7" stroke="#cfa964" stroke-width="3" fill="none" />
+								<text x="180" y="45" font-size="12" fill="#dbe5dc" opacity="0.75">examinerar en aspirant</text>
+								<text x="180" y="185" font-size="12" fill="#dbe5dc" opacity="0.75">automatisk uppgradering — och en ny gren i fadderträdet 🌳</text>
+							</g>
+						</svg>
+					</div>
+					<div class="small">
+						<ul>
+							<li>Den som godkänner en aspirant uppgraderas automatiskt <strong>member → fadder</strong></li>
+							<li>Captain och admin behåller förstås sin roll</li>
+							<li>Relationen skrivs in i fadderträdet — för alltid</li>
+							<li>Så växer klubben: varje medlem kan föra traditionen vidare</li>
+						</ul>
+					</div>
+				</div>
+			</section>
+
+			<!-- ═══════════ ADMIN & GDPR ═══════════ -->
+			<section>
+				<h2>Admin &amp; GDPR 🔒</h2>
+				<hr class="hr" />
+				<div class="cols" style="align-items: flex-start">
+					<div style="flex: 1.5">
+						<div class="shot">
+							<div class="chrome"><i></i><i></i><i></i><span>/admin — medlemmar, koder &amp; kontoåtgärder</span></div>
+							<img src="screenshots/admin.png" alt="Adminsidan i appen" />
+						</div>
+					</div>
+					<div class="small">
+						<ul>
+							<li>Invalskoder och direktskapade medlemmar på ett ställe</li>
+							<li><strong>Återställ lösenord</strong> — engångslösenord, tvingat byte</li>
+							<li>Inaktivera konto → levande sessioner dödas direkt</li>
+							<li><strong>Anonymisera (GDPR)</strong> — oåterkalleligt, men spelhistoriken behålls som klubbstatistik</li>
+							<li>Paginerat och sökbart — testat med 1000+ medlemmar</li>
+						</ul>
+					</div>
+				</div>
+			</section>
+
+			<!-- ═══════════ 19. AVSLUT ═══════════ -->
+			<section>
+				<img class="logo-title" src="logo.png" alt="Tablers Beer Golf Society" style="width: 200px" />
+				<h1 style="margin-top: 0.3em">Skål! 🍻</h1>
+				<p class="kicker">Tablers Beer Golf Society</p>
+				<hr class="hr" />
+				<p class="small muted">
+					Byggt med SvelteKit · SQLite · kärlek till spelet<br />
+					<span class="tiny">Frågor? Ta det över en runda på provslingan.</span>
+				</p>
+			</section>
+
+		</div>
+	</div>
+
+	<script src="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.js"></script>
+	<script>
+		Reveal.initialize({
+			hash: true,
+			transition: 'fade',
+			transitionSpeed: 'slow',
+			width: 1100,
+			height: 720,
+			margin: 0.06
+		});
+	</script>
+</body>
+</html>
