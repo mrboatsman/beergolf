@@ -1,0 +1,14 @@
+node_modules
+build
+.svelte-kit
+data
+tmp
+marketing
+.env
+.env.*
+!.env.example
+.git
+.jj
+.github
+*.md
+!README.md

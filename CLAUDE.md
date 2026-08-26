@@ -39,6 +39,13 @@ DB-fil: `./data/beergolf.db` (via `DATABASE_URL` i `.env`, ej i git).
 - Visuell verifiering: puppeteer-core + systemets Chrome (se scratchpad-mönster:
   logga in via curl, skicka session-cookie, screenshot).
 
+## Deploy
+
+- `Dockerfile` (multistage, node:22-bookworm-slim, `/data`-volym för db+uploads, migrerar
+  vid start via `scripts/migrate.mjs`, `ORIGIN` krävs i runtime). `.github/workflows/docker.yml`
+  bygger och pushar till `ghcr.io/mrboatsman/beergolf` på push till main / `v*`-taggar.
+  Första admin i container: `docker exec ... node scripts/seed.ts`. Se README.
+
 ## Arkitektur
 
 - `src/lib/server/db/schema.ts` — Drizzle-schema. Tabeller: members, sessions, invites,
