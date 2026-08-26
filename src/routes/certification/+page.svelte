@@ -12,17 +12,16 @@
 	// Modal: vilken aspirant etikett-godkännandet gäller (null = stängd)
 	let etiquetteFor = $state<{ id: string; name: string } | null>(null);
 
-	// Namnfilter — det kan bli många aspiranter samtidigt
-	let aspirantFilter = $state('');
-	// ?aspirant=<id> (t.ex. från /invite) visar bara den aspiranten tills filtret rensas
-	let focusId = $derived(page.url.searchParams.get('aspirant'));
-	let filteredAspirants = $derived(
-		focusId && !aspirantFilter
-			? data.aspirants.filter((a) => a.id === focusId)
-			: data.aspirants.filter((a) =>
-					a.name.toLowerCase().includes(aspirantFilter.trim().toLowerCase())
-				)
-	);
+	// Länkar för paginering: behåll den andra listans query-params
+	function pageUrl(patch: Record<string, string | number | null>) {
+		const params = new URLSearchParams(page.url.searchParams);
+		for (const [k, v] of Object.entries(patch)) {
+			if (v === null || v === '' || v === 1) params.delete(k);
+			else params.set(k, String(v));
+		}
+		const qs = params.toString();
+		return qs ? `?${qs}` : '/certification';
+	}
 
 	function fmtDate(d: Date | string) {
 		return new Date(d).toLocaleDateString('sv-SE');
@@ -189,41 +188,49 @@
 {/if}
 
 <!-- Fadder-vy: examinera aspiranter -->
-{#if !data.me.isAspirant}
+{#if data.aspirants}
+	{@const asp = data.aspirants}
 	<section class="mt-10">
 		<div class="flex flex-wrap items-center justify-between gap-3">
-			<h2 class="font-display text-2xl font-semibold">Aspiranter ({data.aspirants.length})</h2>
-			{#if data.aspirants.length > 1}
+			<h2 class="font-display text-2xl font-semibold">Aspiranter ({asp.total})</h2>
+			<form method="GET" class="flex gap-2" data-sveltekit-keepfocus>
+				{#if data.cards?.q}<input type="hidden" name="kq" value={data.cards.q} />{/if}
 				<input
 					type="search"
-					bind:value={aspirantFilter}
+					name="aq"
+					value={asp.q}
 					placeholder="Filtrera på namn…"
 					class="w-56 rounded-lg border-cream-300 bg-white text-sm"
 				/>
-			{/if}
+				<button
+					class="rounded-lg bg-club-700 px-3 py-2 text-sm font-semibold text-cream-200 hover:bg-club-800"
+					>Sök</button
+				>
+			</form>
 		</div>
-		{#if data.aspirants.length === 0}
-			<p class="mt-2 text-sm text-club-900/60">Inga aspiranter väntar på examination.</p>
-		{:else if filteredAspirants.length === 0}
+		{#if asp.list.length === 0}
 			<p class="mt-2 text-sm text-club-900/60">
-				{#if focusId && !aspirantFilter}
+				{#if asp.focusId}
 					Aspiranten väntar inte på examination (klar eller finns inte).
-					<a href="/certification" class="underline">Visa alla</a>
+					<a href={pageUrl({ aspirant: null })} class="underline">Visa alla</a>
+				{:else if asp.q}
+					Ingen aspirant matchar ”{asp.q}”.
+					<a href={pageUrl({ aq: null, apage: null })} class="underline">Visa alla</a>
 				{:else}
-					Ingen aspirant matchar ”{aspirantFilter}”.
+					Inga aspiranter väntar på examination.
 				{/if}
 			</p>
 		{:else}
-			{#if focusId && !aspirantFilter && data.aspirants.length > 1}
+			{#if asp.focusId}
 				<p class="mt-2 text-sm text-club-900/60">
-					Visar en aspirant. <a href="/certification" class="underline">Visa alla</a>
+					Visar en aspirant. <a href={pageUrl({ aspirant: null })} class="underline">Visa alla</a>
 				</p>
 			{/if}
 			<div class="mt-3 space-y-3">
-				{#each filteredAspirants as a (a.id)}
+				{#each asp.list as a (a.id)}
 					<div
 						id="aspirant-{a.id}"
-						class="rounded-2xl bg-parchment p-5 shadow-sm {a.id === focusId
+						class="rounded-2xl bg-parchment p-5 shadow-sm {a.id === asp.focusId
 							? 'ring-2 ring-gold-400'
 							: ''}"
 					>
@@ -300,6 +307,23 @@
 					</div>
 				{/each}
 			</div>
+			{#if asp.pages > 1}
+				<nav class="mt-3 flex items-center justify-center gap-3 text-sm" aria-label="Aspirantsidor">
+					{#if asp.page > 1}
+						<a
+							href={pageUrl({ apage: asp.page - 1 })}
+							class="font-semibold text-club-700 hover:underline">← Föregående</a
+						>
+					{/if}
+					<span class="text-club-900/60">Sida {asp.page} av {asp.pages}</span>
+					{#if asp.page < asp.pages}
+						<a
+							href={pageUrl({ apage: asp.page + 1 })}
+							class="font-semibold text-club-700 hover:underline">Nästa →</a
+						>
+					{/if}
+				</nav>
+			{/if}
 		{/if}
 	</section>
 {/if}
@@ -311,6 +335,7 @@
 		<div class="flex flex-wrap items-center justify-between gap-3">
 			<h2 class="font-display text-2xl font-semibold">Gröna kort ({c.total})</h2>
 			<form method="GET" class="flex gap-2" data-sveltekit-keepfocus>
+				{#if data.aspirants?.q}<input type="hidden" name="aq" value={data.aspirants.q} />{/if}
 				<input
 					type="search"
 					name="kq"
@@ -356,14 +381,14 @@
 				<nav class="mt-3 flex items-center justify-center gap-3 text-sm" aria-label="Kortsidor">
 					{#if c.page > 1}
 						<a
-							href="?kq={encodeURIComponent(c.q)}&kpage={c.page - 1}"
+							href={pageUrl({ kpage: c.page - 1 })}
 							class="font-semibold text-club-700 hover:underline">← Föregående</a
 						>
 					{/if}
 					<span class="text-club-900/60">Sida {c.page} av {c.pages}</span>
 					{#if c.page < c.pages}
 						<a
-							href="?kq={encodeURIComponent(c.q)}&kpage={c.page + 1}"
+							href={pageUrl({ kpage: c.page + 1 })}
 							class="font-semibold text-club-700 hover:underline">Nästa →</a
 						>
 					{/if}

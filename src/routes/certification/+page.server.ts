@@ -21,6 +21,7 @@ function extFor(f: File): string {
 }
 
 const CARDS_PAGE_SIZE = 24;
+const ASPIRANTS_PAGE_SIZE = 20;
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	const me = requireMember(locals.member);
@@ -36,14 +37,34 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			.get()?.n) ?? 0) > 0;
 
 	// Certifierade medlemmar agerar fadder: se och godkänn aspiranter.
-	let aspirants: Array<{
-		id: string;
-		name: string;
-		theory: boolean;
-		practical: boolean;
-		etiquette: boolean;
-	}> = [];
+	// Server-paginerat (aq/apage) — det kan vara hundratals samtidigt.
+	// ?aspirant=<id> (från /invite) visar bara den aspiranten.
+	let aspirants: {
+		q: string;
+		focusId: string | null;
+		page: number;
+		pages: number;
+		total: number;
+		list: { id: string; name: string; theory: boolean; practical: boolean; etiquette: boolean }[];
+	} | null = null;
 	if (me.status !== 'aspirant') {
+		const q = url.searchParams.get('aq')?.trim() ?? '';
+		const focusId = url.searchParams.get('aspirant');
+		const pageReq = Math.max(1, Number(url.searchParams.get('apage') ?? 1) || 1);
+		const where = and(
+			eq(members.status, 'aspirant'),
+			focusId ? eq(members.id, focusId) : q ? like(members.name, `%${q}%`) : undefined
+		);
+		const total =
+			(
+				await db
+					.select({ n: sql<number>`count(*)` })
+					.from(members)
+					.where(where)
+					.get()
+			)?.n ?? 0;
+		const pages = Math.max(1, Math.ceil(total / ASPIRANTS_PAGE_SIZE));
+		const page = Math.min(pageReq, pages);
 		const rows = await db
 			.select({
 				id: members.id,
@@ -54,16 +75,25 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			})
 			.from(members)
 			.leftJoin(certifications, eq(certifications.memberId, members.id))
-			.where(eq(members.status, 'aspirant'))
-			.orderBy(asc(members.name))
+			.where(where)
+			.orderBy(asc(members.name), asc(members.id))
+			.limit(ASPIRANTS_PAGE_SIZE)
+			.offset((page - 1) * ASPIRANTS_PAGE_SIZE)
 			.all();
-		aspirants = rows.map((r) => ({
-			id: r.id,
-			name: r.name,
-			theory: r.theory ?? false,
-			practical: r.practical ?? false,
-			etiquette: r.etiquette ?? false
-		}));
+		aspirants = {
+			q,
+			focusId,
+			page,
+			pages,
+			total,
+			list: rows.map((r) => ({
+				id: r.id,
+				name: r.name,
+				theory: r.theory ?? false,
+				practical: r.practical ?? false,
+				etiquette: r.etiquette ?? false
+			}))
+		};
 	}
 
 	// Alla utfärdade gröna kort (certifierade ser dem): filtrera på namn eller
