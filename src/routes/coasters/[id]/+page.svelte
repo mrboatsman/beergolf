@@ -242,7 +242,7 @@
 						coasterId={coaster.id}
 						drawingKey={coaster.backDrawingKey}
 						images={data.backImages}
-						canEdit={!!myRow}
+						canEdit={!!myRow && !data.backLocked}
 						{editor}
 					/>
 				{/if}
@@ -252,7 +252,26 @@
 </div>
 
 {#if finished && flipped}
-	<CoasterBackToolbar {editor} canEdit={!!myRow} onflip={() => (flipped = false)} />
+	<CoasterBackToolbar
+		{editor}
+		canEdit={!!myRow && !data.backLocked}
+		onflip={() => (flipped = false)}
+	/>
+	{#if myRow && data.backLockAt}
+		<p class="mx-auto mt-2 max-w-2xl text-center text-xs text-club-900/50">
+			{#if data.backLocked}
+				🔒 Baksidan låstes {new Date(data.backLockAt).toLocaleString('sv-SE', {
+					dateStyle: 'short',
+					timeStyle: 'short'
+				})} — två dagar efter att rundan avslutades.
+			{:else}
+				Baksidan kan redigeras till {new Date(data.backLockAt).toLocaleString('sv-SE', {
+					dateStyle: 'short',
+					timeStyle: 'short'
+				})}, sedan låses den.
+			{/if}
+		</p>
+	{/if}
 {/if}
 
 <!-- ====== Kontroller (utanför pappen) ====== -->

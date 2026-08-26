@@ -83,6 +83,21 @@ function withNet<
 
 const MAX_BACK_IMAGE = 10 * 1024 * 1024;
 const MAX_BACK_IMAGES = 12;
+// Baksidan låses en tid efter att coastern blev klar (sista signaturen) — för att
+// undvika misstag i efterhand.
+const BACK_EDIT_WINDOW_MS = 2 * 24 * 60 * 60 * 1000;
+
+/** Tidpunkt då baksidan låses: sista signaturen + 2 dagar. null = ej klar än. */
+function backLockAt(coasterId: string): Date | null {
+	const rows = db
+		.select({ signedAt: coasterPlayers.signedAt })
+		.from(coasterPlayers)
+		.where(eq(coasterPlayers.coasterId, coasterId))
+		.all();
+	if (rows.length < 2 || rows.some((r) => !r.signedAt)) return null;
+	const last = Math.max(...rows.map((r) => r.signedAt!.getTime()));
+	return new Date(last + BACK_EDIT_WINDOW_MS);
+}
 
 // Baksidan får bara redigeras av deltagare, och bara när alla (≥2) signerat.
 function backEditGuard(coasterId: string, memberId: string) {
@@ -96,6 +111,10 @@ function backEditGuard(coasterId: string, memberId: string) {
 	}
 	if (rows.length < 2 || rows.some((r) => !r.signedAt)) {
 		return fail(400, { error: 'Baksidan låses upp när alla har signerat.' });
+	}
+	const lockAt = backLockAt(coasterId);
+	if (lockAt && lockAt.getTime() < Date.now()) {
+		return fail(400, { error: 'Baksidan är låst — två dagar har gått sedan rundan avslutades.' });
 	}
 	return null;
 }
@@ -161,11 +180,15 @@ export const load: PageServerLoad = async ({ locals, params, depends }) => {
 		.orderBy(asc(coasterBackImages.z), asc(coasterBackImages.createdAt))
 		.all();
 
+	const lockAt = backLockAt(coaster.id);
+
 	return {
 		coaster,
 		tournament,
 		players,
 		backImages,
+		backLockAt: lockAt,
+		backLocked: !!lockAt && lockAt.getTime() < Date.now(),
 		addable,
 		meId: me.id,
 		maxPlayers: MAX_COASTER_PLAYERS,

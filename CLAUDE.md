@@ -120,7 +120,8 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   under `coasters/<id>/`, serveras via `/files/`. Drag = flytta, pinch = skala+rotera (två pekare),
   desktop-knappar ±15°/±15 %, vald bild läggs överst. Ritning = canvas över hela kortet, sparas
   som transparent PNG (`coasters.backDrawingKey`) efter penseldrag. Bara deltagare redigerar
-  (`backEditGuard`, max 12 bilder à 10 MB), övriga ser. Baksidan har `data-no-flip`; vänd
+  (`backEditGuard`, max 12 bilder à 10 MB), övriga ser. **Låses 2 dagar efter sista signaturen**
+  (`backLockAt`, `BACK_EDIT_WINDOW_MS`; load returnerar `backLocked`/`backLockAt`, UI visar datum). Baksidan har `data-no-flip`; vänd
   tillbaka via knapp.
 - **Galleri** (`/gallery`, nav-länk "Galleri"): rutnät (kvadratiska kort) med baksidorna på alla
   färdigspelade coasters (`CoasterBackView.svelte` = read-only-renderare av bilder + ritning-PNG,
