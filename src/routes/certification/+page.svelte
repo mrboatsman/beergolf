@@ -304,6 +304,75 @@
 	</section>
 {/if}
 
+{#if data.cards}
+	{@const c = data.cards}
+	<!-- Alla utfärdade gröna kort -->
+	<section class="mt-10">
+		<div class="flex flex-wrap items-center justify-between gap-3">
+			<h2 class="font-display text-2xl font-semibold">Gröna kort ({c.total})</h2>
+			<form method="GET" class="flex gap-2" data-sveltekit-keepfocus>
+				<input
+					type="search"
+					name="kq"
+					value={c.q}
+					placeholder="Namn eller kortnummer…"
+					class="w-56 rounded-lg border-cream-300 bg-white text-sm"
+				/>
+				<button
+					class="rounded-lg bg-club-700 px-3 py-2 text-sm font-semibold text-cream-200 hover:bg-club-800"
+					>Sök</button
+				>
+			</form>
+		</div>
+		{#if c.list.length === 0}
+			<p class="mt-2 text-sm text-club-900/60">
+				{#if c.q}Inget kort matchar ”{c.q}”.
+					<a href="/certification" class="underline">Visa alla</a>{:else}Inga kort utfärdade än.{/if}
+			</p>
+		{:else}
+			<div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+				{#each c.list as m (m.id)}
+					<a
+						href="/members/{m.id}"
+						class="block rounded-2xl bg-club-800 p-4 text-cream-200 shadow-md transition hover:bg-club-700"
+					>
+						<div class="flex items-start justify-between">
+							<span class="text-[10px] font-semibold tracking-[0.2em] text-gold-400 uppercase"
+								>Grönt Kort</span
+							>
+							<span class="font-display text-xl font-semibold text-gold-300"
+								>Nr {m.memberNumber ?? '–'}</span
+							>
+						</div>
+						<div class="font-display mt-2 truncate text-2xl font-semibold">{m.name}</div>
+						<div class="mt-1 text-xs text-cream-200/70">
+							{#if m.greenCardIssuedAt}Certifierad {fmtDate(m.greenCardIssuedAt)}{/if}
+							{#if m.fadderName}· Fadder: {m.fadderName}{/if}
+						</div>
+					</a>
+				{/each}
+			</div>
+			{#if c.pages > 1}
+				<nav class="mt-3 flex items-center justify-center gap-3 text-sm" aria-label="Kortsidor">
+					{#if c.page > 1}
+						<a
+							href="?kq={encodeURIComponent(c.q)}&kpage={c.page - 1}"
+							class="font-semibold text-club-700 hover:underline">← Föregående</a
+						>
+					{/if}
+					<span class="text-club-900/60">Sida {c.page} av {c.pages}</span>
+					{#if c.page < c.pages}
+						<a
+							href="?kq={encodeURIComponent(c.q)}&kpage={c.page + 1}"
+							class="font-semibold text-club-700 hover:underline">Nästa →</a
+						>
+					{/if}
+				</nav>
+			{/if}
+		{/if}
+	</section>
+{/if}
+
 <!-- Modal: bekräfta etikett & hänsyn mot kriterierna -->
 {#if etiquetteFor}
 	<div

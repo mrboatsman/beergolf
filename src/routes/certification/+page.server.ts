@@ -1,5 +1,6 @@
 import { fail } from '@sveltejs/kit';
-import { asc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, isNotNull, like, or, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/sqlite-core';
 import { extname } from 'node:path';
 import { db } from '$lib/server/db';
 import { certificationProofs, certifications, members, quizAttempts } from '$lib/server/db/schema';
@@ -19,7 +20,9 @@ function extFor(f: File): string {
 	return `.${sub.replace(/[^a-z0-9]/gi, '').slice(0, 5) || 'bin'}`;
 }
 
-export const load: PageServerLoad = async ({ locals }) => {
+const CARDS_PAGE_SIZE = 24;
+
+export const load: PageServerLoad = async ({ locals, url }) => {
 	const me = requireMember(locals.member);
 	const status = await getCertStatus(me.id);
 
@@ -63,9 +66,67 @@ export const load: PageServerLoad = async ({ locals }) => {
 		}));
 	}
 
+	// Alla utfärdade gröna kort (certifierade ser dem): filtrera på namn eller
+	// kortnummer (kq), paginerat (kpage), lägst nummer först.
+	let cards: {
+		q: string;
+		page: number;
+		pages: number;
+		total: number;
+		list: {
+			id: string;
+			name: string;
+			memberNumber: number | null;
+			greenCardIssuedAt: Date | null;
+			fadderName: string | null;
+		}[];
+	} | null = null;
+	if (me.status !== 'aspirant') {
+		const q = url.searchParams.get('kq')?.trim() ?? '';
+		const pageReq = Math.max(1, Number(url.searchParams.get('kpage') ?? 1) || 1);
+		const fadder = alias(members, 'fadder');
+		const numeric = /^\d+$/.test(q) ? Number(q) : null;
+		const where = q
+			? and(
+					isNotNull(members.greenCardIssuedAt),
+					numeric !== null
+						? or(eq(members.memberNumber, numeric), like(members.name, `%${q}%`))
+						: like(members.name, `%${q}%`)
+				)
+			: isNotNull(members.greenCardIssuedAt);
+		const total =
+			(
+				await db
+					.select({ n: sql<number>`count(*)` })
+					.from(members)
+					.where(where)
+					.get()
+			)?.n ?? 0;
+		const pages = Math.max(1, Math.ceil(total / CARDS_PAGE_SIZE));
+		const page = Math.min(pageReq, pages);
+		const list = await db
+			.select({
+				id: members.id,
+				name: members.name,
+				memberNumber: members.memberNumber,
+				greenCardIssuedAt: members.greenCardIssuedAt,
+				fadderName: fadder.name
+			})
+			.from(members)
+			.leftJoin(certifications, eq(certifications.memberId, members.id))
+			.leftJoin(fadder, eq(certifications.fadderId, fadder.id))
+			.where(where)
+			.orderBy(asc(members.memberNumber), asc(members.name))
+			.limit(CARDS_PAGE_SIZE)
+			.offset((page - 1) * CARDS_PAGE_SIZE)
+			.all();
+		cards = { q, page, pages, total, list };
+	}
+
 	return {
 		status,
 		aspirants,
+		cards,
 		theorySubmitted,
 		me: {
 			isAspirant: me.status === 'aspirant',
