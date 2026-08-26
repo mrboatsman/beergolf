@@ -68,6 +68,13 @@
 
 	// Om sällskapet — öppnas när man klickar på emblemet
 	let showAbout = $state(false);
+
+	// Mobilmeny (hamburgare) — stängs vid navigering
+	let menuOpen = $state(false);
+	$effect(() => {
+		page.url.pathname;
+		menuOpen = false;
+	});
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
@@ -148,8 +155,8 @@
 		<!-- Topbar (mobil) -->
 		<div class="flex min-w-0 flex-1 flex-col">
 			<header class="bg-club-800 text-cream-200 lg:hidden">
-				<div class="flex items-center justify-between px-4 py-3">
-					<div class="flex items-center gap-2">
+				<div class="flex items-center justify-between gap-2 px-3 py-2.5">
+					<div class="flex min-w-0 items-center gap-2">
 						<button
 							type="button"
 							onclick={() => (showAbout = true)}
@@ -158,22 +165,66 @@
 						>
 							<img src={logo} alt="" class="h-8 w-8 rounded-full" />
 						</button>
-						<a href="/" class="font-display text-lg font-semibold">Tablers Beer Golf Society</a>
-					</div>
-					<form method="POST" action="/logout">
-						<button class="text-xs text-cream-200/70 hover:underline">Logga ut</button>
-					</form>
-				</div>
-				<nav class="flex gap-1 overflow-x-auto px-3 pb-2">
-					{#each nav as item (item.href)}
-						<a
-							href={item.href}
-							class="rounded-full px-3 py-1 text-sm whitespace-nowrap {item.active
-								? 'bg-club-700 font-semibold text-gold-300'
-								: 'text-cream-200/70'}">{item.label}</a
+						<a href="/" class="font-display truncate text-lg font-semibold"
+							>Tablers Beer Golf Society</a
 						>
-					{/each}
-				</nav>
+					</div>
+					<!-- Hamburgare: öppnar/stänger menypanelen -->
+					<button
+						type="button"
+						onclick={() => (menuOpen = !menuOpen)}
+						aria-label={menuOpen ? 'Stäng menyn' : 'Öppna menyn'}
+						aria-expanded={menuOpen}
+						aria-controls="mobile-menu"
+						class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg hover:bg-club-700"
+					>
+						<svg
+							viewBox="0 0 24 24"
+							class="h-6 w-6"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+						>
+							{#if menuOpen}
+								<path d="M6 6l12 12M18 6L6 18" />
+							{:else}
+								<path d="M4 7h16M4 12h16M4 17h16" />
+							{/if}
+						</svg>
+					</button>
+				</div>
+				{#if menuOpen}
+					<nav id="mobile-menu" class="border-t border-club-700 px-3 pt-2 pb-3">
+						{#each nav as item (item.href)}
+							<a
+								href={item.href}
+								class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base {item.active
+									? 'bg-club-700 font-semibold text-gold-300'
+									: 'text-cream-200/80 hover:bg-club-700/50'}"
+							>
+								<span
+									class="h-1.5 w-1.5 rounded-full {item.active ? 'bg-gold-400' : 'bg-cream-200/30'}"
+								></span>
+								{item.label}
+							</a>
+						{/each}
+						<div class="mt-2 flex items-center gap-3 rounded-xl bg-club-700/40 px-3 py-3">
+							<span
+								class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold-400 text-sm font-bold text-club-900"
+								>{initials}</span
+							>
+							<div class="min-w-0 flex-1">
+								<div class="truncate text-sm font-semibold">{member.name}</div>
+								<div class="text-xs text-cream-200/60">HCP {member.hcp}</div>
+							</div>
+							<a href="/password" class="text-xs text-cream-200/70 hover:underline">Byt lösenord</a>
+							<form method="POST" action="/logout">
+								<button class="text-xs text-cream-200/70 hover:underline">Logga ut</button>
+							</form>
+						</div>
+					</nav>
+				{/if}
 			</header>
 
 			<main class="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-8">
