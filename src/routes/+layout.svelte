@@ -44,6 +44,7 @@
 						active: page.url.pathname.startsWith('/certification')
 					},
 					...quizItem,
+					{ href: '/invite', label: 'Bjud in', active: page.url.pathname.startsWith('/invite') },
 					{
 						href: '/members',
 						label: 'Leaderboard',

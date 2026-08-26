@@ -116,6 +116,12 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   Träd-logiken (ren, delad server/klient) i `src/lib/fadder-tree.ts`: `buildFadderTree`,
   `flattenForest`, `focusForest` — relationerna kommer från `certifications.fadderId`.
   Trädet har fit-to-view-start, dynamiska zoomgränser, "Anpassa vy" och fullskärmsläge.
+- **Bjud in** (`/invite`, nav-länk för alla med grönt kort, kräver rollen member+): medlemmen
+  skapar egna invalskoder (aspirant, 30 dagar, max 10 öppna), kopierar/delar länken
+  `/join?code=…`, ser status per kod och kan ta bort oanvända. Vid inlösen i `/join` skapas
+  `certifications`-raden med `fadderId = invites.createdBy` och inbjudaren uppgraderas
+  member→fadder (captain/admin behåller roll). Examinatorn skriver inte över befintlig fadder
+  (`fadderId: cert.fadderId ?? me.id`). Admin-listan över koder visar "Skapad av" + sök på skapare.
 - Listor är paginerade + filtrerbara (server-side, GET-params): `/members` (q/page,
   namn eller e-post), admin-medlemmar (mq/mpage) och invalskoder (iq/ipage — sök på kod
   eller medlemsnamn; kolumnen "Blev medlem" länkar till profilen som koden skapade).

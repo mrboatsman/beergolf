@@ -54,12 +54,17 @@ export const load: PageServerLoad = async ({ url }) => {
 		.offset((memberPage - 1) * PAGE_SIZE)
 		.all();
 
-	// Invalskoder: filtrera på kod eller namnet på medlemmen som koden
-	// skapade, paginerad (iq/ipage). usedByName visar vem som löste in koden.
+	// Invalskoder: filtrera på kod, namnet på medlemmen som koden skapade eller
+	// vem som skapade koden, paginerad (iq/ipage).
 	const usedBy = alias(members, 'used_by_member');
+	const createdBy = alias(members, 'created_by_member');
 	const i = paging(url, 'i');
 	const inviteWhere = i.q
-		? or(like(invites.code, `%${i.q}%`), like(usedBy.name, `%${i.q}%`))
+		? or(
+				like(invites.code, `%${i.q}%`),
+				like(usedBy.name, `%${i.q}%`),
+				like(createdBy.name, `%${i.q}%`)
+			)
 		: undefined;
 	const inviteTotal =
 		(
@@ -67,6 +72,7 @@ export const load: PageServerLoad = async ({ url }) => {
 				.select({ n: sql<number>`count(*)` })
 				.from(invites)
 				.leftJoin(usedBy, eq(invites.usedBy, usedBy.id))
+				.leftJoin(createdBy, eq(invites.createdBy, createdBy.id))
 				.where(inviteWhere)
 				.get()
 		)?.n ?? 0;
@@ -81,10 +87,13 @@ export const load: PageServerLoad = async ({ url }) => {
 			expiresAt: invites.expiresAt,
 			createdAt: invites.createdAt,
 			usedById: usedBy.id,
-			usedByName: usedBy.name
+			usedByName: usedBy.name,
+			createdById: createdBy.id,
+			createdByName: createdBy.name
 		})
 		.from(invites)
 		.leftJoin(usedBy, eq(invites.usedBy, usedBy.id))
+		.leftJoin(createdBy, eq(invites.createdBy, createdBy.id))
 		.where(inviteWhere)
 		.orderBy(desc(invites.createdAt))
 		.limit(PAGE_SIZE)

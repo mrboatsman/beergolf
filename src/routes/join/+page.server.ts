@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { and, eq, isNull } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { invites, members } from '$lib/server/db/schema';
+import { certifications, invites, members } from '$lib/server/db/schema';
 import {
 	hashPassword,
 	generateSessionToken,
@@ -69,6 +69,25 @@ export const actions: Actions = {
 				.set({ usedBy: id, usedAt: new Date() })
 				.where(eq(invites.id, invite.id))
 				.run();
+
+			// Inbjudaren blir aspirantens fadder (syns i fadderträdet direkt) och
+			// uppgraderas member→fadder. Koder skapade av captain/admin ger dem
+			// också fadderskapet men rollen behålls.
+			if (invite.createdBy) {
+				const inviter = tx
+					.select({ id: members.id, role: members.role, status: members.status })
+					.from(members)
+					.where(eq(members.id, invite.createdBy))
+					.get();
+				if (inviter && inviter.status === 'active') {
+					tx.insert(certifications)
+						.values({ id: newId(), memberId: id, fadderId: inviter.id })
+						.run();
+					if (inviter.role === 'member') {
+						tx.update(members).set({ role: 'fadder' }).where(eq(members.id, inviter.id)).run();
+					}
+				}
+			}
 		});
 
 		const token = generateSessionToken();

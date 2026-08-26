@@ -263,7 +263,7 @@
 				type="search"
 				name="iq"
 				value={data.inviteQ}
-				placeholder="Sök kod eller medlem…"
+				placeholder="Sök kod, medlem eller skapare…"
 				class="w-56 rounded-lg border-cream-300 bg-white text-sm"
 			/>
 			<button
@@ -278,6 +278,7 @@
 				<tr>
 					<th class="px-3 py-2">Kod</th>
 					<th class="px-3 py-2">Roll</th>
+					<th class="px-3 py-2">Skapad av</th>
 					<th class="px-3 py-2">Status</th>
 					<th class="px-3 py-2">Blev medlem</th>
 				</tr>
@@ -287,6 +288,14 @@
 					<tr class="border-t border-cream-300">
 						<td class="px-3 py-2 font-mono font-bold">{i.code}</td>
 						<td class="px-3 py-2 capitalize">{i.role}</td>
+						<td class="px-3 py-2">
+							{#if i.createdById}
+								<a class="hover:underline" href={`/members/${i.createdById}`}>{i.createdByName}</a>
+								<span class="text-xs text-club-900/50">{fmtDate(i.createdAt)}</span>
+							{:else}
+								<span class="text-club-900/40">—</span>
+							{/if}
+						</td>
 						<td class="px-3 py-2">
 							{#if i.usedById}
 								<span class="text-club-900/50"
@@ -308,7 +317,7 @@
 						</td>
 					</tr>
 				{:else}
-					<tr><td colspan="4" class="px-3 py-3 text-club-900/60">Ingen träff.</td></tr>
+					<tr><td colspan="5" class="px-3 py-3 text-club-900/60">Ingen träff.</td></tr>
 				{/each}
 			</tbody>
 		</table>

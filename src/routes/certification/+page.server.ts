@@ -143,7 +143,8 @@ async function approve(locals: App.Locals, request: Request, part: 'practical' |
 					practicalPassed: true,
 					practicalAt: now,
 					practicalComment: comment,
-					fadderId: me.id
+					// Inbjudaren är fadder om sådan finns; annars examinatorn
+					fadderId: cert.fadderId ?? me.id
 				})
 				.where(eq(certifications.id, cert.id));
 		}
