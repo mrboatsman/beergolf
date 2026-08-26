@@ -110,6 +110,18 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
 - **Vinnarmärke**: när alla (≥2) signerat räknas lägst netto (`players[].net` från
   `rounds.netTotal`, gäst = brutto − playingHcp) → guldsigill över vimpeln + rad under titeln;
   delad seger vid lika netto.
+- **Avslutad coaster = visningsläge**: när alla (≥2) signerat döljs regler och lägg-till-spelare.
+  Påskägg: klick på pappen flippar den (CSS 3D, `flipped`) → baksida lika stor som coastern.
+  `CoasterBack.svelte` (kortytan) + `CoasterBackToolbar.svelte` (verktyg utanför kortet) delar
+  `BackEditor` (`src/lib/back-editor.svelte.ts`, $state-klass: mode draw/images, färg, storlek,
+  vald bild, status). Logiskt koordinatsystem: bredd 1200, höjd = kortets proportion på enheten,
+  allt förankrat uppe till vänster (ingen förvrängning; kortare skärm klipper). Bilder i tabell
+  `coaster_back_images` (x/y = centrum, scale 1 = 600 px bred, rotation°, z), lagras via storage
+  under `coasters/<id>/`, serveras via `/files/`. Drag = flytta, pinch = skala+rotera (två pekare),
+  desktop-knappar ±15°/±15 %, vald bild läggs överst. Ritning = canvas över hela kortet, sparas
+  som transparent PNG (`coasters.backDrawingKey`) efter penseldrag. Bara deltagare redigerar
+  (`backEditGuard`, max 12 bilder à 10 MB), övriga ser. Baksidan har `data-no-flip`; vänd
+  tillbaka via knapp.
 - **Coastern är enda sättet att registrera rundor** — `/rounds` är ren historik.
 - Dashboard (`/`, komponent `MemberDashboard.svelte`, data `src/lib/server/dashboard.ts`):
   HCP-hero med säsongsförändring, statkort (rundor/bästa brutto/snitt mot par),

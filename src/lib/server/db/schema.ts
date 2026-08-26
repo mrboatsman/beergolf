@@ -321,6 +321,31 @@ export const coasters = sqliteTable('coasters', {
 	createdBy: text('created_by')
 		.notNull()
 		.references(() => members.id),
+	// Påskägg: baksidan på en färdigspelad coaster — ritning (transparent PNG-overlay);
+	// bilderna bor i coaster_back_images
+	backDrawingKey: text('back_drawing_key'),
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`(unixepoch())`)
+});
+
+// Bilder på coasterns baksida. Position/skala/rotation i baksidans logiska
+// koordinatsystem (1200×900, origo uppe till vänster, x/y = bildens centrum).
+export const coasterBackImages = sqliteTable('coaster_back_images', {
+	id: text('id').primaryKey(),
+	coasterId: text('coaster_id')
+		.notNull()
+		.references(() => coasters.id, { onDelete: 'cascade' }),
+	storageKey: text('storage_key').notNull(),
+	contentType: text('content_type').notNull(),
+	width: integer('width').notNull(), // naturlig bildstorlek (px) — för aspect
+	height: integer('height').notNull(),
+	x: real('x').notNull(),
+	y: real('y').notNull(),
+	scale: real('scale').notNull().default(1), // 1 = bredd 600 logiska px
+	rotation: real('rotation').notNull().default(0), // grader
+	z: integer('z').notNull().default(0),
+	createdBy: text('created_by').references(() => members.id),
 	createdAt: integer('created_at', { mode: 'timestamp' })
 		.notNull()
 		.default(sql`(unixepoch())`)

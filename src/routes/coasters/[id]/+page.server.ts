@@ -3,6 +3,7 @@ import { and, asc, eq, isNotNull, isNull, notInArray, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import {
 	coasters,
+	coasterBackImages,
 	coasterPlayers,
 	members,
 	rounds,
@@ -16,6 +17,8 @@ import { newId } from '$lib/server/ids';
 import { nextHcp, netScore } from '$lib/handicap';
 import { maybeDecideMatch } from '$lib/server/tournaments';
 import { notifyCoaster } from '$lib/server/live';
+import { storage } from '$lib/server/storage';
+import { BACK_W, BACK_H } from '$lib/back-editor.svelte';
 import { fillMissingWithX, grossTotal, grossTotalComplete, parseScore } from '$lib/scoring';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -78,6 +81,25 @@ function withNet<
 	}));
 }
 
+const MAX_BACK_IMAGE = 10 * 1024 * 1024;
+const MAX_BACK_IMAGES = 12;
+
+// Baksidan får bara redigeras av deltagare, och bara när alla (≥2) signerat.
+function backEditGuard(coasterId: string, memberId: string) {
+	const rows = db
+		.select({ memberId: coasterPlayers.memberId, signedAt: coasterPlayers.signedAt })
+		.from(coasterPlayers)
+		.where(eq(coasterPlayers.coasterId, coasterId))
+		.all();
+	if (!rows.some((r) => r.memberId === memberId)) {
+		return fail(403, { error: 'Bara deltagare kan rita på baksidan.' });
+	}
+	if (rows.length < 2 || rows.some((r) => !r.signedAt)) {
+		return fail(400, { error: 'Baksidan låses upp när alla har signerat.' });
+	}
+	return null;
+}
+
 export const load: PageServerLoad = async ({ locals, params, depends }) => {
 	const me = requireMember(locals.member);
 	depends(`coaster:${params.id}`);
@@ -132,10 +154,18 @@ export const load: PageServerLoad = async ({ locals, params, depends }) => {
 			.all();
 	}
 
+	const backImages = db
+		.select()
+		.from(coasterBackImages)
+		.where(eq(coasterBackImages.coasterId, coaster.id))
+		.orderBy(asc(coasterBackImages.z), asc(coasterBackImages.createdAt))
+		.all();
+
 	return {
 		coaster,
 		tournament,
 		players,
+		backImages,
 		addable,
 		meId: me.id,
 		maxPlayers: MAX_COASTER_PLAYERS,
@@ -289,6 +319,127 @@ export const actions: Actions = {
 		await db.update(coasterPlayers).set({ scores }).where(eq(coasterPlayers.id, row.id));
 		notifyCoaster(coaster.id);
 		return { saved: true };
+	},
+
+	// --- Baksidan (påskägg): bara deltagare, bara när alla signerat ---------
+	// Ladda upp en eller flera bilder. Klienten skickar naturlig bredd/höjd
+	// (w{i}/h{i}) — bara för aspect ratio, ofarligt om fel.
+	uploadBack: async ({ request, locals, params }) => {
+		const me = requireMember(locals.member);
+		const coaster = await getCoaster(params.id);
+		const err = backEditGuard(coaster.id, me.id);
+		if (err) return err;
+		const form = await request.formData();
+		const files = form.getAll('image').filter((f): f is File => f instanceof File && f.size > 0);
+		if (!files.length) return fail(400, { error: 'Välj minst en bild.' });
+		const count =
+			db
+				.select({ n: sql<number>`count(*)` })
+				.from(coasterBackImages)
+				.where(eq(coasterBackImages.coasterId, coaster.id))
+				.get()?.n ?? 0;
+		if (count + files.length > MAX_BACK_IMAGES) {
+			return fail(400, { error: `Max ${MAX_BACK_IMAGES} bilder på baksidan.` });
+		}
+		let z = count;
+		for (const [i, file] of files.entries()) {
+			if (!file.type.startsWith('image/')) return fail(400, { error: 'Endast bilder.' });
+			if (file.size > MAX_BACK_IMAGE) return fail(400, { error: 'Max 10 MB per bild.' });
+			const w = Math.max(1, Number(form.get(`w${i}`) ?? 0) || 4);
+			const h = Math.max(1, Number(form.get(`h${i}`) ?? 0) || 3);
+			const key = `coasters/${coaster.id}/img-${newId()}`;
+			await storage.put(key, new Uint8Array(await file.arrayBuffer()), file.type);
+			await db.insert(coasterBackImages).values({
+				id: newId(),
+				coasterId: coaster.id,
+				storageKey: key,
+				contentType: file.type,
+				width: w,
+				height: h,
+				// Startposition: mitt på kortet, lite förskjuten per bild
+				x: BACK_W / 2 + (z % 5) * 30,
+				y: BACK_H / 2 + (z % 5) * 30,
+				scale: 1,
+				rotation: 0,
+				z: z++,
+				createdBy: me.id
+			});
+		}
+		notifyCoaster(coaster.id);
+		return { backUploaded: files.length };
+	},
+
+	// Flytta/skala/rotera en bild (anropas efter drag/pinch)
+	updateBackImage: async ({ request, locals, params }) => {
+		const me = requireMember(locals.member);
+		const coaster = await getCoaster(params.id);
+		const err = backEditGuard(coaster.id, me.id);
+		if (err) return err;
+		const form = await request.formData();
+		const id = String(form.get('id') ?? '');
+		const num = (k: string) => Number(form.get(k));
+		const x = num('x');
+		const y = num('y');
+		const scale = num('scale');
+		const rotation = num('rotation');
+		if (![x, y, scale, rotation].every(Number.isFinite))
+			return fail(400, { error: 'Ogiltig position.' });
+		const img = await db.select().from(coasterBackImages).where(eq(coasterBackImages.id, id)).get();
+		if (!img || img.coasterId !== coaster.id) return fail(404, { error: 'Bilden finns inte.' });
+		const bring = form.get('front') === '1';
+		const maxZ = bring
+			? (db
+					.select({ m: sql<number | null>`max(${coasterBackImages.z})` })
+					.from(coasterBackImages)
+					.where(eq(coasterBackImages.coasterId, coaster.id))
+					.get()?.m ?? 0)
+			: img.z;
+		await db
+			.update(coasterBackImages)
+			.set({
+				x: Math.max(-BACK_W, Math.min(2 * BACK_W, x)),
+				y: Math.max(-BACK_H, Math.min(2 * BACK_H, y)),
+				scale: Math.max(0.05, Math.min(10, scale)),
+				rotation: ((rotation % 360) + 360) % 360,
+				z: bring ? maxZ + 1 : img.z
+			})
+			.where(eq(coasterBackImages.id, id));
+		notifyCoaster(coaster.id);
+		return { imageUpdated: id };
+	},
+
+	removeBackImage: async ({ request, locals, params }) => {
+		const me = requireMember(locals.member);
+		const coaster = await getCoaster(params.id);
+		const err = backEditGuard(coaster.id, me.id);
+		if (err) return err;
+		const form = await request.formData();
+		const id = String(form.get('id') ?? '');
+		const img = await db.select().from(coasterBackImages).where(eq(coasterBackImages.id, id)).get();
+		if (!img || img.coasterId !== coaster.id) return fail(404, { error: 'Bilden finns inte.' });
+		await db.delete(coasterBackImages).where(eq(coasterBackImages.id, id));
+		await storage.remove(img.storageKey).catch(() => {});
+		notifyCoaster(coaster.id);
+		return { imageRemoved: id };
+	},
+
+	saveDrawing: async ({ request, locals, params }) => {
+		const me = requireMember(locals.member);
+		const coaster = await getCoaster(params.id);
+		const err = backEditGuard(coaster.id, me.id);
+		if (err) return err;
+		const form = await request.formData();
+		const dataUrl = String(form.get('png') ?? '');
+		const m = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
+		if (!m) return fail(400, { error: 'Ogiltig ritning.' });
+		const bytes = Buffer.from(m[1], 'base64');
+		if (bytes.byteLength > MAX_BACK_IMAGE) return fail(400, { error: 'Ritningen är för stor.' });
+		const key = `coasters/${coaster.id}/drawing-${newId()}.png`;
+		await storage.put(key, new Uint8Array(bytes), 'image/png');
+		await db.update(coasters).set({ backDrawingKey: key }).where(eq(coasters.id, coaster.id));
+		if (coaster.backDrawingKey) await storage.remove(coaster.backDrawingKey).catch(() => {});
+		notifyCoaster(coaster.id);
+		return { drawingSaved: true };
 	},
 
 	// Signera egen rad: låser den, skapar runda och justerar handikapp.

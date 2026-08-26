@@ -1,7 +1,13 @@
 import { error } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { certificationProofs, tournamentExpenses, tournaments } from '$lib/server/db/schema';
+import {
+	certificationProofs,
+	coasterBackImages,
+	coasters,
+	tournamentExpenses,
+	tournaments
+} from '$lib/server/db/schema';
 import { requireMember } from '$lib/server/guard';
 import { storage } from '$lib/server/storage';
 import type { RequestHandler } from './$types';
@@ -39,6 +45,19 @@ function lookupFile(key: string): { contentType: string; filename: string } | nu
 			filename: tournament.charityReceiptName ?? 'kvitto'
 		};
 	}
+	// Coasterns baksida: ritning + bilder
+	const drawing = db
+		.select({ id: coasters.id })
+		.from(coasters)
+		.where(eq(coasters.backDrawingKey, key))
+		.get();
+	if (drawing) return { contentType: 'image/png', filename: 'ritning.png' };
+	const img = db
+		.select({ contentType: coasterBackImages.contentType })
+		.from(coasterBackImages)
+		.where(eq(coasterBackImages.storageKey, key))
+		.get();
+	if (img) return { contentType: img.contentType, filename: 'bild' };
 	return null;
 }
 
