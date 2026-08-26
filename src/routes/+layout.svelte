@@ -201,7 +201,10 @@
 
 		<!-- Topbar (mobil) -->
 		<div class="flex min-w-0 flex-1 flex-col">
-			<header class="bg-club-800 text-cream-200 lg:hidden">
+			<!-- Sticky topbar; pt = safe-area så den hamnar under klockan/notchen i PWA-läge -->
+			<header
+				class="sticky top-0 z-30 bg-club-800 pt-[env(safe-area-inset-top)] text-cream-200 shadow-md lg:hidden"
+			>
 				<div class="flex items-center justify-between gap-2 px-3 py-2.5">
 					<div class="flex min-w-0 items-center gap-2">
 						<button
