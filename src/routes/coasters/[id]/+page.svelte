@@ -3,6 +3,9 @@
 	import CoasterRules from '$lib/components/CoasterRules.svelte';
 	import { shortName } from '$lib/names';
 	import { scoreInput } from '$lib/score-input';
+	import { invalidate } from '$app/navigation';
+	import { onMount } from 'svelte';
+	import { createAutosave, subscribeLive, type SaveState } from '$lib/live-coaster';
 	let { data, form } = $props();
 
 	let coaster = $derived(data.coaster);
@@ -21,6 +24,57 @@
 					.filter((m) => m.name.toLowerCase().includes(playerQuery.trim().toLowerCase()))
 					.slice(0, 8)
 	);
+
+	// Min rad: lokalt state för inmatning, autosparas (debounce) via ?/saveScores.
+	// Sign-knappen och totalen läser härifrån så de reagerar direkt vid inmatning.
+	let myScores = $state<(number | null)[]>([]);
+	// dirty = osparade lokala ändringar; då får servern (live-uppdatering efter
+	// egen sparning) inte skriva över det jag håller på att skriva.
+	let dirty = false;
+	$effect(() => {
+		const server = myRow ? [...myRow.scores] : [];
+		if (!dirty) myScores = server;
+	});
+	let saveState = $state<SaveState>('idle');
+	let saveMsg = $state('');
+	const autosave = createAutosave(
+		'?/saveScores',
+		() => {
+			dirty = false; // allt fram till nu skickas; nya inmatningar sätter dirty igen
+			const fd = new FormData();
+			myScores.forEach((v, i) => fd.set(`s${i}`, v === null ? '' : String(v)));
+			return fd;
+		},
+		(st, msg) => {
+			saveState = st;
+			saveMsg = msg ?? '';
+			if (st === 'error') dirty = true;
+		}
+	);
+	function onScoreInput(i: number, e: Event) {
+		const v = (e.currentTarget as HTMLInputElement).value;
+		myScores[i] = v === '' ? null : Number(v);
+		dirty = true;
+		autosave.schedule();
+	}
+	// Blur kommer från auto-hoppet innan Svelte-handlern hunnit uppdatera state —
+	// vänta ett tick så flush skickar rätt värden.
+	const flushSoon = () => setTimeout(() => autosave.flush(), 0);
+
+	// Live: uppdatera sidan när någon annan ändrar coastern
+	onMount(() =>
+		subscribeLive(`/coasters/${coaster.id}/events`, () => invalidate(`coaster:${coaster.id}`))
+	);
+
+	// Klick var som helst på pappen (inte på knappar/länkar/fält) → första tomma hålet
+	function focusFirstEmpty(e: MouseEvent) {
+		if (!myRow || myRow.signedAt) return;
+		const t = e.target as HTMLElement;
+		if (t.closest('input, button, a, form, select, textarea')) return;
+		const inputs = [...document.querySelectorAll<HTMLInputElement>('input[data-score-input]')];
+		const target = inputs.find((i) => i.value === '') ?? inputs[0];
+		target?.focus();
+	}
 
 	function rowTotal(scores: (number | null)[]) {
 		const filled = scores.filter((s): s is number => s !== null);
@@ -55,9 +109,6 @@
 	<p class="mb-4 rounded bg-club-100 px-3 py-2 text-sm text-club-700">
 		Signerat! HCP {form.hcpBefore} → <strong>{form.hcpAfter}</strong>.
 	</p>
-{/if}
-{#if form?.saved}
-	<p class="mb-4 rounded bg-club-100 px-3 py-2 text-sm text-club-700">Poäng sparade.</p>
 {/if}
 {#if form?.added}
 	<p class="mb-4 rounded bg-club-100 px-3 py-2 text-sm text-club-700">{form.added} tillagd.</p>
@@ -116,13 +167,10 @@
 	</div>
 {/if}
 
-<!-- Formulär för egen rad — inputs i tabellen kopplas hit via form-attributet -->
-{#if myRow && !myRow.signedAt}
-	<form id="scoreform" method="POST" action="?/saveScores" use:enhance></form>
-{/if}
-
 <!-- ====== Papp-coastern ====== -->
+<!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
 <div
+	onclick={focusFirstEmpty}
 	class="mx-auto max-w-2xl -rotate-[0.6deg] rounded-[28px] border border-black/5 bg-card px-3 py-6 font-coaster text-print shadow-[0_10px_30px_-8px_rgba(60,50,30,0.35),0_2px_6px_rgba(60,50,30,0.15)] sm:px-10 sm:py-9"
 >
 	<!-- Huvud: titel + vimpel -->
@@ -246,10 +294,11 @@
 							<td class="border-l border-print/60 p-0 text-center align-middle">
 								{#if mine}
 									<input
-										form="scoreform"
 										name={`s${i}`}
 										use:scoreInput
 										value={s ?? ''}
+										oninput={(e) => onScoreInput(i, e)}
+										onblur={flushSoon}
 										class="h-11 w-full min-w-6 border-0 bg-transparent p-0 text-center font-hand text-lg text-ink sm:text-xl [appearance:textfield] focus:ring-1 focus:ring-print/50 [&::-webkit-inner-spin-button]:appearance-none"
 									/>
 								{:else}
@@ -259,7 +308,7 @@
 						{/each}
 						<td class="border-l border-print/60 px-0 text-center sm:px-1">
 							<span class="font-hand text-lg font-bold text-ink sm:text-xl"
-								>{rowTotal(p.scores) ?? ''}</span
+								>{rowTotal(mine ? myScores : p.scores) ?? ''}</span
 							>
 						</td>
 					</tr>
@@ -296,23 +345,34 @@
 
 <!-- ====== Kontroller (utanför pappen) ====== -->
 {#if myRow && !myRow.signedAt}
-	<div class="mx-auto mt-6 flex max-w-2xl flex-wrap gap-2">
-		<button
-			form="scoreform"
-			class="rounded-lg bg-club-700 px-4 py-2 text-sm font-semibold text-cream-200 hover:bg-club-800"
-			>Spara poäng</button
+	<div class="mx-auto mt-6 flex max-w-2xl flex-wrap items-center gap-3">
+		<form
+			method="POST"
+			action="?/sign"
+			use:enhance={async ({ cancel }) => {
+				// Se till att sista inmatningen är sparad innan signering
+				await autosave.flush();
+				if (saveState === 'error') cancel();
+			}}
 		>
-		<form method="POST" action="?/sign" use:enhance>
 			<button
 				class="rounded-lg bg-gold-500 px-4 py-2 text-sm font-semibold text-club-900 hover:bg-gold-400 disabled:cursor-not-allowed disabled:opacity-50"
-				disabled={myRow.scores.some((s) => s === null) || players.length < data.minPlayers}
+				disabled={myScores.length < 9 ||
+					myScores.some((s) => s === null) ||
+					players.length < data.minPlayers ||
+					saveState === 'saving'}
 				title={players.length < data.minPlayers
 					? 'Man kan inte spela ensam — lägg till minst en medspelare först'
-					: myRow.scores.some((s) => s === null)
+					: myScores.some((s) => s === null)
 						? 'Fyll i alla nio hål först'
 						: ''}>Signera rundan</button
 			>
 		</form>
+		<span class="text-xs text-club-900/60" aria-live="polite">
+			{#if saveState === 'saving'}Sparar…{:else if saveState === 'saved'}Sparat ✓{:else if saveState === 'error'}<span
+					class="text-red-700">{saveMsg}</span
+				>{:else}Poängen sparas automatiskt.{/if}
+		</span>
 	</div>
 {/if}
 

@@ -16,6 +16,7 @@ import {
 	adminSetScores,
 	adminUnsign
 } from '$lib/server/coaster-admin';
+import { notifyCoaster } from '$lib/server/live';
 import type { Actions, PageServerLoad } from './$types';
 
 function getCoaster(id: string) {
@@ -105,6 +106,7 @@ export const actions: Actions = {
 				.trim()
 				.slice(0, 80) || null;
 		db.update(coasters).set({ name }).where(eq(coasters.id, params.id)).run();
+		notifyCoaster(params.id);
 		return { renamed: true };
 	},
 
@@ -116,7 +118,9 @@ export const actions: Actions = {
 		if (!rowId) return fail(400, { error: 'Ogiltig rad.' });
 		const scores = parseScores(form);
 		if (typeof scores === 'string') return fail(400, { error: scores });
-		return run(() => adminSetScores(rowId, scores)) ?? { saved: rowId };
+		const r = run(() => adminSetScores(rowId, scores));
+		notifyCoaster(params.id);
+		return r ?? { saved: rowId };
 	},
 
 	unsign: async ({ locals, params, request }) => {
@@ -125,7 +129,9 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const rowId = ownRow(params.id, String(form.get('rowId') ?? ''));
 		if (!rowId) return fail(400, { error: 'Ogiltig rad.' });
-		return run(() => adminUnsign(rowId)) ?? { unsigned: rowId };
+		const r = run(() => adminUnsign(rowId));
+		notifyCoaster(params.id);
+		return r ?? { unsigned: rowId };
 	},
 
 	removeRow: async ({ locals, params, request }) => {
@@ -134,7 +140,9 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const rowId = ownRow(params.id, String(form.get('rowId') ?? ''));
 		if (!rowId) return fail(400, { error: 'Ogiltig rad.' });
-		return run(() => adminRemoveRow(rowId)) ?? { removed: rowId };
+		const r = run(() => adminRemoveRow(rowId));
+		notifyCoaster(params.id);
+		return r ?? { removed: rowId };
 	},
 
 	deleteCoaster: async ({ locals, params }) => {
@@ -142,6 +150,7 @@ export const actions: Actions = {
 		getCoaster(params.id);
 		const res = run(() => adminDeleteCoaster(params.id));
 		if (res) return res;
+		notifyCoaster(params.id);
 		throw redirect(303, '/admin/coasters?deleted=1');
 	}
 };

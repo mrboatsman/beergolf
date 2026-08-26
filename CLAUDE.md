@@ -93,6 +93,15 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
 - Poängfält på coastern (medlem + gäst) använder `use:scoreInput` (`src/lib/score-input.ts`):
   en siffra 1–9, numeriskt tangentbord, auto-hopp till nästa hål, backspace i tomt fält går
   bakåt. Servern validerar 1–`MAX_HOLE_SCORE` (9). Admin-rättning tillåter 1–30.
+- **Autospar + live**: ingen spara-knapp. Egen rad hålls i lokalt state (`myScores`, dirty-flagga)
+  och autosparas debounced via `?/saveScores` med `createAutosave` (`src/lib/live-coaster.ts`,
+  fetch mot form action + `deserialize`). Blur-flush fördröjs ett tick (auto-hoppet blurrar före
+  Svelte-handlern). Live: `src/lib/server/live.ts` (in-memory EventEmitter, **en replika**),
+  mutationer anropar `notifyCoaster(id)`, SSE på `/coasters/[id]/events` och
+  `/t/[slug]/gast/[token]/events`; klienten `invalidate('coaster:<id>')` / `'guest:rows'`.
+  Servern skriver bara över lokalt state när inget osparat finns. Klick på pappen → fokus på
+  första tomma hålet. OBS: puppeteer-tester måste använda `waitUntil: 'load'` (SSE håller
+  anslutningen öppen så `networkidle0` timar ut).
 - **Coastern är enda sättet att registrera rundor** — `/rounds` är ren historik.
 - Dashboard (`/`, komponent `MemberDashboard.svelte`, data `src/lib/server/dashboard.ts`):
   HCP-hero med säsongsförändring, statkort (rundor/bästa brutto/snitt mot par),

@@ -9,6 +9,7 @@ import {
 } from '$lib/server/db/schema';
 import { settleSessionById } from '$lib/server/stripe';
 import { getTournamentBySlug, maybeDecideMatch } from '$lib/server/tournaments';
+import { notifyCoaster } from '$lib/server/live';
 import { MAX_HOLE_SCORE } from '$lib/score-input';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -56,7 +57,8 @@ function getGuestRows(participantId: string) {
 		.all();
 }
 
-export const load: PageServerLoad = async ({ params, url }) => {
+export const load: PageServerLoad = async ({ params, url, depends }) => {
+	depends('guest:rows');
 	const { tournament, participant } = await getGuest(params.slug, params.token);
 
 	// Success-fallback om webhooken inte hunnit/tappats.
@@ -114,6 +116,7 @@ export const actions: Actions = {
 		}
 
 		await db.update(coasterPlayers).set({ scores }).where(eq(coasterPlayers.id, row.id));
+		notifyCoaster(row.coasterId);
 		return { saved: true };
 	},
 
@@ -141,6 +144,7 @@ export const actions: Actions = {
 
 		// Matchspel: avgör matchen om båda spelarna nu signerat
 		maybeDecideMatch(row.coasterId);
+		notifyCoaster(row.coasterId);
 
 		return { signed: true };
 	}

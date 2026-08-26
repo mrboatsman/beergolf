@@ -15,6 +15,7 @@ import { requireMember } from '$lib/server/guard';
 import { newId } from '$lib/server/ids';
 import { nextHcp, netScore } from '$lib/handicap';
 import { maybeDecideMatch } from '$lib/server/tournaments';
+import { notifyCoaster } from '$lib/server/live';
 import { MAX_HOLE_SCORE } from '$lib/score-input';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -54,8 +55,9 @@ function getPlayers(coasterId: string) {
 		.all();
 }
 
-export const load: PageServerLoad = async ({ locals, params }) => {
+export const load: PageServerLoad = async ({ locals, params, depends }) => {
 	const me = requireMember(locals.member);
+	depends(`coaster:${params.id}`);
 	const coaster = await getCoaster(params.id);
 	const players = await getPlayers(coaster.id);
 
@@ -187,6 +189,7 @@ export const actions: Actions = {
 				position: Math.max(0, ...players.map((p) => p.position)) + 1,
 				scores: Array(9).fill(null)
 			});
+			notifyCoaster(coaster.id);
 			return { added: name || 'Deltagaren' };
 		}
 
@@ -206,6 +209,7 @@ export const actions: Actions = {
 			position: Math.max(0, ...players.map((p) => p.position)) + 1,
 			scores: Array(9).fill(null)
 		});
+		notifyCoaster(coaster.id);
 		return { added: target.name };
 	},
 
@@ -240,6 +244,7 @@ export const actions: Actions = {
 		}
 
 		await db.delete(coasterPlayers).where(eq(coasterPlayers.id, row.id));
+		notifyCoaster(coaster.id);
 		return { removed: row.name };
 	},
 
@@ -268,6 +273,7 @@ export const actions: Actions = {
 		}
 
 		await db.update(coasterPlayers).set({ scores }).where(eq(coasterPlayers.id, row.id));
+		notifyCoaster(coaster.id);
 		return { saved: true };
 	},
 
@@ -327,6 +333,7 @@ export const actions: Actions = {
 		// Matchspel: avgör matchen om båda spelarna nu signerat (lägst netto vinner)
 		if (coaster.tournamentId) maybeDecideMatch(coaster.id);
 
+		notifyCoaster(coaster.id);
 		return { signed: true, hcpBefore, hcpAfter };
 	}
 };

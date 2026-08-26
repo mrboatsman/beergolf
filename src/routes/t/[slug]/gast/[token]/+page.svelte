@@ -1,10 +1,50 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { scoreInput } from '$lib/score-input';
+	import { invalidate } from '$app/navigation';
+	import { onMount } from 'svelte';
+	import { createAutosave, subscribeLive, type SaveState } from '$lib/live-coaster';
 	let { data, form } = $props();
 
 	let t = $derived(data.tournament);
 	let rows = $derived(data.rows);
+
+	// Per rad: lokala poäng + autospar mot ?/saveScores (debounce)
+	let local = $state<Record<string, (number | null)[]>>({});
+	let states = $state<Record<string, { st: SaveState; msg: string }>>({});
+	const dirty = new Set<string>(); // rader med osparade ändringar — servern får inte skriva över
+	$effect(() => {
+		for (const r of rows) if (!dirty.has(r.id)) local[r.id] = [...r.scores];
+	});
+	const savers = new Map<string, ReturnType<typeof createAutosave>>();
+	function saver(rowId: string) {
+		let a = savers.get(rowId);
+		if (!a) {
+			a = createAutosave(
+				'?/saveScores',
+				() => {
+					dirty.delete(rowId);
+					const fd = new FormData();
+					fd.set('rowId', rowId);
+					(local[rowId] ?? []).forEach((v, i) => fd.set(`s${i}`, v === null ? '' : String(v)));
+					return fd;
+				},
+				(st, msg) => {
+					states[rowId] = { st, msg: msg ?? '' };
+					if (st === 'error') dirty.add(rowId);
+				}
+			);
+			savers.set(rowId, a);
+		}
+		return a;
+	}
+	function onScoreInput(rowId: string, i: number, e: Event) {
+		const v = (e.currentTarget as HTMLInputElement).value;
+		local[rowId][i] = v === '' ? null : Number(v);
+		dirty.add(rowId);
+		saver(rowId).schedule();
+	}
+	onMount(() => subscribeLive(`${location.pathname}/events`, () => invalidate('guest:rows')));
 
 	function rowTotal(scores: (number | null)[]) {
 		const filled = scores.filter((s): s is number => s !== null);
@@ -31,9 +71,6 @@
 
 {#if form?.error}
 	<p class="mt-4 rounded bg-red-100 px-3 py-2 text-sm text-red-700">{form.error}</p>
-{/if}
-{#if form?.saved}
-	<p class="mt-4 rounded bg-club-100 px-3 py-2 text-sm text-club-700">Poäng sparade.</p>
 {/if}
 {#if form?.signed}
 	<p class="mt-4 rounded bg-gold-400/20 px-3 py-2 text-sm text-gold-600">
@@ -78,8 +115,7 @@
 					<a href={`/t/${t.slug}`} class="text-gold-600 underline">turneringssidan</a>.
 				</p>
 			{/if}
-			<form method="POST" action="?/saveScores" use:enhance class="mt-4">
-				<input type="hidden" name="rowId" value={row.id} />
+			<div class="mt-4">
 				<div class="overflow-x-auto">
 					<table class="w-full border-collapse text-sm">
 						<thead>
@@ -110,31 +146,43 @@
 												name={`s${i}`}
 												use:scoreInput
 												value={s ?? ''}
+												oninput={(e) => onScoreInput(row.id, i, e)}
+												onblur={() => setTimeout(() => saver(row.id).flush(), 0)}
 												class="h-10 w-full min-w-8 rounded border-cream-300 bg-white/70 p-0 text-center [appearance:textfield] focus:border-gold-400 focus:ring-gold-400 [&::-webkit-inner-spin-button]:appearance-none"
 											/>
 										{/if}
 									</td>
 								{/each}
-								<td class="px-1 text-center font-bold">{rowTotal(row.scores) ?? ''}</td>
+								<td class="px-1 text-center font-bold"
+									>{rowTotal(local[row.id] ?? row.scores) ?? ''}</td
+								>
 							</tr>
 						</tbody>
 					</table>
 				</div>
 				{#if !row.signedAt}
-					<div class="mt-4 flex gap-2">
-						<button
-							class="rounded-lg bg-club-800 px-4 py-2 text-sm font-semibold text-cream-200 hover:bg-club-700"
-							>Spara poäng</button
-						>
-					</div>
+					<p class="mt-2 text-xs text-club-900/60" aria-live="polite">
+						{#if states[row.id]?.st === 'saving'}Sparar…{:else if states[row.id]?.st === 'saved'}Sparat
+							✓{:else if states[row.id]?.st === 'error'}<span class="text-red-700"
+								>{states[row.id].msg}</span
+							>{:else}Poängen sparas automatiskt.{/if}
+					</p>
 				{/if}
-			</form>
+			</div>
 			{#if !row.signedAt}
-				<form method="POST" action="?/sign" use:enhance class="mt-2">
+				<form
+					method="POST"
+					action="?/sign"
+					use:enhance={async () => {
+						await saver(row.id).flush();
+					}}
+					class="mt-2"
+				>
 					<input type="hidden" name="rowId" value={row.id} />
 					<button
 						class="rounded-lg bg-gold-500 px-4 py-2 text-sm font-semibold text-club-900 hover:bg-gold-400 disabled:cursor-not-allowed disabled:opacity-50"
-						disabled={row.scores.some((s) => s === null) || row.playerCount < data.minPlayers}
+						disabled={(local[row.id] ?? row.scores).some((s) => s === null) ||
+							row.playerCount < data.minPlayers}
 						title={row.playerCount < data.minPlayers
 							? 'Man kan inte spela ensam — coastern behöver minst en medspelare'
 							: row.scores.some((s) => s === null)
