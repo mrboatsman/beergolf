@@ -70,6 +70,33 @@
 	// Om sällskapet — öppnas när man klickar på emblemet
 	let showAbout = $state(false);
 
+	// Bottennav på mobil/PWA: de viktigaste vyerna som ikoner (ej för aspiranter)
+	let tabs = $derived(
+		member?.status === 'aspirant'
+			? []
+			: [
+					{ href: '/', label: 'Hem', icon: 'home', active: page.url.pathname === '/' },
+					{
+						href: '/coasters',
+						label: 'Coasters',
+						icon: 'coaster',
+						active: page.url.pathname.startsWith('/coasters')
+					},
+					{
+						href: '/members',
+						label: 'Leaderboard',
+						icon: 'trophy',
+						active: page.url.pathname.startsWith('/members')
+					},
+					{
+						href: '/invite',
+						label: 'Bjud in',
+						icon: 'invite',
+						active: page.url.pathname.startsWith('/invite')
+					}
+				]
+	);
+
 	// Mobilmeny (hamburgare) — stängs vid navigering
 	let menuOpen = $state(false);
 	$effect(() => {
@@ -232,9 +259,81 @@
 				{@render children()}
 			</main>
 
-			<footer class="px-4 py-6 text-center text-xs text-club-900/50">
+			<footer
+				class="px-4 py-6 text-center text-xs text-club-900/50 {tabs.length ? 'pb-24 lg:pb-6' : ''}"
+			>
 				Tablers Beer Golf Society — Färre slag. Fler skål.
 			</footer>
+
+			{#if tabs.length}
+				<!-- Bottennav (mobil/PWA): fast längst ner, respekterar iPhone-safe-area -->
+				<nav
+					aria-label="Snabbmeny"
+					class="fixed inset-x-0 bottom-0 z-40 border-t border-club-700 bg-club-800 pb-[env(safe-area-inset-bottom)] text-cream-200 lg:hidden"
+				>
+					<div class="mx-auto flex max-w-lg items-stretch">
+						{#each tabs as t (t.href)}
+							<a
+								href={t.href}
+								aria-current={t.active ? 'page' : undefined}
+								class="flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium {t.active
+									? 'text-gold-300'
+									: 'text-cream-200/60 active:text-cream-200'}"
+							>
+								<svg
+									viewBox="0 0 24 24"
+									class="h-6 w-6"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1.8"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									aria-hidden="true"
+								>
+									{#if t.icon === 'home'}
+										<path d="M3 11.5 12 4l9 7.5" /><path d="M5 10v10h5v-6h4v6h5V10" />
+									{:else if t.icon === 'coaster'}
+										<circle cx="12" cy="12" r="9" /><path d="M7 9h10M7 12h10M7 15h6" />
+									{:else if t.icon === 'trophy'}
+										<path d="M8 4h8v5a4 4 0 0 1-8 0Z" /><path
+											d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"
+										/><path d="M12 13v4M9 20h6M10 17h4v3h-4Z" />
+									{:else if t.icon === 'invite'}
+										<circle cx="10" cy="8" r="3.5" /><path d="M4 20a6 6 0 0 1 12 0" /><path
+											d="M19 8v6M16 11h6"
+										/>
+									{/if}
+								</svg>
+								{t.label}
+							</a>
+						{/each}
+						<button
+							type="button"
+							onclick={() => {
+								menuOpen = !menuOpen;
+								window.scrollTo({ top: 0 });
+							}}
+							class="flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium {menuOpen
+								? 'text-gold-300'
+								: 'text-cream-200/60'}"
+							aria-label="Öppna menyn"
+						>
+							<svg
+								viewBox="0 0 24 24"
+								class="h-6 w-6"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.8"
+								stroke-linecap="round"
+								aria-hidden="true"
+							>
+								<path d="M4 7h16M4 12h16M4 17h16" />
+							</svg>
+							Meny
+						</button>
+					</div>
+				</nav>
+			{/if}
 		</div>
 	</div>
 {:else}

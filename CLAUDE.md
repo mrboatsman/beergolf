@@ -172,6 +172,8 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   static) cache-first, navigeringar network-first med inbyggd offline-sida, data/`/files/`
   cachas aldrig. Kräver HTTPS i produktion för installation.
 - Mobil: topbaren (<lg) har hamburgermeny med nav + användarkort, stängs vid navigering.
+  Fast bottennav (<lg, ej aspiranter) med ikoner: Hem, Coasters, Leaderboard, Bjud in, Meny;
+  safe-area-padding (`viewport-fit=cover`), footern har pb-24 så innehåll inte döljs.
   Coaster-tabellen ryms på 390 px (kortnamn "Förnamn E." på mobil).
 - Signering kräver minst `MIN_COASTER_PLAYERS` (2) spelare på coastern — man spelar inte ensam.
 - Profilens HCP-kort visar global leaderboard-placering ("#N av M", länkad till /members).
