@@ -236,7 +236,7 @@ export const actions: Actions = {
 		const me = requireRole(locals.member, 'admin');
 		const form = await request.formData();
 		const id = String(form.get('id') ?? '');
-		if (id === me.id) return fail(400, { error: 'Byt ditt eget lösenord under /password.' });
+		if (id === me.id) return fail(400, { error: 'Byt ditt eget lösenord under /settings.' });
 		const target = await db.select().from(members).where(eq(members.id, id)).get();
 		if (!target) return fail(404, { error: 'Medlemmen finns inte.' });
 

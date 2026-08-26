@@ -71,6 +71,13 @@
       "when": 1783681170577,
       "tag": "0009_clean_talisman",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1787778417386,
+      "tag": "0010_young_demogoblin",
+      "breakpoints": true
     }
   ]
 }

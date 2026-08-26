@@ -51,6 +51,24 @@ export const invites = sqliteTable('invites', {
 		.default(sql`(unixepoch())`)
 });
 
+// Passkeys (WebAuthn): inloggning utan lösenord. id = credentialID (base64url).
+export const passkeys = sqliteTable('passkeys', {
+	id: text('id').primaryKey(),
+	memberId: text('member_id')
+		.notNull()
+		.references(() => members.id, { onDelete: 'cascade' }),
+	publicKey: text('public_key').notNull(), // base64url
+	counter: integer('counter').notNull().default(0),
+	transports: text('transports', { mode: 'json' }).$type<string[]>(),
+	deviceType: text('device_type'), // singleDevice | multiDevice
+	backedUp: integer('backed_up', { mode: 'boolean' }).notNull().default(false),
+	name: text('name').notNull(), // användarens etikett, ex "iPhone"
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`(unixepoch())`),
+	lastUsedAt: integer('last_used_at', { mode: 'timestamp' })
+});
+
 // Certifiering av grönt kort — de tre delarna
 export const certifications = sqliteTable('certifications', {
 	id: text('id').primaryKey(),

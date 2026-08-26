@@ -11,7 +11,16 @@ import {
 // Ocertifierade (aspiranter) har bara tillgång till certifieringsflödet.
 // Grönt kort (teori + praktik + etikett) är obligatoriskt innan resten
 // av klubbhuset låses upp.
-const ASPIRANT_ALLOWED = ['/certification', '/quiz', '/logout', '/files', '/password', '/t'];
+const ASPIRANT_ALLOWED = [
+	'/certification',
+	'/quiz',
+	'/logout',
+	'/files',
+	'/password',
+	'/settings',
+	'/api/passkey',
+	'/t'
+];
 // /t = publika turneringssidor, /api/stripe = webhook — öppna även för
 // inloggade aspiranter/lösenordsbytare (oinloggade passerar redan).
 const ALWAYS_ALLOWED = ['/_app', '/@', '/favicon', '/.well-known', '/t/', '/api/stripe'];
@@ -41,8 +50,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 	if (event.locals.member?.mustChangePassword) {
 		const p = event.url.pathname;
 		const allowed =
-			ALWAYS_ALLOWED.some((a) => p.startsWith(a)) || p === '/password' || p === '/logout';
-		if (!allowed) throw redirect(303, '/password');
+			ALWAYS_ALLOWED.some((a) => p.startsWith(a)) ||
+			p === '/password' ||
+			p === '/settings' ||
+			p.startsWith('/api/passkey') ||
+			p === '/logout';
+		if (!allowed) throw redirect(303, '/settings');
 	}
 
 	if (event.locals.member?.status === 'aspirant') {

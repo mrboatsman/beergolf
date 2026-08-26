@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { shortName } from '$lib/names';
 	let { data } = $props();
 
 	function initials(name: string) {
@@ -63,30 +64,39 @@
 		<table class="w-full text-left text-sm">
 			<thead class="bg-club-800 text-cream-200">
 				<tr>
-					<th class="px-4 py-2.5 text-right">#</th>
-					<th class="px-3 py-2.5">Medlem</th>
-					<th class="px-3 py-2.5">Grönt Kort</th>
-					<th class="px-3 py-2.5 text-right">Rundor i år</th>
-					<th class="px-3 py-2.5 text-right">Bästa brutto</th>
-					<th class="px-4 py-2.5 text-right">HCP</th>
+					<th class="px-2 py-2.5 text-right sm:px-4">#</th>
+					<th class="px-2 py-2.5 sm:px-3">Medlem</th>
+					<th class="hidden px-3 py-2.5 sm:table-cell">Grönt Kort</th>
+					<th class="px-2 py-2.5 text-right sm:px-3"
+						>Rundor<span class="hidden sm:inline"> i år</span></th
+					>
+					<th class="hidden px-3 py-2.5 text-right sm:table-cell">Bästa brutto</th>
+					<th class="px-2 py-2.5 text-right sm:px-4">HCP</th>
 				</tr>
 			</thead>
 			<tbody>
 				{#each data.members as m (m.id)}
 					<tr class="border-t border-cream-300 hover:bg-white/60">
-						<td class="px-4 py-2.5 text-right">
-							<span class="font-display text-lg font-semibold {rankClass(m.rank)}">
+						<td class="px-2 py-2.5 text-right sm:px-4">
+							<span
+								class="font-display text-lg font-semibold whitespace-nowrap {rankClass(m.rank)}"
+							>
 								{m.rank}{#if m.rank === 1}<span class="ml-1">🏆</span>{/if}
 							</span>
 						</td>
-						<td class="px-3 py-2.5">
-							<a href={`/members/${m.id}`} class="group flex items-center gap-3">
+						<td class="px-2 py-2.5 sm:px-3">
+							<a href={`/members/${m.id}`} class="group flex items-center gap-2 sm:gap-3">
 								<span
 									class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-club-800 font-display text-sm font-semibold text-gold-300"
 									>{initials(m.name)}</span
 								>
 								<span class="min-w-0">
-									<span class="block truncate font-semibold group-hover:underline">{m.name}</span>
+									<span class="block truncate font-semibold group-hover:underline sm:hidden"
+										>{shortName(m.name)}</span
+									>
+									<span class="hidden truncate font-semibold group-hover:underline sm:block"
+										>{m.name}</span
+									>
 									<span class="block text-xs text-club-900/50">{roleLabel[m.role] ?? m.role}</span>
 								</span>
 								{#if m.status === 'aspirant'}
@@ -97,12 +107,12 @@
 								{/if}
 							</a>
 						</td>
-						<td class="px-3 py-2.5 text-club-900/60">
+						<td class="hidden px-3 py-2.5 text-club-900/60 sm:table-cell">
 							{#if m.memberNumber}Nr {m.memberNumber}{:else}—{/if}
 						</td>
-						<td class="px-3 py-2.5 text-right">{m.roundsSeason}</td>
-						<td class="px-3 py-2.5 text-right">{m.bestGross ?? '—'}</td>
-						<td class="px-4 py-2.5 text-right">
+						<td class="px-2 py-2.5 text-right sm:px-3">{m.roundsSeason}</td>
+						<td class="hidden px-3 py-2.5 text-right sm:table-cell">{m.bestGross ?? '—'}</td>
+						<td class="px-2 py-2.5 text-right sm:px-4">
 							<span class="font-display text-lg font-semibold text-club-700">{m.hcp}</span>
 						</td>
 					</tr>

@@ -8,7 +8,12 @@ handikapp och turneringar. Hobbyprojekt, låga volymer.
 - **SvelteKit** (Svelte 5, runes) + **adapter-node** (self-host på VPS)
 - **SQLite** via **Drizzle ORM** + better-sqlite3 (synkron driver)
 - **Tailwind CSS v4** (`@theme` i `src/routes/layout.css`)
-- Sessioner: token i cookie, sha256 lagras i db. Lösenord: argon2id (`@node-rs/argon2`)
+- Sessioner: token i cookie, sha256 lagras i db. Lösenord: argon2id (`@node-rs/argon2`).
+  **Passkeys** (WebAuthn, `@simplewebauthn`): tabell `passkeys`, logik i
+  `src/lib/server/passkeys.ts` (RP-id = request-hostname, challenge i httpOnly-cookie
+  `pk_challenge`), endpoints `/api/passkey/register` (GET options/POST verify, inloggad) och
+  `/api/passkey/login` (öppen; POST skapar session). Discoverable credentials → "Logga in med
+  passkey" på `/login` utan e-post.
 - **jj (Jujutsu)** för versionshantering (colocated med git) — se `jujutsu`-skill före VCS-kommandon
 
 ## Kommandon
@@ -155,8 +160,9 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   hooks-redirect till `/password`), **Inaktivera/Aktivera** (inactive kan inte logga in,
   levande sessioner dödas i hooks), **Anonymisera (GDPR, oåterkallelig)** — namn/e-post
   ersätts, lösenord+sessioner raderas, bevismedia tas bort ur lagringen och fadderns
-  omdöme rensas; spelhistorik behålls som klubbstatistik. `/password` = byt eget lösenord
-  (länk i sidebarens användarkort), loggar ut övriga sessioner.
+  omdöme rensas; spelhistorik behålls som klubbstatistik. `/settings` (Inställningar, länk i användarkortet;
+  `/password` → 301) = passkeys (lägg till/ta bort) + byt eget lösenord (loggar ut övriga
+  sessioner). Framtida profilinställningar hör hemma här.
 - **Admin: Score Coasters** (`/admin/coasters`, endast rollen admin, logik i
   `src/lib/server/coaster-admin.ts`): sök på coaster-/spelar-/turneringsnamn (q/page),
   detaljsida `/admin/coasters/[id]`: byt namn, rätta poäng på valfri rad (även signerad),
@@ -176,7 +182,8 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   en bottom sheet (fly-transition) ovanför navet med användarkort + hela navlistan, stängs
   vid navigering/klick utanför;
   safe-area-padding (`viewport-fit=cover`), footern har pb-24 så innehåll inte döljs.
-  Coaster-tabellen ryms på 390 px (kortnamn "Förnamn E." på mobil).
+  Coaster-tabellen och leaderboarden ryms på 390 px: kortnamn "Förnamn E." via
+  `src/lib/names.ts` (`shortName`) under `sm`, leaderboarden döljer Grönt Kort/Bästa brutto.
 - Signering kräver minst `MIN_COASTER_PLAYERS` (2) spelare på coastern — man spelar inte ensam.
 - Profilens HCP-kort visar global leaderboard-placering ("#N av M", länkad till /members).
 

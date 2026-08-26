@@ -185,8 +185,9 @@
 					</div>
 					<div class="mt-3 flex items-center gap-3">
 						<a
-							href="/password"
-							class="text-xs text-cream-200/60 hover:text-cream-200 hover:underline">Byt lösenord</a
+							href="/settings"
+							class="text-xs text-cream-200/60 hover:text-cream-200 hover:underline"
+							>Inställningar</a
 						>
 						<form method="POST" action="/logout" class="flex">
 							<button class="text-xs text-cream-200/60 hover:text-cream-200 hover:underline"
@@ -252,7 +253,7 @@
 							<div class="text-xs text-cream-200/60">HCP {member.hcp}</div>
 						</div>
 						<div class="flex items-center gap-3 text-xs leading-none">
-							<a href="/password" class="text-cream-200/70 hover:underline">Byt lösenord</a>
+							<a href="/settings" class="text-cream-200/70 hover:underline">Inställningar</a>
 							<form method="POST" action="/logout" class="flex">
 								<button class="text-cream-200/70 hover:underline">Logga ut</button>
 							</form>

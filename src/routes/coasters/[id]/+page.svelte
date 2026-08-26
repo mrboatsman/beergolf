@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import CoasterRules from '$lib/components/CoasterRules.svelte';
+	import { shortName } from '$lib/names';
 	let { data, form } = $props();
 
 	let coaster = $derived(data.coaster);
@@ -8,11 +9,6 @@
 	let myRow = $derived(players.find((p) => p.memberId === data.meId));
 	let parTotal = $derived(coaster.par.reduce((a, b) => a + b, 0));
 	let signed = $derived(players.filter((p) => p.signedAt));
-	// Mobil: smal namnkolumn, visa "Förnamn E."
-	function shortName(name: string) {
-		const parts = name.trim().split(/\s+/);
-		return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]}.` : name;
-	}
 	let amInvolved = $derived(coaster.createdBy === data.meId || !!myRow);
 
 	// Sök bland medlemmar att lägga till — lista funkar inte med 1000 st
