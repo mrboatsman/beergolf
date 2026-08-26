@@ -8,6 +8,9 @@
 	let isAdmin = $derived(page.data.member?.role === 'admin');
 	let meId = $derived(page.data.member?.id);
 
+	// Redigera medlem (modal)
+	let editing = $state<null | (typeof data.members)[number]>(null);
+
 	// Paginering: bevara båda tabellernas query-params i länkarna
 	function pageUrl(patch: Record<string, string | number>) {
 		const params = new URLSearchParams();
@@ -49,6 +52,11 @@
 		Engångslösenord för <strong>{form.passwordReset.name}</strong>:
 		<span class="font-mono text-lg font-bold">{form.passwordReset.oneTime}</span>
 		— visas bara nu. Användaren måste byta det vid inloggning.
+	</p>
+{/if}
+{#if form?.memberUpdated}
+	<p class="mt-4 rounded bg-club-100 px-3 py-2 text-sm text-club-700">
+		Uppgifter sparade för {form.memberUpdated}.
 	</p>
 {/if}
 {#if form?.deactivated}
@@ -180,8 +188,13 @@
 						<td class="px-3 py-2">{m.hcp}</td>
 						{#if isAdmin}
 							<td class="px-3 py-2">
-								{#if m.id !== meId}
-									<div class="flex flex-wrap gap-2 text-xs whitespace-nowrap">
+								<div class="flex flex-wrap gap-2 text-xs whitespace-nowrap">
+									<button
+										type="button"
+										onclick={() => (editing = m)}
+										class="font-semibold text-club-700 hover:underline">Redigera</button
+									>
+									{#if m.id !== meId}
 										<form method="POST" action="?/resetPassword" use:enhance>
 											<input type="hidden" name="id" value={m.id} />
 											<button class="font-semibold text-club-700 hover:underline"
@@ -211,10 +224,8 @@
 											<button class="font-semibold text-red-700 hover:underline">Anonymisera</button
 											>
 										</form>
-									</div>
-								{:else}
-									<span class="text-xs text-club-900/40">—</span>
-								{/if}
+									{/if}
+								</div>
 							</td>
 						{/if}
 					</tr>
@@ -411,3 +422,116 @@
 		{/each}
 	</div>
 </section>
+
+{#if editing}
+	{@const m = editing}
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-club-950/60 p-4"
+		role="presentation"
+		onclick={(e) => {
+			if (e.target === e.currentTarget) editing = null;
+		}}
+	>
+		<div
+			class="w-full max-w-md rounded-2xl bg-parchment p-6 shadow-xl"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="edit-member-title"
+		>
+			<h2 id="edit-member-title" class="font-display text-2xl font-semibold text-club-900">
+				Redigera medlem
+			</h2>
+			<form
+				method="POST"
+				action="?/updateMember"
+				use:enhance={() =>
+					async ({ result, update }) => {
+						if (result.type === 'success') editing = null;
+						await update();
+					}}
+				class="mt-4 grid gap-3"
+			>
+				<input type="hidden" name="id" value={m.id} />
+				{#if form?.error}
+					<p class="rounded bg-red-100 px-3 py-2 text-sm text-red-700">{form.error}</p>
+				{/if}
+				<label class="text-sm">
+					<span class="font-semibold text-club-900">Namn</span>
+					<input
+						name="name"
+						value={m.name}
+						required
+						minlength="2"
+						class="mt-1 w-full rounded-lg border-cream-300 bg-white text-sm"
+					/>
+				</label>
+				<label class="text-sm">
+					<span class="font-semibold text-club-900">E-post</span>
+					<input
+						name="email"
+						type="email"
+						value={m.email}
+						required
+						class="mt-1 w-full rounded-lg border-cream-300 bg-white text-sm"
+					/>
+				</label>
+				<div class="grid grid-cols-3 gap-3">
+					<label class="text-sm">
+						<span class="font-semibold text-club-900">Roll</span>
+						<select
+							name="role"
+							value={m.role}
+							disabled={m.id === meId}
+							class="mt-1 w-full rounded-lg border-cream-300 bg-white text-sm capitalize disabled:opacity-60"
+						>
+							{#each roles as r (r)}<option value={r}>{r}</option>{/each}
+						</select>
+					</label>
+					<label class="text-sm">
+						<span class="font-semibold text-club-900">HCP</span>
+						<input
+							name="hcp"
+							type="number"
+							step="0.1"
+							min="0"
+							max="54"
+							value={m.hcp}
+							required
+							class="mt-1 w-full rounded-lg border-cream-300 bg-white text-sm"
+						/>
+					</label>
+					<label class="text-sm">
+						<span class="font-semibold text-club-900">Kort-nr</span>
+						<input
+							name="memberNumber"
+							type="number"
+							min="1"
+							step="1"
+							value={m.memberNumber ?? ''}
+							placeholder="—"
+							class="mt-1 w-full rounded-lg border-cream-300 bg-white text-sm"
+						/>
+					</label>
+				</div>
+				{#if m.id === meId}
+					<p class="text-xs text-club-900/60">Din egen roll kan inte ändras här.</p>
+				{/if}
+				<p class="text-xs text-club-900/60">
+					Status, lösenord och grönt kort hanteras via åtgärderna i tabellen respektive
+					certifieringen.
+				</p>
+				<div class="mt-2 flex justify-end gap-2">
+					<button
+						type="button"
+						onclick={() => (editing = null)}
+						class="rounded-lg px-4 py-2 text-sm text-club-900/70 hover:bg-cream-300">Avbryt</button
+					>
+					<button
+						class="rounded-lg bg-club-700 px-4 py-2 text-sm font-semibold text-cream-200 hover:bg-club-800"
+						>Spara</button
+					>
+				</div>
+			</form>
+		</div>
+	</div>
+{/if}

@@ -16,6 +16,7 @@ import { storage } from '$lib/server/storage';
 import { newId, newInviteCode } from '$lib/server/ids';
 import { requireRole } from '$lib/server/guard';
 import { buildFadderTree } from '$lib/fadder-tree';
+import { MAX_HCP, MIN_HCP, round1 } from '$lib/handicap';
 import type { Actions, PageServerLoad } from './$types';
 
 const ROLES: Role[] = ['aspirant', 'member', 'fadder', 'captain', 'admin'];
@@ -238,6 +239,68 @@ export const actions: Actions = {
 		await db.delete(sessions).where(eq(sessions.memberId, id));
 
 		return { passwordReset: { name: target.name, oneTime } };
+	},
+
+	// Admin redigerar medlemsuppgifter: namn, e-post, roll, HCP, medlemsnummer.
+	// Egen roll kan inte ändras (låser inte ute sig själv). Uppgraderas
+	// aspirant till annan roll utan grönt kort lämnas status orörd — kortet
+	// utfärdas via certifieringen.
+	updateMember: async ({ request, locals }) => {
+		const me = requireRole(locals.member, 'admin');
+		const form = await request.formData();
+		const id = String(form.get('id') ?? '');
+		const target = await db.select().from(members).where(eq(members.id, id)).get();
+		if (!target) return fail(404, { error: 'Medlemmen finns inte.' });
+
+		const name = String(form.get('name') ?? '').trim();
+		const email = String(form.get('email') ?? '')
+			.trim()
+			.toLowerCase();
+		const role = String(form.get('role') ?? target.role) as Role;
+		const hcpRaw = String(form.get('hcp') ?? '')
+			.trim()
+			.replace(',', '.');
+		const numberRaw = String(form.get('memberNumber') ?? '').trim();
+
+		if (name.length < 2) return fail(400, { error: 'Namn måste vara minst två tecken.' });
+		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail(400, { error: 'Ogiltig e-post.' });
+		if (!ROLES.includes(role)) return fail(400, { error: 'Ogiltig roll.' });
+		if (id === me.id && role !== target.role) {
+			return fail(400, { error: 'Du kan inte ändra din egen roll.' });
+		}
+		const hcp = Number(hcpRaw);
+		if (hcpRaw === '' || !Number.isFinite(hcp) || hcp < MIN_HCP || hcp > MAX_HCP) {
+			return fail(400, { error: `HCP måste vara ${MIN_HCP}–${MAX_HCP}.` });
+		}
+		let memberNumber: number | null = null;
+		if (numberRaw !== '') {
+			memberNumber = Number(numberRaw);
+			if (!Number.isInteger(memberNumber) || memberNumber < 1) {
+				return fail(400, { error: 'Medlemsnummer måste vara ett positivt heltal.' });
+			}
+			const taken = await db
+				.select({ id: members.id })
+				.from(members)
+				.where(eq(members.memberNumber, memberNumber))
+				.get();
+			if (taken && taken.id !== id) {
+				return fail(400, { error: `Medlemsnummer ${memberNumber} används redan.` });
+			}
+		}
+		const emailTaken = await db
+			.select({ id: members.id })
+			.from(members)
+			.where(eq(members.email, email))
+			.get();
+		if (emailTaken && emailTaken.id !== id) {
+			return fail(400, { error: 'E-postadressen används redan.' });
+		}
+
+		await db
+			.update(members)
+			.set({ name, email, role, hcp: round1(hcp), memberNumber })
+			.where(eq(members.id, id));
+		return { memberUpdated: name };
 	},
 
 	toggleActive: async ({ request, locals }) => {

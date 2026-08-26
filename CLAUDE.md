@@ -139,6 +139,8 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   finnas i db — ingen path traversal). `BODY_SIZE_LIMIT` i .env höjer adapter-nodes
   body-gräns för videouppladdning; max 200 MB/fil valideras i actionen.
 
+- **Redigera medlem** (admin, modal i medlemstabellen, action `updateMember`): namn, e-post,
+  roll, HCP (0–54) och kort-nr; unika e-post/kort-nr valideras; egen roll kan inte ändras.
 - Kontoåtgärder i admin (endast rollen admin, ej på sig själv): **Återställ lösenord**
   (engångslösenord visas en gång; `members.mustChangePassword` tvingar byte via
   hooks-redirect till `/password`), **Inaktivera/Aktivera** (inactive kan inte logga in,
