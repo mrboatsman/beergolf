@@ -1,5 +1,6 @@
 import { desc, eq, sql } from 'drizzle-orm';
 import { db } from './db';
+import { grossTotal } from '$lib/scoring';
 import { coasters, coasterPlayers, members, quizAttempts, rounds } from './db/schema';
 import { getCertStatus } from './certification';
 
@@ -105,6 +106,7 @@ export async function getDashboard(memberId: string) {
 			createdAt: coasters.createdAt,
 			myScores: coasterPlayers.scores,
 			mySignedAt: coasterPlayers.signedAt,
+			par: coasters.par,
 			playerCount: sql<number>`(
 				select count(*) from coaster_players cp where cp.coaster_id = ${coasters.id}
 			)`,
@@ -119,7 +121,6 @@ export async function getDashboard(memberId: string) {
 		.orderBy(desc(coasters.createdAt))
 		.all()
 		.map((m) => {
-			const filled = m.myScores.filter((s): s is number => s !== null);
 			return {
 				id: m.id,
 				name: m.name,
@@ -127,7 +128,7 @@ export async function getDashboard(memberId: string) {
 				playerCount: m.playerCount,
 				signedCount: m.signedCount,
 				finished: m.playerCount > 0 && m.signedCount === m.playerCount,
-				myGross: filled.length ? filled.reduce((a, b) => a + b, 0) : null,
+				myGross: grossTotal(m.myScores, m.par),
 				mySigned: m.mySignedAt !== null
 			};
 		});

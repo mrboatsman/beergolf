@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { scoreInput } from '$lib/score-input';
+	import { fmtScore, grossTotal, parseScore } from '$lib/scoring';
 	import { invalidate } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { createAutosave, subscribeLive, type SaveState } from '$lib/live-coaster';
@@ -39,17 +40,13 @@
 		return a;
 	}
 	function onScoreInput(rowId: string, i: number, e: Event) {
-		const v = (e.currentTarget as HTMLInputElement).value;
-		local[rowId][i] = v === '' ? null : Number(v);
+		local[rowId][i] = parseScore((e.currentTarget as HTMLInputElement).value);
 		dirty.add(rowId);
 		saver(rowId).schedule();
 	}
 	onMount(() => subscribeLive(`${location.pathname}/events`, () => invalidate('guest:rows')));
 
-	function rowTotal(scores: (number | null)[]) {
-		const filled = scores.filter((s): s is number => s !== null);
-		return filled.length ? filled.reduce((a, b) => a + b, 0) : null;
-	}
+	const rowTotal = (scores: (number | null)[], par: number[]) => grossTotal(scores, par);
 </script>
 
 <svelte:head>
@@ -111,7 +108,7 @@
 			</h2>
 			{#if row.signedAt}
 				<p class="mt-2 text-sm">
-					Signerad ✓ — brutto {rowTotal(row.scores)}. Kolla
+					Signerad ✓ — brutto {rowTotal(row.scores, row.par)}. Kolla
 					<a href={`/t/${t.slug}`} class="text-gold-600 underline">turneringssidan</a>.
 				</p>
 			{/if}
@@ -140,12 +137,12 @@
 								{#each row.scores as s, i (i)}
 									<td class="p-0.5 text-center">
 										{#if row.signedAt}
-											<span class="font-semibold">{s ?? ''}</span>
+											<span class="font-semibold">{fmtScore(s)}</span>
 										{:else}
 											<input
 												name={`s${i}`}
 												use:scoreInput
-												value={s ?? ''}
+												value={fmtScore(s)}
 												oninput={(e) => onScoreInput(row.id, i, e)}
 												onblur={() => setTimeout(() => saver(row.id).flush(), 0)}
 												class="h-10 w-full min-w-8 rounded border-cream-300 bg-white/70 p-0 text-center [appearance:textfield] focus:border-gold-400 focus:ring-gold-400 [&::-webkit-inner-spin-button]:appearance-none"
@@ -154,7 +151,7 @@
 									</td>
 								{/each}
 								<td class="px-1 text-center font-bold"
-									>{rowTotal(local[row.id] ?? row.scores) ?? ''}</td
+									>{rowTotal(local[row.id] ?? row.scores, row.par) ?? ''}</td
 								>
 							</tr>
 						</tbody>
@@ -173,15 +170,21 @@
 				<form
 					method="POST"
 					action="?/sign"
-					use:enhance={async () => {
+					use:enhance={async ({ cancel }) => {
 						await saver(row.id).flush();
+						const empty = (local[row.id] ?? row.scores).filter((s) => s === null).length;
+						if (
+							empty > 0 &&
+							!confirm(`${empty} hål är tomma och räknas som x (dubbelt par). Signera ändå?`)
+						)
+							cancel();
 					}}
 					class="mt-2"
 				>
 					<input type="hidden" name="rowId" value={row.id} />
 					<button
 						class="rounded-lg bg-gold-500 px-4 py-2 text-sm font-semibold text-club-900 hover:bg-gold-400 disabled:cursor-not-allowed disabled:opacity-50"
-						disabled={(local[row.id] ?? row.scores).some((s) => s === null) ||
+						disabled={(local[row.id] ?? row.scores).every((s) => s === null) ||
 							row.playerCount < data.minPlayers}
 						title={row.playerCount < data.minPlayers
 							? 'Man kan inte spela ensam — coastern behöver minst en medspelare'

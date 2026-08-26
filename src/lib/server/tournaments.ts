@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit';
 import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import { db } from './db';
+import { grossTotalComplete } from '$lib/scoring';
 import {
 	coasters,
 	coasterPlayers,
@@ -162,8 +163,7 @@ export function getLeaderboard(tournamentId: string): Leaderboard {
 	const unfinished: Leaderboard['unfinished'] = [];
 	for (const r of rows) {
 		if (r.signedAt && r.scores && r.par && r.coasterId) {
-			const scores = r.scores as number[];
-			const gross = scores.reduce((a, b) => a + b, 0);
+			const gross = grossTotalComplete(r.scores, r.par);
 			const parTotal = r.par.reduce((a, b) => a + b, 0);
 			entries.push({
 				participantId: r.participantId,
@@ -369,10 +369,12 @@ export function maybeDecideMatch(coasterId: string): void {
 			participantId: coasterPlayers.participantId,
 			scores: coasterPlayers.scores,
 			signedAt: coasterPlayers.signedAt,
-			playingHcp: tournamentParticipants.playingHcp
+			playingHcp: tournamentParticipants.playingHcp,
+			par: coasters.par
 		})
 		.from(coasterPlayers)
 		.innerJoin(tournamentParticipants, eq(coasterPlayers.participantId, tournamentParticipants.id))
+		.innerJoin(coasters, eq(coasterPlayers.coasterId, coasters.id))
 		.where(eq(coasterPlayers.coasterId, coasterId))
 		.all();
 
@@ -380,7 +382,7 @@ export function maybeDecideMatch(coasterId: string): void {
 	const r2 = rows.find((r) => r.participantId === match.participant2Id);
 	if (!r1?.signedAt || !r2?.signedAt) return;
 
-	const net = (r: typeof r1) => (r!.scores as number[]).reduce((a, b) => a + b, 0) - r!.playingHcp;
+	const net = (r: typeof r1) => grossTotalComplete(r!.scores, r!.par) - r!.playingHcp;
 	const net1 = net(r1);
 	const net2 = net(r2);
 	if (net1 === net2) return; // lika — captain avgör manuellt
@@ -421,18 +423,20 @@ export function getBracket(tournamentId: string): Bracket | null {
 				participantId: coasterPlayers.participantId,
 				scores: coasterPlayers.scores,
 				signedAt: coasterPlayers.signedAt,
-				playingHcp: tournamentParticipants.playingHcp
+				playingHcp: tournamentParticipants.playingHcp,
+				par: coasters.par
 			})
 			.from(coasterPlayers)
 			.innerJoin(
 				tournamentParticipants,
 				eq(coasterPlayers.participantId, tournamentParticipants.id)
 			)
+			.innerJoin(coasters, eq(coasterPlayers.coasterId, coasters.id))
 			.where(eq(tournamentParticipants.tournamentId, tournamentId))
 			.all();
 		for (const r of rows) {
 			if (!r.signedAt || !r.participantId) continue;
-			const gross = (r.scores as number[]).reduce((a, b) => a + b, 0);
+			const gross = grossTotalComplete(r.scores, r.par);
 			netByCoasterParticipant.set(
 				`${r.coasterId}:${r.participantId}`,
 				Math.round((gross - r.playingHcp) * 10) / 10

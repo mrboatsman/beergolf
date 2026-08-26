@@ -17,6 +17,7 @@ import {
 	adminUnsign
 } from '$lib/server/coaster-admin';
 import { notifyCoaster } from '$lib/server/live';
+import { parseScoreAdmin } from '$lib/scoring';
 import type { Actions, PageServerLoad } from './$types';
 
 function getCoaster(id: string) {
@@ -65,13 +66,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 function parseScores(form: FormData): (number | null)[] | string {
 	const scores: (number | null)[] = [];
 	for (let i = 0; i < 9; i++) {
-		const raw = String(form.get(`s${i}`) ?? '').trim();
-		if (raw === '') {
-			scores.push(null);
-			continue;
-		}
-		const v = Number(raw);
-		if (!Number.isInteger(v) || v < 1 || v > 30) return `Ogiltig poäng på hål ${i + 1}.`;
+		const v = parseScoreAdmin(String(form.get(`s${i}`) ?? ''));
+		if (v === 'invalid') return `Ogiltig poäng på hål ${i + 1} (1–30, x eller tomt).`;
 		scores.push(v);
 	}
 	return scores;

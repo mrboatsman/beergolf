@@ -16,7 +16,7 @@ import { newId } from '$lib/server/ids';
 import { nextHcp, netScore } from '$lib/handicap';
 import { maybeDecideMatch } from '$lib/server/tournaments';
 import { notifyCoaster } from '$lib/server/live';
-import { MAX_HOLE_SCORE } from '$lib/score-input';
+import { fillMissingWithX, grossTotal, grossTotalComplete, parseScore } from '$lib/scoring';
 import type { Actions, PageServerLoad } from './$types';
 
 async function getCoaster(id: string) {
@@ -46,12 +46,8 @@ function getPlayers(coasterId: string) {
 			signedAt: coasterPlayers.signedAt,
 			name: sql<string>`coalesce(${members.name}, ${tournamentParticipants.guestName}, '?')`,
 			hcp: members.hcp,
-			// Netto vid signering: medlem = rundans netTotal, gäst = brutto − spelhcp
-			net: sql<number | null>`case
-				when ${rounds.netTotal} is not null then ${rounds.netTotal}
-				when ${coasterPlayers.signedAt} is not null and ${tournamentParticipants.playingHcp} is not null
-					then (select sum(value) from json_each(${coasterPlayers.scores})) - ${tournamentParticipants.playingHcp}
-				else null end`
+			roundNet: rounds.netTotal,
+			playingHcp: tournamentParticipants.playingHcp
 		})
 		.from(coasterPlayers)
 		.leftJoin(members, eq(coasterPlayers.memberId, members.id))
@@ -62,11 +58,31 @@ function getPlayers(coasterId: string) {
 		.all();
 }
 
+// Netto vid signering: medlem = rundans netTotal, gäst = brutto (x = 2×par) − spelhcp
+function withNet<
+	T extends {
+		scores: (number | null)[];
+		signedAt: Date | null;
+		roundNet: number | null;
+		playingHcp: number | null;
+	}
+>(players: T[], par: number[]) {
+	return players.map((p) => ({
+		...p,
+		net:
+			p.roundNet !== null
+				? p.roundNet
+				: p.signedAt && p.playingHcp !== null
+					? (grossTotal(p.scores, par) ?? 0) - p.playingHcp
+					: null
+	}));
+}
+
 export const load: PageServerLoad = async ({ locals, params, depends }) => {
 	const me = requireMember(locals.member);
 	depends(`coaster:${params.id}`);
 	const coaster = await getCoaster(params.id);
-	const players = await getPlayers(coaster.id);
+	const players = withNet(await getPlayers(coaster.id), coaster.par);
 
 	let addable: { id: string; name: string; isGuest?: boolean }[];
 	let tournament: { id: string; name: string } | null = null;
@@ -267,16 +283,7 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const scores: (number | null)[] = [];
 		for (let i = 0; i < 9; i++) {
-			const raw = String(form.get(`s${i}`) ?? '').trim();
-			if (raw === '') {
-				scores.push(null);
-				continue;
-			}
-			const v = Number(raw);
-			if (!Number.isInteger(v) || v < 1 || v > MAX_HOLE_SCORE) {
-				return fail(400, { error: `Ogiltig poäng på hål ${i + 1}.` });
-			}
-			scores.push(v);
+			scores.push(parseScore(String(form.get(`s${i}`) ?? '')));
 		}
 
 		await db.update(coasterPlayers).set({ scores }).where(eq(coasterPlayers.id, row.id));
@@ -292,8 +299,8 @@ export const actions: Actions = {
 
 		if (!row) return fail(403, { error: 'Du är inte spelare på denna coaster.' });
 		if (row.signedAt) return fail(400, { error: 'Redan signerad.' });
-		if (row.scores.some((s) => s === null)) {
-			return fail(400, { error: 'Fyll i alla nio hål innan du signerar.' });
+		if (row.scores.every((s) => s === null)) {
+			return fail(400, { error: 'Fyll i minst ett hål innan du signerar.' });
 		}
 		const playerCount =
 			db
@@ -307,8 +314,9 @@ export const actions: Actions = {
 			});
 		}
 
-		const scores = row.scores as number[];
-		const grossTotal = scores.reduce((a, b) => a + b, 0);
+		// Tomma hål = x (dubbelt par); x lagras som 0 så brutto räknas mot par
+		const scores = fillMissingWithX(row.scores, coaster.par.length);
+		const grossTotal = grossTotalComplete(scores, coaster.par);
 		const parTotal = coaster.par.reduce((a, b) => a + b, 0);
 		const current = await db.select().from(members).where(eq(members.id, me.id)).get();
 		const hcpBefore = current?.hcp ?? me.hcp;
@@ -332,7 +340,7 @@ export const actions: Actions = {
 				.run();
 			tx.update(members).set({ hcp: hcpAfter }).where(eq(members.id, me.id)).run();
 			tx.update(coasterPlayers)
-				.set({ signedAt: new Date(), roundId })
+				.set({ scores, signedAt: new Date(), roundId })
 				.where(eq(coasterPlayers.id, row.id))
 				.run();
 		});

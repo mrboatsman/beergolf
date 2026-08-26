@@ -1,13 +1,12 @@
-// Svelte-action för poängfält på coastern: bara en siffra (1–9), numeriskt
-// tangentbord, och fokus hoppar automatiskt till nästa hål när siffran är
+// Svelte-action för poängfält på coastern: ett tecken (1–9 = slag, 0/bokstav = x =
+// dubbelt par), numeriskt tangentbord, och fokus hoppar automatiskt till nästa hål när siffran är
 // ifylld. Backspace i tomt fält går tillbaka till föregående hål.
-export const MAX_HOLE_SCORE = 9;
+export { MAX_HOLE_SCORE } from './scoring';
 
 export function scoreInput(el: HTMLInputElement) {
 	el.type = 'text';
-	el.inputMode = 'numeric';
+	el.inputMode = 'numeric'; // mobil: sifferknappsats; 0 = x
 	el.maxLength = 1;
-	el.pattern = '[1-9]';
 	el.autocomplete = 'off';
 
 	function siblings(): HTMLInputElement[] {
@@ -26,10 +25,11 @@ export function scoreInput(el: HTMLInputElement) {
 		}
 	}
 	function onInput() {
-		// Behåll bara sista siffran 1–9 (0 och bokstäver ignoreras)
-		const digit = el.value.replace(/[^1-9]/g, '').slice(-1);
-		el.value = digit;
-		if (digit) move(1);
+		// Sista tecknet: 1–9 = slag, allt annat (0, bokstav) = x (dubbelt par)
+		const last = el.value.slice(-1);
+		const v = last === '' ? '' : /[1-9]/.test(last) ? last : 'x';
+		el.value = v;
+		if (v) move(1);
 	}
 	function onKeydown(e: KeyboardEvent) {
 		if (e.key === 'Backspace' && el.value === '') {

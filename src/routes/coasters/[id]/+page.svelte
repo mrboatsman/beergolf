@@ -3,6 +3,7 @@
 	import CoasterRules from '$lib/components/CoasterRules.svelte';
 	import { shortName } from '$lib/names';
 	import { scoreInput } from '$lib/score-input';
+	import { fmtScore, grossTotal, parseScore } from '$lib/scoring';
 	import { invalidate } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { createAutosave, subscribeLive, type SaveState } from '$lib/live-coaster';
@@ -52,8 +53,7 @@
 		}
 	);
 	function onScoreInput(i: number, e: Event) {
-		const v = (e.currentTarget as HTMLInputElement).value;
-		myScores[i] = v === '' ? null : Number(v);
+		myScores[i] = parseScore((e.currentTarget as HTMLInputElement).value);
 		dirty = true;
 		autosave.schedule();
 	}
@@ -86,10 +86,9 @@
 		return nets.filter((p) => p.net === best);
 	});
 
-	function rowTotal(scores: (number | null)[]) {
-		const filled = scores.filter((s): s is number => s !== null);
-		return filled.length ? filled.reduce((a, b) => a + b, 0) : null;
-	}
+	const rowTotal = (scores: (number | null)[]) => grossTotal(scores, coaster.par);
+	// Tomma hål vid signering räknas som x (dubbelt par)
+	let emptyCount = $derived(myScores.filter((s) => s === null).length);
 
 	function fmtDate(d: Date | string) {
 		return new Date(d).toLocaleDateString('sv-SE');
@@ -355,13 +354,13 @@
 									<input
 										name={`s${i}`}
 										use:scoreInput
-										value={s ?? ''}
+										value={fmtScore(s)}
 										oninput={(e) => onScoreInput(i, e)}
 										onblur={flushSoon}
 										class="h-11 w-full min-w-6 border-0 bg-transparent p-0 text-center font-hand text-lg text-ink sm:text-xl [appearance:textfield] focus:ring-1 focus:ring-print/50 [&::-webkit-inner-spin-button]:appearance-none"
 									/>
 								{:else}
-									<span class="font-hand text-xl text-ink">{s ?? ''}</span>
+									<span class="font-hand text-xl text-ink">{fmtScore(s)}</span>
 								{/if}
 							</td>
 						{/each}
@@ -411,26 +410,35 @@
 			use:enhance={async ({ cancel }) => {
 				// Se till att sista inmatningen är sparad innan signering
 				await autosave.flush();
-				if (saveState === 'error') cancel();
+				if (saveState === 'error') return cancel();
+				if (
+					emptyCount > 0 &&
+					!confirm(
+						`${emptyCount} hål är tomma och räknas som x (dubbelt par) när du signerar. Signera ändå?`
+					)
+				)
+					cancel();
 			}}
 		>
 			<button
 				class="rounded-lg bg-gold-500 px-4 py-2 text-sm font-semibold text-club-900 hover:bg-gold-400 disabled:cursor-not-allowed disabled:opacity-50"
 				disabled={myScores.length < 9 ||
-					myScores.some((s) => s === null) ||
+					myScores.every((s) => s === null) ||
 					players.length < data.minPlayers ||
 					saveState === 'saving'}
 				title={players.length < data.minPlayers
 					? 'Man kan inte spela ensam — lägg till minst en medspelare först'
-					: myScores.some((s) => s === null)
-						? 'Fyll i alla nio hål först'
-						: ''}>Signera rundan</button
+					: myScores.every((s) => s === null)
+						? 'Fyll i minst ett hål först'
+						: emptyCount > 0
+							? `${emptyCount} tomma hål räknas som x`
+							: ''}>Signera rundan</button
 			>
 		</form>
 		<span class="text-xs text-club-900/60" aria-live="polite">
 			{#if saveState === 'saving'}Sparar…{:else if saveState === 'saved'}Sparat ✓{:else if saveState === 'error'}<span
 					class="text-red-700">{saveMsg}</span
-				>{:else}Poängen sparas automatiskt.{/if}
+				>{:else}Poängen sparas automatiskt. 0 eller bokstav = x (dubbelt par).{/if}
 		</span>
 	</div>
 {/if}

@@ -90,9 +90,14 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   Varje spelare fyller sin rad (partiellt OK), signerar när klar → raden låses,
   runda skapas och HCP justeras mot coasterns par. Layout efter fysiska underlägget
   (`tmp/score-coaster.png`).
+- **Poängmodell** (`src/lib/scoring.ts`): per hål `null` = ej spelat, `0` = **x** (OB, räknas som
+  2 × par), 1–9 = slag. Brutto räknas ALLTID mot coasterns par via `grossTotal`/
+  `grossTotalComplete` — summera aldrig scores rakt av. Vid signering blir tomma hål x
+  (`fillMissingWithX`, bekräftelsedialog i UI); `rounds.scores` lagrar också 0 för x.
+  Inmatning: `0` eller bokstav → x (`parseScore`); admin tillåter 1–30/x (`parseScoreAdmin`).
 - Poängfält på coastern (medlem + gäst) använder `use:scoreInput` (`src/lib/score-input.ts`):
-  en siffra 1–9, numeriskt tangentbord, auto-hopp till nästa hål, backspace i tomt fält går
-  bakåt. Servern validerar 1–`MAX_HOLE_SCORE` (9). Admin-rättning tillåter 1–30.
+  ett tecken (1–9, 0/bokstav = x), numeriskt tangentbord, auto-hopp till nästa hål, backspace i
+  tomt fält går bakåt. Admin-rättning tillåter 1–30 och x.
 - **Autospar + live**: ingen spara-knapp. Egen rad hålls i lokalt state (`myScores`, dirty-flagga)
   och autosparas debounced via `?/saveScores` med `createAutosave` (`src/lib/live-coaster.ts`,
   fetch mot form action + `deserialize`). Blur-flush fördröjs ett tick (auto-hoppet blurrar före

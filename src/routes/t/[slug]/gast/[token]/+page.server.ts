@@ -10,7 +10,7 @@ import {
 import { settleSessionById } from '$lib/server/stripe';
 import { getTournamentBySlug, maybeDecideMatch } from '$lib/server/tournaments';
 import { notifyCoaster } from '$lib/server/live';
-import { MAX_HOLE_SCORE } from '$lib/score-input';
+import { fillMissingWithX, parseScore } from '$lib/scoring';
 import type { Actions, PageServerLoad } from './$types';
 
 // Gästens spelsida — auktoriseras med bearer-token i URL:en (ingen inloggning).
@@ -103,16 +103,7 @@ export const actions: Actions = {
 
 		const scores: (number | null)[] = [];
 		for (let i = 0; i < 9; i++) {
-			const raw = String(form.get(`s${i}`) ?? '').trim();
-			if (raw === '') {
-				scores.push(null);
-				continue;
-			}
-			const v = Number(raw);
-			if (!Number.isInteger(v) || v < 1 || v > MAX_HOLE_SCORE) {
-				return fail(400, { error: `Ogiltig poäng på hål ${i + 1}.` });
-			}
-			scores.push(v);
+			scores.push(parseScore(String(form.get(`s${i}`) ?? '')));
 		}
 
 		await db.update(coasterPlayers).set({ scores }).where(eq(coasterPlayers.id, row.id));
@@ -128,8 +119,8 @@ export const actions: Actions = {
 		const row = getGuestRows(participant.id).find((r) => r.id === rowId);
 		if (!row) return fail(400, { error: 'Du har ingen rad på en coaster än.' });
 		if (row.signedAt) return fail(400, { error: 'Redan signerad.' });
-		if (row.scores.some((s) => s === null)) {
-			return fail(400, { error: 'Fyll i alla nio hål innan du signerar.' });
+		if (row.scores.every((s) => s === null)) {
+			return fail(400, { error: 'Fyll i minst ett hål innan du signerar.' });
 		}
 		if (row.playerCount < MIN_COASTER_PLAYERS) {
 			return fail(400, {
@@ -137,9 +128,10 @@ export const actions: Actions = {
 			});
 		}
 
+		// Tomma hål = x (dubbelt par)
 		await db
 			.update(coasterPlayers)
-			.set({ signedAt: new Date() })
+			.set({ scores: fillMissingWithX(row.scores, row.par.length), signedAt: new Date() })
 			.where(eq(coasterPlayers.id, row.id));
 
 		// Matchspel: avgör matchen om båda spelarna nu signerat

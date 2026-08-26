@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { fmtScore, grossTotal } from '$lib/scoring';
 	let { data, form } = $props();
 
 	let coaster = $derived(data.coaster);
 	let parTotal = $derived(coaster.par.reduce((a, b) => a + b, 0));
 	const fmt = (d: Date) => new Date(d).toLocaleString('sv-SE');
-	const total = (s: (number | null)[]) => s.reduce<number>((a, b) => a + (b ?? 0), 0);
+	const total = (s: (number | null)[]) => grossTotal(s, coaster.par) ?? 0;
 </script>
 
 <svelte:head><title>Redigera coaster — Admin</title></svelte:head>
@@ -56,7 +57,8 @@
 	class="mt-6 rounded-lg border border-gold-400/50 bg-gold-500/10 px-3 py-2 text-xs text-club-900/80"
 >
 	Adminrättning: ändringar på signerade medlemsrader uppdaterar rundan och spelar om medlemmens hela
-	HCP-kedja från ingångshandikappet. Gästrader påverkar aldrig HCP.
+	HCP-kedja från ingångshandikappet. Gästrader påverkar aldrig HCP. Poäng: 1–30, <strong>x</strong>
+	= dubbelt par, tomt = ej spelat.
 	{#if data.tournament?.format === 'match'}
 		Matchresultatet avgörs inte om automatiskt — sätt vinnare manuellt på turneringssidan vid behov.
 	{/if}
@@ -116,11 +118,10 @@
 								<span>H{i + 1} <span class="text-club-900/40">p{par}</span></span>
 								<input
 									name="s{i}"
-									type="number"
-									min="1"
-									max="30"
-									inputmode="numeric"
-									value={row.scores[i] ?? ''}
+									type="text"
+									maxlength="2"
+									placeholder="–"
+									value={fmtScore(row.scores[i])}
 									class="w-12 rounded border-cream-300 bg-white text-center text-sm"
 								/>
 							</label>

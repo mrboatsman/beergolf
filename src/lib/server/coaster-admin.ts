@@ -8,10 +8,9 @@ import { asc, eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { coasters, coasterPlayers, members, rounds, DEFAULT_PAR } from '$lib/server/db/schema';
 import { ENTRY_HCP, netScore, nextHcp } from '$lib/handicap';
+import { grossTotalComplete } from '$lib/scoring';
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
-
-const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
 
 /**
  * Spela om alla rundor för en medlem i kronologisk ordning från ENTRY_HCP.
@@ -33,7 +32,7 @@ export function recomputeMemberHcp(tx: Tx, memberId: string): number {
 
 	let hcp = ENTRY_HCP;
 	for (const r of rs) {
-		const parTotal = sum(r.par ?? DEFAULT_PAR);
+		const parTotal = (r.par ?? DEFAULT_PAR).reduce((a, b) => a + b, 0);
 		const hcpBefore = hcp;
 		const hcpAfter = nextHcp(hcpBefore, r.grossTotal, parTotal);
 		tx.update(rounds)
@@ -61,8 +60,11 @@ export function adminSetScores(rowId: string, scores: (number | null)[]): void {
 		tx.update(coasterPlayers).set({ scores }).where(eq(coasterPlayers.id, row.id)).run();
 		if (row.roundId && row.memberId) {
 			const full = scores as number[];
+			const par =
+				tx.select({ par: coasters.par }).from(coasters).where(eq(coasters.id, row.coasterId)).get()
+					?.par ?? DEFAULT_PAR;
 			tx.update(rounds)
-				.set({ scores: full, grossTotal: sum(full) })
+				.set({ scores: full, grossTotal: grossTotalComplete(full, par) })
 				.where(eq(rounds.id, row.roundId))
 				.run();
 			recomputeMemberHcp(tx, row.memberId);
