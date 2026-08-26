@@ -7,7 +7,7 @@ import { newId } from '$lib/server/ids';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	requireMember(locals.member);
+	const me = requireMember(locals.member);
 	// Låga volymer + klubbtransparens: lista alla coasters, nyast först.
 	const list = await db
 		.select({
@@ -21,7 +21,13 @@ export const load: PageServerLoad = async ({ locals }) => {
 			signedCount: sql<number>`(
 				select count(*) from ${coasterPlayers}
 				where ${coasterPlayers.coasterId} = ${coasters.id} and ${coasterPlayers.signedAt} is not null
-			)`
+			)`,
+			// Min egen rad: 0 = inte med, 1 = med (ej signerad), 2 = med och signerad
+			myState: sql<number>`coalesce((
+				select case when ${coasterPlayers.signedAt} is null then 1 else 2 end
+				from ${coasterPlayers}
+				where ${coasterPlayers.coasterId} = ${coasters.id} and ${coasterPlayers.memberId} = ${me.id}
+			), 0)`
 		})
 		.from(coasters)
 		.innerJoin(members, eq(coasters.createdBy, members.id))

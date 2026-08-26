@@ -2,8 +2,13 @@
 	import { enhance } from '$app/forms';
 	let { data, form } = $props();
 
-	let ongoing = $derived(data.coasters.filter((c) => c.signedCount < c.playerCount));
-	let finished = $derived(data.coasters.filter((c) => c.signedCount >= c.playerCount));
+	let isOngoing = (c: (typeof data.coasters)[number]) => c.signedCount < c.playerCount;
+	// Mina pågående överst — de där min rad inte är signerad först
+	let mine = $derived(
+		data.coasters.filter((c) => c.myState > 0 && isOngoing(c)).sort((a, b) => a.myState - b.myState)
+	);
+	let ongoing = $derived(data.coasters.filter((c) => c.myState === 0 && isOngoing(c)));
+	let finished = $derived(data.coasters.filter((c) => !isOngoing(c)));
 
 	function fmtDate(d: Date | string) {
 		return new Date(d).toLocaleDateString('sv-SE');
@@ -59,16 +64,60 @@
 </section>
 
 <section class="mt-8">
-	<h2 class="font-display text-2xl font-semibold">Pågående ({ongoing.length})</h2>
+	<h2 class="font-display text-2xl font-semibold">Mina pågående ({mine.length})</h2>
+	{#if mine.length === 0}
+		<p class="mt-2 text-sm text-club-900/60">
+			Du spelar inte i någon pågående coaster. Skapa en ovan eller be en medspelare lägga till dig.
+		</p>
+	{:else}
+		<ul class="mt-3 space-y-2">
+			{#each mine as c (c.id)}
+				<li>
+					<a
+						href={`/coasters/${c.id}`}
+						class="flex flex-wrap items-center justify-between gap-2 rounded-xl border-l-4 px-4 py-3 shadow-sm hover:shadow {c.myState ===
+						1
+							? 'border-gold-400 bg-parchment'
+							: 'border-club-700/40 bg-parchment'}"
+					>
+						<div class="min-w-0">
+							<span class="font-semibold">{c.name ?? 'Score Coaster'}</span>
+							<span class="ml-2 text-sm text-club-900/60"
+								>av {c.creatorName} · {fmtDate(c.createdAt)}</span
+							>
+						</div>
+						<span class="text-sm text-club-900/60">
+							{c.signedCount}/{c.playerCount} signerade
+							{#if c.myState === 1}
+								<span
+									class="ml-2 rounded-full bg-gold-400 px-2.5 py-0.5 text-xs font-semibold text-club-900"
+									>Fyll i din rad</span
+								>
+							{:else}
+								<span
+									class="ml-2 rounded-full bg-club-700/10 px-2.5 py-0.5 text-xs font-semibold text-club-700"
+									>Du har signerat</span
+								>
+							{/if}
+						</span>
+					</a>
+				</li>
+			{/each}
+		</ul>
+	{/if}
+</section>
+
+<section class="mt-8">
+	<h2 class="font-display text-2xl font-semibold">Övriga pågående ({ongoing.length})</h2>
 	{#if ongoing.length === 0}
-		<p class="mt-2 text-sm text-club-900/60">Inga pågående matcher.</p>
+		<p class="mt-2 text-sm text-club-900/60">Inga andra pågående matcher.</p>
 	{:else}
 		<ul class="mt-3 space-y-2">
 			{#each ongoing as c (c.id)}
 				<li>
 					<a
 						href={`/coasters/${c.id}`}
-						class="flex items-center justify-between rounded-xl bg-parchment px-4 py-3 shadow-sm hover:shadow"
+						class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-parchment px-4 py-3 shadow-sm hover:shadow"
 					>
 						<div>
 							<span class="font-semibold">{c.name ?? 'Score Coaster'}</span>
@@ -100,7 +149,7 @@
 				<li>
 					<a
 						href={`/coasters/${c.id}`}
-						class="flex items-center justify-between rounded-xl bg-parchment px-4 py-3 shadow-sm hover:shadow"
+						class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-parchment px-4 py-3 shadow-sm hover:shadow"
 					>
 						<div>
 							<span class="font-semibold">{c.name ?? 'Score Coaster'}</span>
@@ -110,6 +159,12 @@
 						</div>
 						<span class="text-sm text-club-900/60">
 							{c.playerCount} spelare
+							{#if c.myState > 0}
+								<span
+									class="ml-2 rounded-full bg-gold-400/20 px-2.5 py-0.5 text-xs font-semibold text-gold-600"
+									>Du spelade</span
+								>
+							{/if}
 							<span
 								class="ml-2 rounded-full bg-club-700/10 px-2.5 py-0.5 text-xs font-semibold text-club-700"
 								>Avslutad</span
