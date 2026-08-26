@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { scoreInput } from '$lib/score-input';
 	let { data, form } = $props();
 
 	let t = $derived(data.tournament);
@@ -107,9 +108,7 @@
 										{:else}
 											<input
 												name={`s${i}`}
-												type="number"
-												min="1"
-												max="30"
+												use:scoreInput
 												value={s ?? ''}
 												class="h-10 w-full min-w-8 rounded border-cream-300 bg-white/70 p-0 text-center [appearance:textfield] focus:border-gold-400 focus:ring-gold-400 [&::-webkit-inner-spin-button]:appearance-none"
 											/>

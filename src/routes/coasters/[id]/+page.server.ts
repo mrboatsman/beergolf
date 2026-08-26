@@ -15,6 +15,7 @@ import { requireMember } from '$lib/server/guard';
 import { newId } from '$lib/server/ids';
 import { nextHcp, netScore } from '$lib/handicap';
 import { maybeDecideMatch } from '$lib/server/tournaments';
+import { MAX_HOLE_SCORE } from '$lib/score-input';
 import type { Actions, PageServerLoad } from './$types';
 
 async function getCoaster(id: string) {
@@ -260,7 +261,7 @@ export const actions: Actions = {
 				continue;
 			}
 			const v = Number(raw);
-			if (!Number.isInteger(v) || v < 1 || v > 30) {
+			if (!Number.isInteger(v) || v < 1 || v > MAX_HOLE_SCORE) {
 				return fail(400, { error: `Ogiltig poäng på hål ${i + 1}.` });
 			}
 			scores.push(v);

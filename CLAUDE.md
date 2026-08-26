@@ -90,6 +90,9 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   Varje spelare fyller sin rad (partiellt OK), signerar när klar → raden låses,
   runda skapas och HCP justeras mot coasterns par. Layout efter fysiska underlägget
   (`tmp/score-coaster.png`).
+- Poängfält på coastern (medlem + gäst) använder `use:scoreInput` (`src/lib/score-input.ts`):
+  en siffra 1–9, numeriskt tangentbord, auto-hopp till nästa hål, backspace i tomt fält går
+  bakåt. Servern validerar 1–`MAX_HOLE_SCORE` (9). Admin-rättning tillåter 1–30.
 - **Coastern är enda sättet att registrera rundor** — `/rounds` är ren historik.
 - Dashboard (`/`, komponent `MemberDashboard.svelte`, data `src/lib/server/dashboard.ts`):
   HCP-hero med säsongsförändring, statkort (rundor/bästa brutto/snitt mot par),

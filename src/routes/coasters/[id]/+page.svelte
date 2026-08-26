@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import CoasterRules from '$lib/components/CoasterRules.svelte';
 	import { shortName } from '$lib/names';
+	import { scoreInput } from '$lib/score-input';
 	let { data, form } = $props();
 
 	let coaster = $derived(data.coaster);
@@ -247,9 +248,7 @@
 									<input
 										form="scoreform"
 										name={`s${i}`}
-										type="number"
-										min="1"
-										max="30"
+										use:scoreInput
 										value={s ?? ''}
 										class="h-11 w-full min-w-6 border-0 bg-transparent p-0 text-center font-hand text-lg text-ink sm:text-xl [appearance:textfield] focus:ring-1 focus:ring-print/50 [&::-webkit-inner-spin-button]:appearance-none"
 									/>

@@ -9,6 +9,7 @@ import {
 } from '$lib/server/db/schema';
 import { settleSessionById } from '$lib/server/stripe';
 import { getTournamentBySlug, maybeDecideMatch } from '$lib/server/tournaments';
+import { MAX_HOLE_SCORE } from '$lib/score-input';
 import type { Actions, PageServerLoad } from './$types';
 
 // Gästens spelsida — auktoriseras med bearer-token i URL:en (ingen inloggning).
@@ -106,7 +107,7 @@ export const actions: Actions = {
 				continue;
 			}
 			const v = Number(raw);
-			if (!Number.isInteger(v) || v < 1 || v > 30) {
+			if (!Number.isInteger(v) || v < 1 || v > MAX_HOLE_SCORE) {
 				return fail(400, { error: `Ogiltig poäng på hål ${i + 1}.` });
 			}
 			scores.push(v);
