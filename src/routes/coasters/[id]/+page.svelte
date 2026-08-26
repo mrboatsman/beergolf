@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import CoasterRules from '$lib/components/CoasterRules.svelte';
 	let { data, form } = $props();
 
 	let coaster = $derived(data.coaster);
@@ -28,6 +29,10 @@
 		return new Date(d).toLocaleDateString('sv-SE');
 	}
 </script>
+
+<div class="mx-auto mb-4 max-w-2xl">
+	<CoasterRules />
+</div>
 
 {#if data.tournament}
 	<div class="mx-auto mb-4 max-w-2xl">

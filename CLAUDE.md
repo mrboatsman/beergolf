@@ -146,6 +146,8 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   medlemsrader spelar om medlemmens HCP-kedja från `ENTRY_HCP` (36) i kronologisk ordning
   (`recomputeMemberHcp`, par från coastern via coaster_players.roundId). Gästrader rör
   aldrig rounds/HCP. Matchresultat avgörs inte om automatiskt vid rättning.
+- Regeltext i `src/lib/rules.ts` (`RULES`, sektioner Spelet / Räkning & signatur / Etikett),
+  visas hopfällbart (`CoasterRules.svelte`) ovanför coastern på `/coasters/[id]`.
 - Signering kräver minst `MIN_COASTER_PLAYERS` (2) spelare på coastern — man spelar inte ensam.
 - Profilens HCP-kort visar global leaderboard-placering ("#N av M", länkad till /members).
 
