@@ -2,13 +2,13 @@
 // Körs med:  npm run db:seed
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { hash } from '@node-rs/argon2';
 import { randomUUID } from 'node:crypto';
-import { members, quizQuestions } from '../src/lib/server/db/schema.ts';
+import { certifications, members, quizQuestions } from '../src/lib/server/db/schema.ts';
 
 const url = (process.env.DATABASE_URL ?? './data/beergolf.db').replace(/^file:/, '');
-const db = drizzle(new Database(url), { schema: { members, quizQuestions } });
+const db = drizzle(new Database(url), { schema: { members, quizQuestions, certifications } });
 
 const ARGON = { memoryCost: 19456, timeCost: 2, outputLen: 32, parallelism: 1 };
 
@@ -31,6 +31,39 @@ if (existing) {
 		})
 		.run();
 	console.log(`Admin skapad: ${adminEmail} / ${adminPassword}  (byt lösenord!)`);
+}
+
+// Admin är urmedlem: grönt kort (nästa lediga nummer) så att coasters kan skapas direkt.
+const admin = db.select().from(members).where(eq(members.email, adminEmail)).get()!;
+if (!admin.greenCardIssuedAt) {
+	const now = new Date();
+	const next =
+		(db
+			.select({ max: sql<number | null>`max(${members.memberNumber})` })
+			.from(members)
+			.get()?.max ?? 0) + 1;
+	db.update(members)
+		.set({ status: 'active', memberNumber: admin.memberNumber ?? next, greenCardIssuedAt: now })
+		.where(eq(members.id, admin.id))
+		.run();
+	const cert = db.select().from(certifications).where(eq(certifications.memberId, admin.id)).get();
+	if (!cert) {
+		db.insert(certifications)
+			.values({
+				id: randomUUID(),
+				memberId: admin.id,
+				theoryPassed: true,
+				theoryAutoPassed: true,
+				theoryAt: now,
+				practicalPassed: true,
+				practicalAt: now,
+				practicalComment: 'Urmedlem — grundare.',
+				etiquettePassed: true,
+				certifiedAt: now
+			})
+			.run();
+	}
+	console.log(`Grönt kort nr ${admin.memberNumber ?? next} utfärdat till admin.`);
 }
 
 // --- Teoriprov ------------------------------------------------------------

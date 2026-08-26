@@ -54,6 +54,11 @@
 		— visas bara nu. Användaren måste byta det vid inloggning.
 	</p>
 {/if}
+{#if form?.greenCardIssued}
+	<p class="mt-4 rounded bg-club-100 px-3 py-2 text-sm text-club-700">
+		Grönt kort utfärdat till {form.greenCardIssued}.
+	</p>
+{/if}
 {#if form?.memberUpdated}
 	<p class="mt-4 rounded bg-club-100 px-3 py-2 text-sm text-club-700">
 		Uppgifter sparade för {form.memberUpdated}.
@@ -194,6 +199,21 @@
 										onclick={() => (editing = m)}
 										class="font-semibold text-club-700 hover:underline">Redigera</button
 									>
+									{#if !m.greenCardIssuedAt}
+										<form
+											method="POST"
+											action="?/issueGreenCard"
+											use:enhance={({ cancel }) => {
+												if (!confirm(`Utfärda grönt kort till ${m.name} utan prov (urmedlem)?`))
+													cancel();
+											}}
+										>
+											<input type="hidden" name="id" value={m.id} />
+											<button class="font-semibold text-club-700 hover:underline"
+												>Utfärda grönt kort</button
+											>
+										</form>
+									{/if}
 									{#if m.id !== meId}
 										<form method="POST" action="?/resetPassword" use:enhance>
 											<input type="hidden" name="id" value={m.id} />

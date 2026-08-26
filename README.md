@@ -53,6 +53,7 @@ docker exec -e ADMIN_EMAIL=du@example.se -e ADMIN_PASSWORD=hemligt beergolf node
 ```
 
 - Migreringar körs automatiskt vid start (`scripts/migrate.mjs`).
+- Seeden ger admin grönt kort nr 1. Konton som seedats med äldre version: Admin → medlemstabellen → **Utfärda grönt kort**.
 - `/data` = SQLite-db + uppladdningar; montera som volym.
 - `ORIGIN` måste sättas till den publika URL:en (form actions/CSRF bakom proxy).
 - Lokalt bygge: `docker build -t beergolf .`

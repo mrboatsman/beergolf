@@ -16,6 +16,7 @@ import { storage } from '$lib/server/storage';
 import { newId, newInviteCode } from '$lib/server/ids';
 import { requireRole } from '$lib/server/guard';
 import { buildFadderTree } from '$lib/fadder-tree';
+import { issueGreenCardDirect } from '$lib/server/certification';
 import { MAX_HCP, MIN_HCP, round1 } from '$lib/handicap';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -310,6 +311,23 @@ export const actions: Actions = {
 			.set({ name, email, role, hcp: round1(hcp), memberNumber })
 			.where(eq(members.id, id));
 		return { memberUpdated: name };
+	},
+
+	// Utfärda grönt kort utan prov (urmedlem / adminbeslut) — alla tre delar
+	// bokförs som godkända på heder, kortet får nästa lediga nummer.
+	issueGreenCard: async ({ request, locals }) => {
+		const me = requireRole(locals.member, 'admin');
+		const form = await request.formData();
+		const id = String(form.get('id') ?? '');
+		const target = await db.select().from(members).where(eq(members.id, id)).get();
+		if (!target) return fail(404, { error: 'Medlemmen finns inte.' });
+		if (target.greenCardIssuedAt) return fail(400, { error: 'Medlemmen har redan grönt kort.' });
+		issueGreenCardDirect(
+			id,
+			`Utfärdat av admin (${me.name}) utan prov — urmedlem.`,
+			me.id === id ? null : me.id
+		);
+		return { greenCardIssued: target.name };
 	},
 
 	toggleActive: async ({ request, locals }) => {

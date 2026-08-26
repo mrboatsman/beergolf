@@ -145,6 +145,9 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   finnas i db — ingen path traversal). `BODY_SIZE_LIMIT` i .env höjer adapter-nodes
   body-gräns för videouppladdning; max 200 MB/fil valideras i actionen.
 
+- **Utfärda grönt kort** (admin, i medlemstabellen, action `issueGreenCard` →
+  `issueGreenCardDirect` i certification.ts): utan prov, alla delar bokförs godkända på heder,
+  nästa lediga kortnummer. Seeden (`db:seed`) ger admin kort automatiskt (urmedlem).
 - **Redigera medlem** (admin, modal i medlemstabellen, action `updateMember`): namn, e-post,
   roll, HCP (0–54) och kort-nr; unika e-post/kort-nr valideras; egen roll kan inte ändras.
 - Kontoåtgärder i admin (endast rollen admin, ej på sig själv): **Återställ lösenord**
