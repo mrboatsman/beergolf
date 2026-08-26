@@ -8,6 +8,11 @@
 	let myRow = $derived(players.find((p) => p.memberId === data.meId));
 	let parTotal = $derived(coaster.par.reduce((a, b) => a + b, 0));
 	let signed = $derived(players.filter((p) => p.signedAt));
+	// Mobil: smal namnkolumn, visa "Förnamn E."
+	function shortName(name: string) {
+		const parts = name.trim().split(/\s+/);
+		return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]}.` : name;
+	}
 	let amInvolved = $derived(coaster.createdBy === data.meId || !!myRow);
 
 	// Sök bland medlemmar att lägga till — lista funkar inte med 1000 st
@@ -121,7 +126,7 @@
 
 <!-- ====== Papp-coastern ====== -->
 <div
-	class="mx-auto max-w-2xl -rotate-[0.6deg] rounded-[28px] border border-black/5 bg-card px-6 py-7 font-coaster text-print shadow-[0_10px_30px_-8px_rgba(60,50,30,0.35),0_2px_6px_rgba(60,50,30,0.15)] sm:px-10 sm:py-9"
+	class="mx-auto max-w-2xl -rotate-[0.6deg] rounded-[28px] border border-black/5 bg-card px-3 py-6 font-coaster text-print shadow-[0_10px_30px_-8px_rgba(60,50,30,0.35),0_2px_6px_rgba(60,50,30,0.15)] sm:px-10 sm:py-9"
 >
 	<!-- Huvud: titel + vimpel -->
 	<div class="flex items-start justify-between gap-4">
@@ -181,13 +186,18 @@
 		<table class="w-full border-collapse">
 			<thead>
 				<tr class="border-t-[4px] border-b border-double border-t-print border-b-print/80">
-					<th class="w-[30%] min-w-28 py-2 pr-2 text-left text-xl font-bold">Hole</th>
+					<th
+						class="w-[20%] max-w-16 min-w-14 py-2 pr-1 text-left text-lg font-bold sm:w-[30%] sm:max-w-none sm:min-w-28 sm:text-xl"
+						>Hole</th
+					>
 					{#each coaster.par as _, i (i)}
-						<th class="w-9 border-l border-print/60 px-1 py-2 text-center text-lg font-bold"
+						<th
+							class="w-9 min-w-6 border-l border-print/60 px-0 py-2 text-center text-base font-bold sm:px-1 sm:text-lg"
 							>{i + 1}</th
 						>
 					{/each}
-					<th class="w-16 border-l border-print/60 px-1 py-2 text-center text-lg font-bold"
+					<th
+						class="w-12 border-l border-print/60 px-0 py-2 text-center text-base font-bold sm:w-16 sm:px-1 sm:text-lg"
 						>Total</th
 					>
 				</tr>
@@ -195,12 +205,15 @@
 			<tbody>
 				<!-- Par-rad (tryckt) -->
 				<tr class="border-b border-print/80">
-					<td class="py-2 pr-2 text-xl font-bold">Par</td>
+					<td class="py-2 pr-1 text-lg font-bold sm:text-xl">Par</td>
 					{#each coaster.par as p, i (i)}
-						<td class="border-l border-print/60 px-1 py-2 text-center text-lg font-semibold">{p}</td
+						<td
+							class="border-l border-print/60 px-0 py-2 text-center text-base font-semibold sm:px-1 sm:text-lg"
+							>{p}</td
 						>
 					{/each}
-					<td class="border-l border-print/60 px-1 py-2 text-center text-lg font-semibold"
+					<td
+						class="border-l border-print/60 px-0 py-2 text-center text-base font-semibold sm:px-1 sm:text-lg"
 						>{parTotal}</td
 					>
 				</tr>
@@ -208,9 +221,13 @@
 				{#each players as p (p.id)}
 					{@const mine = p.memberId === data.meId && !p.signedAt}
 					<tr class="border-b border-print/80">
-						<td class="h-12 py-1 pr-2 align-top">
+						<td class="h-12 max-w-16 py-1 pr-1 align-top sm:max-w-none">
 							<span class="block text-[9px] leading-none text-print/80">Player {p.position}</span>
-							<span class="font-hand text-xl leading-tight text-ink">{p.name}</span>
+							<span class="font-hand text-lg leading-tight text-ink sm:hidden"
+								>{shortName(p.name)}</span
+							>
+							<span class="hidden font-hand text-xl leading-tight text-ink sm:inline">{p.name}</span
+							>
 							{#if !p.memberId}<span
 									class="ml-1 rounded-full bg-print/10 px-1.5 align-middle text-[10px] font-bold text-print/70"
 									>GÄST</span
@@ -238,22 +255,24 @@
 										min="1"
 										max="30"
 										value={s ?? ''}
-										class="h-11 w-full min-w-8 border-0 bg-transparent p-0 text-center font-hand text-xl text-ink [appearance:textfield] focus:ring-1 focus:ring-print/50 [&::-webkit-inner-spin-button]:appearance-none"
+										class="h-11 w-full min-w-6 border-0 bg-transparent p-0 text-center font-hand text-lg text-ink sm:text-xl [appearance:textfield] focus:ring-1 focus:ring-print/50 [&::-webkit-inner-spin-button]:appearance-none"
 									/>
 								{:else}
 									<span class="font-hand text-xl text-ink">{s ?? ''}</span>
 								{/if}
 							</td>
 						{/each}
-						<td class="border-l border-print/60 px-1 text-center">
-							<span class="font-hand text-xl font-bold text-ink">{rowTotal(p.scores) ?? ''}</span>
+						<td class="border-l border-print/60 px-0 text-center sm:px-1">
+							<span class="font-hand text-lg font-bold text-ink sm:text-xl"
+								>{rowTotal(p.scores) ?? ''}</span
+							>
 						</td>
 					</tr>
 				{/each}
 				<!-- Tomma rader upp till sex, som på det tryckta underlägget -->
 				{#each Array(Math.max(0, data.maxPlayers - players.length)) as _, i (i)}
 					<tr class="border-b border-print/80">
-						<td class="h-12 py-1 pr-2 align-top">
+						<td class="h-12 py-1 pr-1 align-top">
 							<span class="block text-[9px] leading-none text-print/80"
 								>Player {players.length + i + 1}</span
 							>

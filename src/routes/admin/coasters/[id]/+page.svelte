@@ -103,7 +103,7 @@
 							Runda: HCP {row.hcpBefore} → {row.hcpAfter}
 						{/if}
 						{#if !row.isGuest && row.memberHcp != null}
-							· Nuvarande HCP {row.memberHcp}
+							{#if row.roundId}·{/if} Nuvarande HCP {row.memberHcp}
 						{/if}
 					</div>
 				</div>
