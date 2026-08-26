@@ -148,6 +148,13 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   aldrig rounds/HCP. Matchresultat avgörs inte om automatiskt vid rättning.
 - Regeltext i `src/lib/rules.ts` (`RULES`, sektioner Spelet / Räkning & signatur / Etikett),
   visas hopfällbart (`CoasterRules.svelte`) ovanför coastern på `/coasters/[id]`.
+- **PWA**: `static/manifest.webmanifest` + ikoner i `static/icons/` (genererade från
+  `src/lib/assets/logo.png` med sips; maskable = logo på club-800), meta/länkar i `src/app.html`,
+  service worker `src/service-worker.ts` (auto-registrerad av SvelteKit): app-skalet (build +
+  static) cache-first, navigeringar network-first med inbyggd offline-sida, data/`/files/`
+  cachas aldrig. Kräver HTTPS i produktion för installation.
+- Mobil: topbaren (<lg) har hamburgermeny med nav + användarkort, stängs vid navigering.
+  Coaster-tabellen ryms på 390 px (kortnamn "Förnamn E." på mobil).
 - Signering kräver minst `MIN_COASTER_PLAYERS` (2) spelare på coastern — man spelar inte ensam.
 - Profilens HCP-kort visar global leaderboard-placering ("#N av M", länkad till /members).
 

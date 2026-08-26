@@ -1,0 +1,17 @@
+{
+	"name": "Tablers Beer Golf Society",
+	"short_name": "Beer Golf",
+	"description": "Klubbsystem för Beer Golf™: Score Coasters, handikapp, grönt kort och turneringar.",
+	"lang": "sv",
+	"start_url": "/",
+	"scope": "/",
+	"display": "standalone",
+	"orientation": "portrait",
+	"background_color": "#ede6d3",
+	"theme_color": "#17382b",
+	"icons": [
+		{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+		{ "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+		{ "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+	]
+}
