@@ -5,6 +5,7 @@
 // faktiska spel — ett självkorrigerande system likt riktig golf men
 // enklare, anpassat för låga volymer.
 
+export const ENTRY_HCP = 36; // ingångshandikapp vid grönt kort
 export const MIN_HCP = 0;
 export const MAX_HCP = 54;
 export const ADJUST_FACTOR = 0.2; // hur snabbt hcp rör sig mot formen

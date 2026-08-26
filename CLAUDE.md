@@ -139,6 +139,14 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   ersätts, lösenord+sessioner raderas, bevismedia tas bort ur lagringen och fadderns
   omdöme rensas; spelhistorik behålls som klubbstatistik. `/password` = byt eget lösenord
   (länk i sidebarens användarkort), loggar ut övriga sessioner.
+- **Admin: Score Coasters** (`/admin/coasters`, endast rollen admin, logik i
+  `src/lib/server/coaster-admin.ts`): sök på coaster-/spelar-/turneringsnamn (q/page),
+  detaljsida `/admin/coasters/[id]`: byt namn, rätta poäng på valfri rad (även signerad),
+  häv signatur, ta bort spelare, ta bort hela coastern. Allt som rör signerade
+  medlemsrader spelar om medlemmens HCP-kedja från `ENTRY_HCP` (36) i kronologisk ordning
+  (`recomputeMemberHcp`, par från coastern via coaster_players.roundId). Gästrader rör
+  aldrig rounds/HCP. Matchresultat avgörs inte om automatiskt vid rättning.
+- Signering kräver minst `MIN_COASTER_PLAYERS` (2) spelare på coastern — man spelar inte ensam.
 - Profilens HCP-kort visar global leaderboard-placering ("#N av M", länkad till /members).
 
 - **Turneringar = välgörenhetsinsamlingar** (`/tournaments`, logik i

@@ -67,6 +67,21 @@
 	</p>
 {/if}
 
+{#if isAdmin}
+	<a
+		href="/admin/coasters"
+		class="mt-6 flex items-center justify-between rounded-2xl bg-parchment px-5 py-4 shadow-sm hover:bg-cream-200"
+	>
+		<span>
+			<span class="font-semibold text-club-900">Score Coasters</span>
+			<span class="block text-sm text-club-900/60"
+				>Sök, rätta poäng, häv signaturer och ta bort coasters.</span
+			>
+		</span>
+		<span class="text-club-900/60">→</span>
+	</a>
+{/if}
+
 <div class="mt-6 grid gap-6 md:grid-cols-2">
 	<section class="rounded-2xl bg-parchment shadow-sm p-5">
 		<h2 class="font-semibold text-club-900">Skapa invalskod</h2>
