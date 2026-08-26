@@ -102,6 +102,9 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   Servern skriver bara över lokalt state när inget osparat finns. Klick på pappen → fokus på
   första tomma hålet. OBS: puppeteer-tester måste använda `waitUntil: 'load'` (SSE håller
   anslutningen öppen så `networkidle0` timar ut).
+- **Vinnarmärke**: när alla (≥2) signerat räknas lägst netto (`players[].net` från
+  `rounds.netTotal`, gäst = brutto − playingHcp) → guldsigill över vimpeln + rad under titeln;
+  delad seger vid lika netto.
 - **Coastern är enda sättet att registrera rundor** — `/rounds` är ren historik.
 - Dashboard (`/`, komponent `MemberDashboard.svelte`, data `src/lib/server/dashboard.ts`):
   HCP-hero med säsongsförändring, statkort (rundor/bästa brutto/snitt mot par),

@@ -45,11 +45,18 @@ function getPlayers(coasterId: string) {
 			scores: coasterPlayers.scores,
 			signedAt: coasterPlayers.signedAt,
 			name: sql<string>`coalesce(${members.name}, ${tournamentParticipants.guestName}, '?')`,
-			hcp: members.hcp
+			hcp: members.hcp,
+			// Netto vid signering: medlem = rundans netTotal, gäst = brutto − spelhcp
+			net: sql<number | null>`case
+				when ${rounds.netTotal} is not null then ${rounds.netTotal}
+				when ${coasterPlayers.signedAt} is not null and ${tournamentParticipants.playingHcp} is not null
+					then (select sum(value) from json_each(${coasterPlayers.scores})) - ${tournamentParticipants.playingHcp}
+				else null end`
 		})
 		.from(coasterPlayers)
 		.leftJoin(members, eq(coasterPlayers.memberId, members.id))
 		.leftJoin(tournamentParticipants, eq(coasterPlayers.participantId, tournamentParticipants.id))
+		.leftJoin(rounds, eq(coasterPlayers.roundId, rounds.id))
 		.where(eq(coasterPlayers.coasterId, coasterId))
 		.orderBy(asc(coasterPlayers.position))
 		.all();

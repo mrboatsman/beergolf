@@ -76,6 +76,16 @@
 		target?.focus();
 	}
 
+	// Vinnare när alla (minst två) signerat: lägst netto. Delad seger möjlig.
+	let finished = $derived(players.length >= 2 && players.every((p) => p.signedAt));
+	let winners = $derived.by(() => {
+		if (!finished) return [];
+		const nets = players.filter((p) => p.net !== null);
+		if (!nets.length) return [];
+		const best = Math.min(...nets.map((p) => p.net as number));
+		return nets.filter((p) => p.net === best);
+	});
+
 	function rowTotal(scores: (number | null)[]) {
 		const filled = scores.filter((s): s is number => s !== null);
 		return filled.length ? filled.reduce((a, b) => a + b, 0) : null;
@@ -183,47 +193,96 @@
 			{#if coaster.name}
 				<p class="mt-1 text-xs text-print/70">{coaster.name} · {fmtDate(coaster.createdAt)}</p>
 			{/if}
+			{#if winners.length}
+				<p class="mt-2 text-sm font-bold text-print">
+					🏆 {winners.length > 1 ? 'Delad seger' : 'Vinnare'}: {winners
+						.map((w) => w.name)
+						.join(' & ')}
+					<span class="font-normal text-print/70">(netto {winners[0].net})</span>
+				</p>
+			{/if}
 		</div>
-		<!-- Beer Golf-vimpel med glas och korsade klubbor -->
-		<svg viewBox="0 0 64 86" class="h-24 w-[4.5rem] shrink-0" aria-label="Beer Golf">
-			<path
-				d="M4 3h56v66L32 83 4 69Z"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2.5"
-				stroke-linejoin="round"
-			/>
-			<!-- korsade klubbor -->
-			<path
-				d="M20 30 40 12M44 30 24 12"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="1.6"
-				stroke-linecap="round"
-			/>
-			<circle cx="20.5" cy="30" r="2" fill="currentColor" />
-			<circle cx="43.5" cy="30" r="2" fill="currentColor" />
-			<!-- ölglas -->
-			<path
-				d="M27 13.5h10l-1.6 12h-6.8Z"
-				fill="var(--color-card)"
-				stroke="currentColor"
-				stroke-width="1.6"
-			/>
-			<path d="M28.4 17h7.4" stroke="currentColor" stroke-width="1" />
-			<text x="17" y="20" text-anchor="middle" font-size="7" font-weight="bold" fill="currentColor"
-				>B</text
+		<div class="relative shrink-0">
+			{#if winners.length}
+				<!-- Guldmärke: klistras över vimpeln när alla signerat -->
+				<div
+					class="absolute -top-8 -right-3 z-10 flex h-[7.5rem] w-[7.5rem] rotate-[8deg] sm:h-[8rem] sm:w-[8rem] flex-col items-center justify-center rounded-full text-center text-club-900 drop-shadow-[0_4px_8px_rgba(60,50,30,0.45)]"
+					style="background: radial-gradient(circle at 35% 30%, #fff3c4 0%, #e8c04a 45%, #b8892a 100%); clip-path: polygon(50% 0%, 58% 8%, 68% 4%, 73% 14%, 84% 13%, 85% 24%, 96% 27%, 92% 37%, 100% 45%, 93% 53%, 97% 64%, 87% 68%, 87% 79%, 76% 78%, 71% 89%, 61% 85%, 54% 95%, 46% 95%, 39% 85%, 29% 89%, 24% 78%, 13% 79%, 13% 68%, 3% 64%, 7% 53%, 0% 45%, 8% 37%, 4% 27%, 15% 24%, 16% 13%, 27% 14%, 32% 4%, 42% 8%)"
+					title={`Vinnare: ${winners.map((w) => w.name).join(' & ')} (netto ${winners[0].net})`}
+				>
+					<span class="text-[10px] font-bold tracking-[0.2em] uppercase">Vinnare</span>
+					<span class="text-2xl leading-none">🏆</span>
+					<span class="font-hand mt-0.5 max-w-[6rem] truncate px-1 text-base leading-tight"
+						>{winners.length === 1 ? shortName(winners[0].name) : 'Delad seger'}</span
+					>
+					<span class="text-[11px] leading-none">netto {winners[0].net}</span>
+				</div>
+			{/if}
+			<!-- Beer Golf-vimpel med glas och korsade klubbor -->
+			<svg
+				viewBox="0 0 64 86"
+				class="h-24 w-[4.5rem] shrink-0 {winners.length ? 'opacity-70' : ''}"
+				aria-label="Beer Golf"
 			>
-			<text x="47" y="20" text-anchor="middle" font-size="7" font-weight="bold" fill="currentColor"
-				>G</text
-			>
-			<text x="32" y="49" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor"
-				>Beer</text
-			>
-			<text x="32" y="63" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor"
-				>Golf</text
-			>
-		</svg>
+				<path
+					d="M4 3h56v66L32 83 4 69Z"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2.5"
+					stroke-linejoin="round"
+				/>
+				<!-- korsade klubbor -->
+				<path
+					d="M20 30 40 12M44 30 24 12"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.6"
+					stroke-linecap="round"
+				/>
+				<circle cx="20.5" cy="30" r="2" fill="currentColor" />
+				<circle cx="43.5" cy="30" r="2" fill="currentColor" />
+				<!-- ölglas -->
+				<path
+					d="M27 13.5h10l-1.6 12h-6.8Z"
+					fill="var(--color-card)"
+					stroke="currentColor"
+					stroke-width="1.6"
+				/>
+				<path d="M28.4 17h7.4" stroke="currentColor" stroke-width="1" />
+				<text
+					x="17"
+					y="20"
+					text-anchor="middle"
+					font-size="7"
+					font-weight="bold"
+					fill="currentColor">B</text
+				>
+				<text
+					x="47"
+					y="20"
+					text-anchor="middle"
+					font-size="7"
+					font-weight="bold"
+					fill="currentColor">G</text
+				>
+				<text
+					x="32"
+					y="49"
+					text-anchor="middle"
+					font-size="14"
+					font-weight="bold"
+					fill="currentColor">Beer</text
+				>
+				<text
+					x="32"
+					y="63"
+					text-anchor="middle"
+					font-size="14"
+					font-weight="bold"
+					fill="currentColor">Golf</text
+				>
+			</svg>
+		</div>
 	</div>
 
 	<!-- Poängtabell -->
