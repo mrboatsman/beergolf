@@ -87,6 +87,11 @@
 						{#if i.usedByStatus === 'aspirant'}
 							<span class="ml-1 rounded bg-cream-300 px-1.5 py-0.5 text-xs">under certifiering</span
 							>
+							<a
+								href="/certification?aspirant={i.usedById}"
+								class="ml-2 inline-block rounded-lg bg-club-700 px-2.5 py-1 text-xs font-semibold text-cream-200 hover:bg-club-800"
+								>Examinera →</a
+							>
 						{:else}
 							<span class="ml-1 rounded bg-club-800 px-1.5 py-0.5 text-xs text-cream-200"
 								>grönt kort</span

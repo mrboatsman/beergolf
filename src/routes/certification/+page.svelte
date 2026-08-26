@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { ETIQUETTE_CRITERIA } from '$lib/etiquette';
+	import { page } from '$app/state';
 	let { data, form } = $props();
 
 	let s = $derived(data.status);
@@ -13,8 +14,14 @@
 
 	// Namnfilter — det kan bli många aspiranter samtidigt
 	let aspirantFilter = $state('');
+	// ?aspirant=<id> (t.ex. från /invite) visar bara den aspiranten tills filtret rensas
+	let focusId = $derived(page.url.searchParams.get('aspirant'));
 	let filteredAspirants = $derived(
-		data.aspirants.filter((a) => a.name.toLowerCase().includes(aspirantFilter.trim().toLowerCase()))
+		focusId && !aspirantFilter
+			? data.aspirants.filter((a) => a.id === focusId)
+			: data.aspirants.filter((a) =>
+					a.name.toLowerCase().includes(aspirantFilter.trim().toLowerCase())
+				)
 	);
 
 	function fmtDate(d: Date | string) {
@@ -198,11 +205,28 @@
 		{#if data.aspirants.length === 0}
 			<p class="mt-2 text-sm text-club-900/60">Inga aspiranter väntar på examination.</p>
 		{:else if filteredAspirants.length === 0}
-			<p class="mt-2 text-sm text-club-900/60">Ingen aspirant matchar ”{aspirantFilter}”.</p>
+			<p class="mt-2 text-sm text-club-900/60">
+				{#if focusId && !aspirantFilter}
+					Aspiranten väntar inte på examination (klar eller finns inte).
+					<a href="/certification" class="underline">Visa alla</a>
+				{:else}
+					Ingen aspirant matchar ”{aspirantFilter}”.
+				{/if}
+			</p>
 		{:else}
+			{#if focusId && !aspirantFilter && data.aspirants.length > 1}
+				<p class="mt-2 text-sm text-club-900/60">
+					Visar en aspirant. <a href="/certification" class="underline">Visa alla</a>
+				</p>
+			{/if}
 			<div class="mt-3 space-y-3">
 				{#each filteredAspirants as a (a.id)}
-					<div class="rounded-2xl bg-parchment p-5 shadow-sm">
+					<div
+						id="aspirant-{a.id}"
+						class="rounded-2xl bg-parchment p-5 shadow-sm {a.id === focusId
+							? 'ring-2 ring-gold-400'
+							: ''}"
+					>
 						<div class="flex flex-wrap items-center justify-between gap-2">
 							<div class="font-semibold">{a.name}</div>
 							<div class="flex gap-2 text-xs">
