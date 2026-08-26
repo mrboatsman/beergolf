@@ -171,8 +171,10 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   service worker `src/service-worker.ts` (auto-registrerad av SvelteKit): app-skalet (build +
   static) cache-first, navigeringar network-first med inbyggd offline-sida, data/`/files/`
   cachas aldrig. Kräver HTTPS i produktion för installation.
-- Mobil: topbaren (<lg) har hamburgermeny med nav + användarkort, stängs vid navigering.
-  Fast bottennav (<lg, ej aspiranter) med ikoner: Hem, Coasters, Leaderboard, Bjud in, Meny;
+- Mobil (<lg): topbaren har bara logo/titel. Fast bottennav med ikoner: Hem, Coasters,
+  Leaderboard, Bjud in, Meny (aspiranter: Grönt Kort, Teoriprov, Meny). "Meny" öppnar
+  en bottom sheet (fly-transition) ovanför navet med användarkort + hela navlistan, stängs
+  vid navigering/klick utanför;
   safe-area-padding (`viewport-fit=cover`), footern har pb-24 så innehåll inte döljs.
   Coaster-tabellen ryms på 390 px (kortnamn "Förnamn E." på mobil).
 - Signering kräver minst `MIN_COASTER_PLAYERS` (2) spelare på coastern — man spelar inte ensam.

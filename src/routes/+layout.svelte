@@ -3,6 +3,7 @@
 	import favicon from '$lib/assets/favicon.png';
 	import logo from '$lib/assets/logo.png';
 	import { page } from '$app/state';
+	import { fly } from 'svelte/transition';
 
 	let { children, data } = $props();
 	let member = $derived(data.member);
@@ -73,7 +74,24 @@
 	// Bottennav på mobil/PWA: de viktigaste vyerna som ikoner (ej för aspiranter)
 	let tabs = $derived(
 		member?.status === 'aspirant'
-			? []
+			? [
+					{
+						href: '/certification',
+						label: 'Grönt Kort',
+						icon: 'card',
+						active: page.url.pathname.startsWith('/certification')
+					},
+					...(data.theoryPassed
+						? []
+						: [
+								{
+									href: '/quiz',
+									label: 'Teoriprov',
+									icon: 'quiz',
+									active: page.url.pathname.startsWith('/quiz')
+								}
+							])
+				]
 			: [
 					{ href: '/', label: 'Hem', icon: 'home', active: page.url.pathname === '/' },
 					{
@@ -165,12 +183,12 @@
 							<div class="text-xs text-cream-200/60">HCP {member.hcp}</div>
 						</div>
 					</div>
-					<div class="mt-3 flex gap-3">
+					<div class="mt-3 flex items-center gap-3">
 						<a
 							href="/password"
 							class="text-xs text-cream-200/60 hover:text-cream-200 hover:underline">Byt lösenord</a
 						>
-						<form method="POST" action="/logout">
+						<form method="POST" action="/logout" class="flex">
 							<button class="text-xs text-cream-200/60 hover:text-cream-200 hover:underline"
 								>Logga ut</button
 							>
@@ -197,62 +215,7 @@
 							>Tablers Beer Golf Society</a
 						>
 					</div>
-					<!-- Hamburgare: öppnar/stänger menypanelen -->
-					<button
-						type="button"
-						onclick={() => (menuOpen = !menuOpen)}
-						aria-label={menuOpen ? 'Stäng menyn' : 'Öppna menyn'}
-						aria-expanded={menuOpen}
-						aria-controls="mobile-menu"
-						class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg hover:bg-club-700"
-					>
-						<svg
-							viewBox="0 0 24 24"
-							class="h-6 w-6"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-						>
-							{#if menuOpen}
-								<path d="M6 6l12 12M18 6L6 18" />
-							{:else}
-								<path d="M4 7h16M4 12h16M4 17h16" />
-							{/if}
-						</svg>
-					</button>
 				</div>
-				{#if menuOpen}
-					<nav id="mobile-menu" class="border-t border-club-700 px-3 pt-2 pb-3">
-						{#each nav as item (item.href)}
-							<a
-								href={item.href}
-								class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base {item.active
-									? 'bg-club-700 font-semibold text-gold-300'
-									: 'text-cream-200/80 hover:bg-club-700/50'}"
-							>
-								<span
-									class="h-1.5 w-1.5 rounded-full {item.active ? 'bg-gold-400' : 'bg-cream-200/30'}"
-								></span>
-								{item.label}
-							</a>
-						{/each}
-						<div class="mt-2 flex items-center gap-3 rounded-xl bg-club-700/40 px-3 py-3">
-							<span
-								class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold-400 text-sm font-bold text-club-900"
-								>{initials}</span
-							>
-							<div class="min-w-0 flex-1">
-								<div class="truncate text-sm font-semibold">{member.name}</div>
-								<div class="text-xs text-cream-200/60">HCP {member.hcp}</div>
-							</div>
-							<a href="/password" class="text-xs text-cream-200/70 hover:underline">Byt lösenord</a>
-							<form method="POST" action="/logout">
-								<button class="text-xs text-cream-200/70 hover:underline">Logga ut</button>
-							</form>
-						</div>
-					</nav>
-				{/if}
 			</header>
 
 			<main class="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-8">
@@ -264,6 +227,52 @@
 			>
 				Tablers Beer Golf Society — Färre slag. Fler skål.
 			</footer>
+
+			{#if menuOpen}
+				<!-- Mobilmeny som bottom sheet: glider upp ovanför bottennavet -->
+				<div
+					class="fixed inset-0 z-30 bg-club-950/50 lg:hidden"
+					role="presentation"
+					onclick={() => (menuOpen = false)}
+				></div>
+				<nav
+					id="mobile-menu"
+					aria-label="Meny"
+					class="fixed inset-x-0 bottom-[calc(3.75rem+env(safe-area-inset-bottom))] z-40 max-h-[70vh] overflow-y-auto rounded-t-2xl border-t border-club-700 bg-club-800 px-3 pt-3 pb-3 text-cream-200 shadow-[0_-10px_30px_rgba(0,0,0,0.35)] lg:hidden"
+					transition:fly={{ y: 200, duration: 200 }}
+				>
+					<div class="mx-auto mb-2 h-1 w-10 rounded-full bg-cream-200/30"></div>
+					<div class="mb-2 flex items-center gap-3 rounded-xl bg-club-700/40 px-3 py-3">
+						<span
+							class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold-400 text-sm font-bold text-club-900"
+							>{initials}</span
+						>
+						<div class="min-w-0 flex-1">
+							<div class="truncate text-sm font-semibold">{member.name}</div>
+							<div class="text-xs text-cream-200/60">HCP {member.hcp}</div>
+						</div>
+						<div class="flex items-center gap-3 text-xs leading-none">
+							<a href="/password" class="text-cream-200/70 hover:underline">Byt lösenord</a>
+							<form method="POST" action="/logout" class="flex">
+								<button class="text-cream-200/70 hover:underline">Logga ut</button>
+							</form>
+						</div>
+					</div>
+					{#each nav as item (item.href)}
+						<a
+							href={item.href}
+							class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base {item.active
+								? 'bg-club-700 font-semibold text-gold-300'
+								: 'text-cream-200/80 hover:bg-club-700/50'}"
+						>
+							<span
+								class="h-1.5 w-1.5 rounded-full {item.active ? 'bg-gold-400' : 'bg-cream-200/30'}"
+							></span>
+							{item.label}
+						</a>
+					{/each}
+				</nav>
+			{/if}
 
 			{#if tabs.length}
 				<!-- Bottennav (mobil/PWA): fast längst ner, respekterar iPhone-safe-area -->
@@ -302,6 +311,12 @@
 										<circle cx="10" cy="8" r="3.5" /><path d="M4 20a6 6 0 0 1 12 0" /><path
 											d="M19 8v6M16 11h6"
 										/>
+									{:else if t.icon === 'card'}
+										<rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 10h18M7 15h4" />
+									{:else if t.icon === 'quiz'}
+										<circle cx="12" cy="12" r="9" /><path
+											d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7"
+										/><path d="M12 17h.01" />
 									{/if}
 								</svg>
 								{t.label}
@@ -309,10 +324,9 @@
 						{/each}
 						<button
 							type="button"
-							onclick={() => {
-								menuOpen = !menuOpen;
-								window.scrollTo({ top: 0 });
-							}}
+							onclick={() => (menuOpen = !menuOpen)}
+							aria-expanded={menuOpen}
+							aria-controls="mobile-menu"
 							class="flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium {menuOpen
 								? 'text-gold-300'
 								: 'text-cream-200/60'}"
