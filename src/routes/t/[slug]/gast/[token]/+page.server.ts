@@ -1,7 +1,12 @@
 import { error, fail, redirect } from '@sveltejs/kit';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { coasters, coasterPlayers, tournamentParticipants } from '$lib/server/db/schema';
+import {
+	coasters,
+	coasterPlayers,
+	tournamentParticipants,
+	MIN_COASTER_PLAYERS
+} from '$lib/server/db/schema';
 import { settleSessionById } from '$lib/server/stripe';
 import { getTournamentBySlug, maybeDecideMatch } from '$lib/server/tournaments';
 import type { Actions, PageServerLoad } from './$types';
@@ -39,7 +44,9 @@ function getGuestRows(participantId: string) {
 			position: coasterPlayers.position,
 			coasterName: coasters.name,
 			par: coasters.par,
-			createdAt: coasters.createdAt
+			createdAt: coasters.createdAt,
+			// Antal spelare på coastern — man får inte signera ensam
+			playerCount: sql<number>`(select count(*) from coaster_players cp where cp.coaster_id = ${coasters.id})`
 		})
 		.from(coasterPlayers)
 		.innerJoin(coasters, eq(coasterPlayers.coasterId, coasters.id))
@@ -77,7 +84,8 @@ export const load: PageServerLoad = async ({ params, url }) => {
 			playingHcp: participant.playingHcp,
 			status: participant.status
 		},
-		rows: getGuestRows(participant.id)
+		rows: getGuestRows(participant.id),
+		minPlayers: MIN_COASTER_PLAYERS
 	};
 };
 
@@ -118,6 +126,11 @@ export const actions: Actions = {
 		if (row.signedAt) return fail(400, { error: 'Redan signerad.' });
 		if (row.scores.some((s) => s === null)) {
 			return fail(400, { error: 'Fyll i alla nio hål innan du signerar.' });
+		}
+		if (row.playerCount < MIN_COASTER_PLAYERS) {
+			return fail(400, {
+				error: 'Man kan inte spela ensam — coastern behöver minst en medspelare.'
+			});
 		}
 
 		await db

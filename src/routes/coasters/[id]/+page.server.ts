@@ -8,7 +8,8 @@ import {
 	rounds,
 	tournaments,
 	tournamentParticipants,
-	MAX_COASTER_PLAYERS
+	MAX_COASTER_PLAYERS,
+	MIN_COASTER_PLAYERS
 } from '$lib/server/db/schema';
 import { requireMember } from '$lib/server/guard';
 import { newId } from '$lib/server/ids';
@@ -111,7 +112,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		players,
 		addable,
 		meId: me.id,
-		maxPlayers: MAX_COASTER_PLAYERS
+		maxPlayers: MAX_COASTER_PLAYERS,
+		minPlayers: MIN_COASTER_PLAYERS
 	};
 };
 
@@ -278,6 +280,17 @@ export const actions: Actions = {
 		if (row.signedAt) return fail(400, { error: 'Redan signerad.' });
 		if (row.scores.some((s) => s === null)) {
 			return fail(400, { error: 'Fyll i alla nio hål innan du signerar.' });
+		}
+		const playerCount =
+			db
+				.select({ n: sql<number>`count(*)` })
+				.from(coasterPlayers)
+				.where(eq(coasterPlayers.coasterId, coaster.id))
+				.get()?.n ?? 0;
+		if (playerCount < MIN_COASTER_PLAYERS) {
+			return fail(400, {
+				error: `Man kan inte spela ensam — lägg till minst ${MIN_COASTER_PLAYERS - 1} medspelare innan du signerar.`
+			});
 		}
 
 		const scores = row.scores as number[];

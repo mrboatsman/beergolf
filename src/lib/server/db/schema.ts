@@ -290,6 +290,8 @@ export const rounds = sqliteTable('rounds', {
 // 6 spelarrader. Varje spelare fyller sin rad och signerar när rundan är
 // klar — signaturen låser raden och skapar en post i rounds (HCP-justering).
 export const MAX_COASTER_PLAYERS = 6;
+// Man kan inte spela en runda ensam — minst två spelare på coastern innan signering.
+export const MIN_COASTER_PLAYERS = 2;
 export const DEFAULT_PAR = [4, 4, 3, 4, 5, 3, 4, 3, 5];
 
 export const coasters = sqliteTable('coasters', {

@@ -28,7 +28,7 @@
 			>
 			<input
 				name="name"
-				placeholder="Lördagsslingan"
+				placeholder="Torsdagsrundan"
 				class="mt-1 w-full rounded-lg border-club-600 bg-club-900/40 text-cream-200 placeholder:text-cream-200/30 focus:border-gold-400 focus:ring-gold-400"
 			/>
 		</label>

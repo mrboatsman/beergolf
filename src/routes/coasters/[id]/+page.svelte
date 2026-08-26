@@ -286,9 +286,12 @@
 		<form method="POST" action="?/sign" use:enhance>
 			<button
 				class="rounded-lg bg-gold-500 px-4 py-2 text-sm font-semibold text-club-900 hover:bg-gold-400 disabled:cursor-not-allowed disabled:opacity-50"
-				disabled={myRow.scores.some((s) => s === null)}
-				title={myRow.scores.some((s) => s === null) ? 'Fyll i alla nio hål först' : ''}
-				>Signera rundan</button
+				disabled={myRow.scores.some((s) => s === null) || players.length < data.minPlayers}
+				title={players.length < data.minPlayers
+					? 'Man kan inte spela ensam — lägg till minst en medspelare först'
+					: myRow.scores.some((s) => s === null)
+						? 'Fyll i alla nio hål först'
+						: ''}>Signera rundan</button
 			>
 		</form>
 	</div>

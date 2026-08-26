@@ -135,9 +135,12 @@
 					<input type="hidden" name="rowId" value={row.id} />
 					<button
 						class="rounded-lg bg-gold-500 px-4 py-2 text-sm font-semibold text-club-900 hover:bg-gold-400 disabled:cursor-not-allowed disabled:opacity-50"
-						disabled={row.scores.some((s) => s === null)}
-						title={row.scores.some((s) => s === null) ? 'Fyll i alla nio hål först' : ''}
-						>Signera rundan</button
+						disabled={row.scores.some((s) => s === null) || row.playerCount < data.minPlayers}
+						title={row.playerCount < data.minPlayers
+							? 'Man kan inte spela ensam — coastern behöver minst en medspelare'
+							: row.scores.some((s) => s === null)
+								? 'Fyll i alla nio hål först'
+								: ''}>Signera rundan</button
 					>
 				</form>
 				<p class="mt-2 text-xs text-club-900/50">
