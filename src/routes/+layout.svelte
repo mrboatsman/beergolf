@@ -34,6 +34,7 @@
 						active: page.url.pathname.startsWith('/coasters')
 					},
 					{ href: '/rounds', label: 'Rundor', active: page.url.pathname === '/rounds' },
+					{ href: '/gallery', label: 'Galleri', active: page.url.pathname.startsWith('/gallery') },
 					{
 						href: '/tournaments',
 						label: 'Turneringar',

@@ -122,6 +122,12 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   som transparent PNG (`coasters.backDrawingKey`) efter penseldrag. Bara deltagare redigerar
   (`backEditGuard`, max 12 bilder à 10 MB), övriga ser. Baksidan har `data-no-flip`; vänd
   tillbaka via knapp.
+- **Galleri** (`/gallery`, nav-länk "Galleri"): rutnät (kvadratiska kort) med baksidorna på alla
+  färdigspelade coasters (`CoasterBackView.svelte` = read-only-renderare av bilder + ritning-PNG,
+  samma logiska koordinater). Fullskärmsvisare: tryck/Enter vänder kortet (3D-flip) till samma
+  papp-coaster som på `/coasters/[id]`, svep/piltangenter/knappar bläddrar (wrap-around), Esc
+  stänger. Pappret är extraherat till `CoasterPaper.svelte` (props coaster/players/winners,
+  snippets `cell`/`remove` för redigerbart läge på coaster-sidan; galleriet skickar inga).
 - **Coastern är enda sättet att registrera rundor** — `/rounds` är ren historik.
 - Dashboard (`/`, komponent `MemberDashboard.svelte`, data `src/lib/server/dashboard.ts`):
   HCP-hero med säsongsförändring, statkort (rundor/bästa brutto/snitt mot par),
