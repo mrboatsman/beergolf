@@ -6,11 +6,12 @@ export const RULES: RuleSection[] = [
 	{
 		title: 'Spelet',
 		rules: [
-			'En runda är nio hål. Varje hål är ett glas fyllt en bra bit över 50 cl-strecket: strecket är pinnen.',
-			'Ett slag är en kontrollerad klunk. Målet är att landa ölens yta pin high, exakt på strecket, på så få slag som möjligt.',
-			'Ditt resultat på hålet är antalet slag som krävdes. Hamnar ytan under strecket är hålet klart, men slagen räknas ändå.',
-			'Hamnar slaget out of bounds, eller inte på något numrerat område, räknas hålet som 2 × par. Skriv 0 (visas som x) på coastern. Tomma hål räknas också som x när du signerar.',
-			'Par står på coastern (standard 4-4-3-4-5-3-4-3-5 = 35). Lägre än par är bra, lägre totalt är bättre.',
+			'Spelas i ett Beer Golf-glas med tryckta markeringar: två tee-linjer (övre och mellersta), numrerade poängområden med pinne för varje hål och hazards. En runda är nio hål, dvs nio slag.',
+			'Fyll upp: på udda hål fylls glaset (eller dricks ner) till den övre tee-linjen, på jämna hål dricks det ner till den mellersta tee-linjen.',
+			'Utslag: ett enda slag per hål, alltså en klunk. Målet är att ölens yta (där drycken möter skummet eller kanten) landar så nära hålets pinne som möjligt.',
+			'Poäng: läs av siffran på området där ytan landade. Det är dina slag på hålet. Lägre är bättre, och de tryckta hazarderna vill man undvika.',
+			'Hamnar ytan out of bounds, eller inte på något numrerat område, räknas hålet som 2 × par. Skriv 0 (visas som x) på coastern. Tomma hål räknas också som x när du signerar.',
+			'Par står på coastern (standard 4-4-3-4-5-3-4-3-5 = 35). Lägst totalt efter nio hål vinner, med handikappet inräknat (netto).',
 			'Du behöver inte spela alla nio hål på en gång. Spara coastern och spela klart en annan kväll.'
 		]
 	},
