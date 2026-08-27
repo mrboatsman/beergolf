@@ -12,13 +12,14 @@ export const RULES: RuleSection[] = [
 			'Poäng: läs av siffran på området där ytan landade. Det är dina slag på hålet. Lägre är bättre, och de tryckta hazarderna vill man undvika.',
 			'Hamnar ytan out of bounds, eller inte på något numrerat område, räknas hålet som 2 × par. Skriv 0 (visas som x) på coastern. Tomma hål räknas också som x när du signerar.',
 			'Par står på coastern (standard 4-4-3-4-5-3-4-3-5 = 35). Lägst totalt efter nio hål vinner, med handikappet inräknat (netto).',
-			'Du behöver inte spela alla nio hål på en gång. Spara coastern och spela klart en annan kväll.'
+			'Du behöver inte spela alla nio hål på en gång. Spara coastern och spela klart en annan kväll.',
+			'Det behöver inte vara öl. Beer Golf kan spelas med vilken dryck som helst.'
 		]
 	},
 	{
 		title: 'Räkning & signatur',
 		rules: [
-			'Hederssystemet gäller: du räknar dina egna slag. Vid tvekan dömer du till din egen nackdel.',
+			'Hederssystemet gäller: du räknar dina egna slag. Är poängen tveksam mellan två områden tar du det högre (sämre) av dem.',
 			'Fyll i alla nio hål och signera när rundan är klar. Signaturen låser raden, bokför rundan och justerar ditt handikapp.',
 			'Man spelar inte ensam: minst två spelare på coastern innan någon kan signera. Max sex spelare per coaster.',
 			'Fel i efterhand? Kontakta admin, som kan rätta poäng och räkna om handikappet.'
@@ -35,7 +36,8 @@ export const RULES: RuleSection[] = [
 	{
 		title: 'Tips',
 		rules: [
-			'Räkna hålet så fort du ställt ner glaset. Vänta inte på att skummet lägger sig och ytan stiger.'
+			'Räkna hålet så fort du ställt ner glaset. Vänta inte på att skummet lägger sig och ytan stiger.',
+			'Många föredrar att ta nästa hål från där förra slaget landade i stället för att fylla på till tee-linjen.'
 		]
 	}
 ];
