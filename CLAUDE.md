@@ -166,6 +166,11 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   `certifications`-raden med `fadderId = invites.createdBy` och inbjudaren uppgraderas
   member→fadder (captain/admin behåller roll). Examinatorn skriver inte över befintlig fadder
   (`fadderId: cert.fadderId ?? me.id`). Admin-listan över koder visar "Skapad av" + sök på skapare.
+- **Utskrift av invalskort** (`/invite/print`, member+): 85×55 mm, 4 per A4, framsidor + speglade
+  baksidor med QR (`qrcode`, SVG) för dubbelsidig utskrift; `?codes=A,B` väljer, annars alla egna
+  öppna koder; bara egna (captain+ allas), max 40. Komponent `InviteCards.svelte` (egen CSS,
+  `@page` A4 utan marginal), sidan döljer app-skalet med `@media print`. PDF = webbläsarens
+  "Spara som PDF". Länkar: `/invite` ("Skriv ut kort" + per kod), admin-kodlistan (per öppen kod).
 - Listor är paginerade + filtrerbara (server-side, GET-params): `/members` (q/page,
   namn eller e-post), admin-medlemmar (mq/mpage) och invalskoder (iq/ipage — sök på kod
   eller medlemsnamn; kolumnen "Blev medlem" länkar till profilen som koden skapade).

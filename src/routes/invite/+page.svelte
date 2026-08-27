@@ -6,6 +6,22 @@
 	const link = (code: string) => `${data.origin}/join?code=${code}`;
 	const isExpired = (d: Date | null) => !!d && new Date(d).getTime() < Date.now();
 
+	// Val av koder för utskrift (bara öppna koder kan väljas)
+	let selected = $state(new Set<string>());
+	let openCodes = $derived(
+		data.invites.filter((i) => !i.usedById && !isExpired(i.expiresAt)).map((i) => i.code)
+	);
+	function toggle(code: string) {
+		const next = new Set(selected);
+		if (next.has(code)) next.delete(code);
+		else next.add(code);
+		selected = next;
+	}
+	function toggleAll() {
+		selected = selected.size === openCodes.length ? new Set() : new Set(openCodes);
+	}
+	let printUrl = $derived(`/invite/print?codes=${[...selected].join(',')}`);
+
 	let copied = $state<string | null>(null);
 	async function copy(code: string) {
 		try {
@@ -42,12 +58,21 @@
 	<p class="mt-4 rounded bg-red-100 px-3 py-2 text-sm text-red-700">{form.error}</p>
 {/if}
 
-<form method="POST" action="?/create" use:enhance class="mt-6">
-	<button
-		class="rounded-lg bg-gold-500 px-5 py-2.5 text-sm font-semibold text-club-900 hover:bg-gold-400"
-		>+ Ny invalskod</button
-	>
-</form>
+<div class="mt-6 flex flex-wrap items-center gap-2">
+	<form method="POST" action="?/create" use:enhance>
+		<button
+			class="rounded-lg bg-gold-500 px-5 py-2.5 text-sm font-semibold text-club-900 hover:bg-gold-400"
+			>+ Ny invalskod</button
+		>
+	</form>
+	{#if openCodes.length}
+		<a
+			href={selected.size ? printUrl : '/invite/print'}
+			class="rounded-lg border border-club-700 px-4 py-2.5 text-sm font-semibold text-club-800 hover:bg-club-100"
+			>🖨️ {selected.size ? `Skriv ut valda (${selected.size})` : 'Skriv ut alla öppna kort'}</a
+		>
+	{/if}
+</div>
 
 {#if form?.created}
 	<section class="mt-6 rounded-2xl border border-gold-400/60 bg-parchment p-5 shadow-sm">
@@ -72,12 +97,37 @@
 {/if}
 
 <section class="mt-8">
-	<h2 class="font-semibold text-club-900">Mina koder ({data.invites.length})</h2>
+	<div class="flex flex-wrap items-center justify-between gap-2">
+		<h2 class="font-semibold text-club-900">Mina koder ({data.invites.length})</h2>
+		{#if openCodes.length}
+			<label class="flex items-center gap-2 text-xs text-club-900/70">
+				<input
+					type="checkbox"
+					checked={selected.size === openCodes.length}
+					indeterminate={selected.size > 0 && selected.size < openCodes.length}
+					onchange={toggleAll}
+					class="rounded border-cream-300 text-club-700 focus:ring-gold-400"
+				/>
+				Markera alla öppna för utskrift
+			</label>
+		{/if}
+	</div>
 	<ul class="mt-3 space-y-2">
 		{#each data.invites as i (i.id)}
 			<li class="rounded-2xl bg-parchment px-4 py-3 shadow-sm">
 				<div class="flex flex-wrap items-center justify-between gap-2">
-					<span class="font-mono text-lg font-bold tracking-widest text-club-900">{i.code}</span>
+					<label class="flex items-center gap-2">
+						{#if !i.usedById && !isExpired(i.expiresAt)}
+							<input
+								type="checkbox"
+								checked={selected.has(i.code)}
+								onchange={() => toggle(i.code)}
+								aria-label={`Välj ${i.code} för utskrift`}
+								class="rounded border-cream-300 text-club-700 focus:ring-gold-400"
+							/>
+						{/if}
+						<span class="font-mono text-lg font-bold tracking-widest text-club-900">{i.code}</span>
+					</label>
 					<span class="text-xs text-club-900/50">Skapad {fmt(i.createdAt)}</span>
 				</div>
 				<div class="mt-1 text-sm text-club-900/80">
@@ -115,6 +165,10 @@
 							type="button"
 							onclick={() => share(i.code)}
 							class="text-xs font-semibold text-club-700 hover:underline">Dela…</button
+						>
+						<a
+							href="/invite/print?codes={i.code}"
+							class="text-xs font-semibold text-club-700 hover:underline">Skriv ut</a
 						>
 						<form method="POST" action="?/revoke" use:enhance class="inline">
 							<input type="hidden" name="id" value={i.id} />

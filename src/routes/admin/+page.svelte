@@ -8,6 +8,15 @@
 	let isAdmin = $derived(page.data.member?.role === 'admin');
 	let meId = $derived(page.data.member?.id);
 
+	// Val av öppna invalskoder för utskrift
+	let selectedCodes = $state(new Set<string>());
+	function toggleCode(code: string) {
+		const next = new Set(selectedCodes);
+		if (next.has(code)) next.delete(code);
+		else next.add(code);
+		selectedCodes = next;
+	}
+
 	// Redigera medlem (modal)
 	let editing = $state<null | (typeof data.members)[number]>(null);
 
@@ -276,7 +285,16 @@
 
 <section class="mt-8">
 	<div class="flex flex-wrap items-center justify-between gap-3">
-		<h2 class="font-semibold text-club-900">Invalskoder ({data.inviteTotal})</h2>
+		<h2 class="font-semibold text-club-900">
+			Invalskoder ({data.inviteTotal})
+			{#if selectedCodes.size}
+				<a
+					href={`/invite/print?codes=${[...selectedCodes].join(',')}`}
+					class="ml-3 rounded-lg border border-club-700 px-3 py-1 text-xs font-semibold text-club-800 hover:bg-club-100"
+					>🖨️ Skriv ut valda ({selectedCodes.size})</a
+				>
+			{/if}
+		</h2>
 		<form method="GET" class="flex gap-2">
 			{#if data.memberQ}<input type="hidden" name="mq" value={data.memberQ} />{/if}
 			<input
@@ -323,7 +341,20 @@
 										{fmtDate(i.usedAt)}{/if}</span
 								>
 							{:else}
-								<span class="font-semibold text-club-700">öppen</span>
+								<label class="inline-flex items-center gap-1.5">
+									<input
+										type="checkbox"
+										checked={selectedCodes.has(i.code)}
+										onchange={() => toggleCode(i.code)}
+										aria-label={`Välj ${i.code} för utskrift`}
+										class="rounded border-cream-300 text-club-700 focus:ring-gold-400"
+									/>
+									<span class="font-semibold text-club-700">öppen</span>
+								</label>
+								<a
+									href="/invite/print?codes={i.code}"
+									class="ml-2 text-xs text-club-700 hover:underline">Skriv ut</a
+								>
 							{/if}
 						</td>
 						<td class="px-3 py-2">
