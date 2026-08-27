@@ -171,6 +171,9 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   öppna koder; bara egna (captain+ allas), max 40. Komponent `InviteCards.svelte` (egen CSS,
   `@page` A4 utan marginal), sidan döljer app-skalet med `@media print`. PDF = webbläsarens
   "Spara som PDF". Länkar: `/invite` ("Skriv ut kort" + per kod), admin-kodlistan (per öppen kod).
+- **FAQ** (`/faq`, nav-länk, member+): innehåll i `src/lib/faq.ts` (`buildFaq(vars)`), servern
+  skickar riktiga konstanter (HCP-start/faktor/gränser, min/max spelare, par) + räkneexempel via
+  `nextHcp()`. Regelsektionen renderar `<CoasterRules open />` — regeltext bara i `rules.ts`.
 - Listor är paginerade + filtrerbara (server-side, GET-params): `/members` (q/page,
   namn eller e-post), admin-medlemmar (mq/mpage) och invalskoder (iq/ipage — sök på kod
   eller medlemsnamn; kolumnen "Blev medlem" länkar till profilen som koden skapade).
