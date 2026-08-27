@@ -8,7 +8,7 @@ export const RULES: RuleSection[] = [
 		rules: [
 			'Spelas i ett Beer Golf-glas med tryckta markeringar: två tee-linjer (övre och mellersta), numrerade poängområden med pinne för varje hål och hazards. En runda är nio hål, dvs nio slag.',
 			'Fyll upp: på udda hål fylls glaset (eller dricks ner) till den övre tee-linjen, på jämna hål dricks det ner till den mellersta tee-linjen.',
-			'Utslag: ett enda slag per hål, alltså en klunk. Målet är att ölens yta (där drycken möter skummet eller kanten) landar så nära hålets pinne som möjligt.',
+			'Utslag: ett slag per hål. Slaget pågår så länge glaset är vid läpparna. Glaset får inte lämna läpparna förrän slaget är klart, sedan är hålet spelat. Målet är att ölens yta (där drycken möter skummet eller kanten) landar så nära hålets pinne som möjligt.',
 			'Poäng: läs av siffran på området där ytan landade. Det är dina slag på hålet. Lägre är bättre, och de tryckta hazarderna vill man undvika.',
 			'Hamnar ytan out of bounds, eller inte på något numrerat område, räknas hålet som 2 × par. Skriv 0 (visas som x) på coastern. Tomma hål räknas också som x när du signerar.',
 			'Par står på coastern (standard 4-4-3-4-5-3-4-3-5 = 35). Lägst totalt efter nio hål vinner, med handikappet inräknat (netto).',

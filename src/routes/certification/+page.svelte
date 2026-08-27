@@ -60,7 +60,7 @@
 			{#if s.fadderName}· Fadder: {s.fadderName}{/if}
 		</div>
 		<div class="mt-4 border-t border-cream-200/15 pt-3 text-xs text-cream-200/60">
-			Play Slow. En klunk per hål. Hederssystemet gäller.
+			Play Slow. Ett slag per hål. Hederssystemet gäller.
 		</div>
 	</div>
 {:else if data.me.isAspirant}
@@ -152,8 +152,8 @@
 				{/if}
 			{:else}
 				<p class="mt-2 text-sm text-club-900/70">
-					Provslingan under uppsikt av fadder: korrekt fyllning, kontrollerad klunk per hål, godkänt
-					utslag nära pinnen och rätt fört protokoll.
+					Provslingan under uppsikt av fadder: korrekt fyllning, ett kontrollerat slag per hål utan
+					att glaset lämnar läpparna, godkänt utslag nära pinnen och rätt fört protokoll.
 				</p>
 			{/if}
 		</div>
@@ -269,7 +269,7 @@
 										<textarea
 											name="comment"
 											rows="2"
-											placeholder="Fyllde korrekt, kontrollerad klunk per hål, fint utslag på hål 2…"
+											placeholder="Fyllde korrekt, glaset lämnade aldrig läpparna, fint utslag på hål 2…"
 											class="mt-1 w-full rounded-lg border-cream-300 bg-white text-sm"></textarea>
 									</label>
 									<label class="block text-xs">

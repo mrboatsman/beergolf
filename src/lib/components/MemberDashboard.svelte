@@ -231,7 +231,7 @@
 				{#if d.cert.fadderName}· Fadder: {d.cert.fadderName}{/if}
 			</div>
 			<div class="mt-4 border-t border-cream-200/15 pt-3 pr-8 text-xs text-cream-200/60">
-				Play Slow. En klunk per hål. Hederssystemet gäller.
+				Play Slow. Ett slag per hål. Hederssystemet gäller.
 			</div>
 			<button
 				type="button"
