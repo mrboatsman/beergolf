@@ -7,11 +7,19 @@
 
 	let d = $derived(dashboard);
 
+	// Hälsning efter besökarens klocka (lokal tid i webbläsaren)
+	function timeGreeting(h: number) {
+		if (h < 5) return 'Godnatt';
+		if (h < 10) return 'God morgon';
+		if (h < 12) return 'God dag';
+		if (h < 18) return 'God eftermiddag';
+		if (h < 23) return 'God kväll';
+		return 'Godnatt';
+	}
+
 	let greeting = $derived.by(() => {
 		if (!isSelf) return d.member.name;
-		const h = new Date().getHours();
-		const g = h < 10 ? 'God morgon' : h < 18 ? 'God eftermiddag' : 'God kväll';
-		return `${g}, ${d.member.name.split(' ')[0]}`;
+		return `${timeGreeting(new Date().getHours())}, ${d.member.name.split(' ')[0]}`;
 	});
 
 	let ongoing = $derived(d.matches.filter((m) => !m.finished));
