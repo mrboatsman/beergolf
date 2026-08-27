@@ -49,8 +49,14 @@ export function buildFaq(v: FaqVars): FaqSection[] {
 		},
 		{
 			id: 'handikapp',
-			title: 'Handikapp',
+			title: 'Handikapp (HCP)',
 			items: [
+				{
+					q: 'Vad betyder HCP?',
+					a: [
+						'HCP är förkortningen för handikapp (från engelskans handicap). Det är talet som visas bredvid ditt namn på leaderboarden, i sidomenyn och på coastern — ju lägre, desto bättre spelar du.'
+					]
+				},
 				{
 					q: 'Var börjar jag?',
 					a: [
