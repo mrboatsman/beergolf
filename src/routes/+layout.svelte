@@ -4,6 +4,7 @@
 	import logo from '$lib/assets/logo.png';
 	import { page } from '$app/state';
 	import { fly } from 'svelte/transition';
+	import Avatar from '$lib/components/Avatar.svelte';
 
 	let { children, data } = $props();
 	let member = $derived(data.member);
@@ -56,17 +57,6 @@
 						? [{ href: '/admin', label: 'Admin', active: page.url.pathname.startsWith('/admin') }]
 						: [])
 				]
-	);
-
-	let initials = $derived(
-		member
-			? member.name
-					.split(/\s+/)
-					.map((w: string) => w[0])
-					.slice(0, 2)
-					.join('')
-					.toUpperCase()
-			: ''
 	);
 
 	// Om sällskapet — öppnas när man klickar på emblemet
@@ -175,10 +165,7 @@
 			<div class="mt-auto p-4">
 				<div class="rounded-xl bg-club-700/40 p-4">
 					<div class="flex items-center gap-3">
-						<span
-							class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gold-400 text-sm font-bold text-club-900"
-							>{initials}</span
-						>
+						<Avatar name={member.name} src={data.avatarUrl} class="h-10 w-10 text-sm" />
 						<div class="min-w-0">
 							<div class="truncate text-sm font-semibold">{member.name}</div>
 							<div class="text-xs text-cream-200/60">HCP {member.hcp}</div>
@@ -248,10 +235,7 @@
 				>
 					<div class="mx-auto mb-2 h-1 w-10 rounded-full bg-cream-200/30"></div>
 					<div class="mb-2 flex items-center gap-3 rounded-xl bg-club-700/40 px-3 py-3">
-						<span
-							class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold-400 text-sm font-bold text-club-900"
-							>{initials}</span
-						>
+						<Avatar name={member.name} src={data.avatarUrl} class="h-9 w-9 text-sm" />
 						<div class="min-w-0 flex-1">
 							<div class="truncate text-sm font-semibold">{member.name}</div>
 							<div class="text-xs text-cream-200/60">HCP {member.hcp}</div>

@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { certifications } from '$lib/server/db/schema';
+import { avatarUrl } from '$lib/server/avatar';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ locals }) => {
@@ -14,5 +15,9 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 			.get();
 		theoryPassed = cert?.passed ?? false;
 	}
-	return { member: locals.member, theoryPassed };
+	return {
+		member: locals.member,
+		theoryPassed,
+		avatarUrl: locals.member ? avatarUrl(locals.member) : null
+	};
 };

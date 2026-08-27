@@ -5,6 +5,7 @@ import {
 	certificationProofs,
 	coasterBackImages,
 	coasters,
+	members,
 	tournamentExpenses,
 	tournaments
 } from '$lib/server/db/schema';
@@ -58,6 +59,13 @@ function lookupFile(key: string): { contentType: string; filename: string } | nu
 		.where(eq(coasterBackImages.storageKey, key))
 		.get();
 	if (img) return { contentType: img.contentType, filename: 'bild' };
+	// Profilbilder (alltid JPEG från beskäraren)
+	const avatar = db
+		.select({ id: members.id })
+		.from(members)
+		.where(eq(members.avatarKey, key))
+		.get();
+	if (avatar) return { contentType: 'image/jpeg', filename: 'profilbild.jpg' };
 	return null;
 }
 

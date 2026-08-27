@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Avatar from '$lib/components/Avatar.svelte';
 	import HcpTrend from './HcpTrend.svelte';
 	import type { Dashboard } from '$lib/server/dashboard';
 
@@ -36,7 +37,14 @@
 		<p class="text-xs font-semibold tracking-[0.2em] text-gold-600 uppercase">
 			{isSelf ? "Members' lounge" : 'Medlemsprofil'}
 		</p>
-		<h1 class="font-display mt-1 text-4xl font-semibold sm:text-5xl">{greeting}</h1>
+		<div class="mt-1 flex items-center gap-3">
+			<Avatar
+				name={d.member.name}
+				src={d.member.avatarUrl}
+				class="h-14 w-14 text-xl sm:h-16 sm:w-16"
+			/>
+			<h1 class="font-display text-4xl font-semibold sm:text-5xl">{greeting}</h1>
+		</div>
 	</div>
 	<div class="text-right text-sm text-club-900/60">
 		<div>Säsong {d.seasonYear}</div>

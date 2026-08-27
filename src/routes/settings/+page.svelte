@@ -2,9 +2,30 @@
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { startRegistration } from '@simplewebauthn/browser';
+	import Avatar from '$lib/components/Avatar.svelte';
+	import AvatarCropper from '$lib/components/AvatarCropper.svelte';
+	import { deserialize } from '$app/forms';
+	import { page } from '$app/state';
 	let { data, form } = $props();
 
 	const fmt = (d: Date | null) => (d ? new Date(d).toLocaleDateString('sv-SE') : '—');
+
+	// Profilbild: vald fil → beskärare → uppladdning
+	let cropFile = $state<File | null>(null);
+	let avatarMsg = $state<string | null>(null);
+	async function saveAvatar(blob: Blob) {
+		const fd = new FormData();
+		fd.set('image', new File([blob], 'avatar.jpg', { type: 'image/jpeg' }));
+		const res = await fetch('?/uploadAvatar', {
+			method: 'POST',
+			body: fd,
+			headers: { 'x-sveltekit-action': 'true', accept: 'application/json' }
+		});
+		const r = deserialize(await res.text());
+		avatarMsg = r.type === 'success' ? 'Profilbilden är sparad.' : 'Kunde inte spara bilden.';
+		cropFile = null;
+		await invalidateAll();
+	}
 
 	// Passkey-registrering: options från servern → enhetens dialog → verifiera
 	let pkBusy = $state(false);
@@ -70,6 +91,84 @@
 			Passkeyn ”{form.passkeyDeleted}” är borttagen.
 		</p>
 	{/if}
+
+	<!-- Profilbild -->
+	<section class="mt-8 rounded-2xl bg-parchment p-5 shadow-sm">
+		<h2 class="font-display text-2xl font-semibold text-club-900">Profilbild</h2>
+		{#if form?.avatarSaved || avatarMsg}
+			<p class="mt-2 rounded bg-club-100 px-3 py-2 text-sm text-club-700">
+				{avatarMsg ?? form?.avatarSaved}
+			</p>
+		{/if}
+		{#if cropFile}
+			<div class="mt-4">
+				<AvatarCropper file={cropFile} oncancel={() => (cropFile = null)} onsave={saveAvatar} />
+			</div>
+		{:else}
+			<div class="mt-4 flex flex-wrap items-center gap-5">
+				<Avatar
+					name={page.data.member?.name ?? ''}
+					src={data.avatar.url}
+					class="h-24 w-24 text-3xl"
+				/>
+				<div class="space-y-3 text-sm">
+					<p class="text-club-900/70">
+						{#if data.avatar.hasCustom}
+							Egen uppladdad bild visas.
+						{:else if data.avatar.gravatar}
+							Gravatar används (bilden kopplad till din e-post på gravatar.com). Saknas en visas
+							dina initialer.
+						{:else}
+							Dina initialer visas.
+						{/if}
+					</p>
+					<div class="flex flex-wrap gap-2">
+						<label
+							class="cursor-pointer rounded-lg bg-club-700 px-3 py-1.5 text-xs font-semibold text-cream-200 hover:bg-club-800"
+						>
+							{data.avatar.hasCustom ? 'Byt bild' : 'Ladda upp egen bild'}
+							<input
+								type="file"
+								accept="image/*"
+								class="sr-only"
+								onchange={(e) => {
+									const f = (e.currentTarget as HTMLInputElement).files?.[0];
+									if (f) cropFile = f;
+									(e.currentTarget as HTMLInputElement).value = '';
+								}}
+							/>
+						</label>
+						{#if data.avatar.hasCustom}
+							<form
+								method="POST"
+								action="?/removeAvatar"
+								use:enhance={({ cancel }) => {
+									if (!confirm('Ta bort din uppladdade bild?')) cancel();
+								}}
+							>
+								<button
+									class="rounded-lg border border-red-700/50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50"
+									>Ta bort egen bild</button
+								>
+							</form>
+						{/if}
+					</div>
+					<form method="POST" action="?/setGravatar" use:enhance class="flex items-center gap-2">
+						<input type="hidden" name="gravatar" value={data.avatar.gravatar ? '0' : '1'} />
+						<label class="flex items-center gap-2 text-xs text-club-900/70">
+							<input
+								type="checkbox"
+								checked={data.avatar.gravatar}
+								onchange={(e) => (e.currentTarget as HTMLInputElement).form?.requestSubmit()}
+								class="rounded border-cream-300 text-club-700 focus:ring-gold-400"
+							/>
+							Använd Gravatar när ingen egen bild finns
+						</label>
+					</form>
+				</div>
+			</div>
+		{/if}
+	</section>
 
 	<!-- Passkeys -->
 	<section class="mt-8 rounded-2xl bg-parchment p-5 shadow-sm">

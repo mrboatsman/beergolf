@@ -2,6 +2,7 @@ import { asc, like, or, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { members } from '$lib/server/db/schema';
 import { requireMember } from '$lib/server/guard';
+import { avatarUrl } from '$lib/server/avatar';
 import type { PageServerLoad } from './$types';
 
 const PAGE_SIZE = 25;
@@ -34,6 +35,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		.select({
 			id: members.id,
 			name: members.name,
+			email: members.email,
+			avatarKey: members.avatarKey,
+			gravatar: members.gravatar,
 			role: members.role,
 			status: members.status,
 			hcp: members.hcp,
@@ -55,5 +59,10 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		.offset((current - 1) * PAGE_SIZE)
 		.all();
 
-	return { members: list, q, page: current, pages, total, seasonYear: new Date().getFullYear() };
+	// Skicka aldrig e-post/nycklar till klienten — bara färdig avatar-URL
+	const rows = list.map(({ email, avatarKey, gravatar, ...m }) => ({
+		...m,
+		avatarUrl: avatarUrl({ email, avatarKey, gravatar })
+	}));
+	return { members: rows, q, page: current, pages, total, seasonYear: new Date().getFullYear() };
 };

@@ -3,6 +3,7 @@ import { db } from './db';
 import { grossTotal } from '$lib/scoring';
 import { coasters, coasterPlayers, members, quizAttempts, rounds } from './db/schema';
 import { getCertStatus } from './certification';
+import { avatarUrl } from './avatar';
 
 const FALLBACK_PAR = 35; // äldre rundor utan coaster-koppling
 
@@ -35,6 +36,9 @@ export async function getDashboard(memberId: string) {
 		.select({
 			id: members.id,
 			name: members.name,
+			email: members.email,
+			avatarKey: members.avatarKey,
+			gravatar: members.gravatar,
 			role: members.role,
 			status: members.status,
 			hcp: members.hcp,
@@ -150,7 +154,11 @@ export async function getDashboard(memberId: string) {
 		.all();
 
 	return {
-		member,
+		member: (() => {
+			// e-post/nycklar stannar på servern — bara avatar-URL går ut
+			const { email, avatarKey, gravatar, ...rest } = member;
+			return { ...rest, avatarUrl: avatarUrl({ email, avatarKey, gravatar }) };
+		})(),
 		seasonYear,
 		stats: {
 			roundsSeason: season.length,

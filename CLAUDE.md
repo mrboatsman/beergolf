@@ -199,6 +199,13 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   nästa lediga kortnummer. Seeden (`db:seed`) ger admin kort automatiskt (urmedlem).
 - **Redigera medlem** (admin, modal i medlemstabellen, action `updateMember`): namn, e-post,
   roll, HCP (0–54) och kort-nr; unika e-post/kort-nr valideras; egen roll kan inte ändras.
+- **Profilbild**: `members.avatarKey` (egen, JPEG 320×320 via klientbeskärare
+  `AvatarCropper.svelte`: dra/nyp/zoom i cirkel) och `members.gravatar` (default på). Upplösning i
+  `src/lib/server/avatar.ts` (`avatarUrl`: egen > Gravatar sha256(e-post), `d=404` > null) — räknas
+  på servern så e-post aldrig går till klienten; `Avatar.svelte` faller tillbaka på initialer vid
+  404/null. Används i sidebar/sheet (layout), leaderboard, dashboard-huvud. Inställningar:
+  ladda upp/byt/ta bort egen bild, Gravatar-toggle (`setGravatar`, `uploadAvatar`, `removeAvatar`).
+  Filer under `avatars/<memberId>/`, serveras via `/files/` (lookup i members).
 - Kontoåtgärder i admin (endast rollen admin, ej på sig själv): **Återställ lösenord**
   (engångslösenord visas en gång; `members.mustChangePassword` tvingar byte via
   hooks-redirect till `/password`), **Inaktivera/Aktivera** (inactive kan inte logga in,

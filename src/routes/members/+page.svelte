@@ -1,15 +1,7 @@
 <script lang="ts">
 	import { shortName } from '$lib/names';
+	import Avatar from '$lib/components/Avatar.svelte';
 	let { data } = $props();
-
-	function initials(name: string) {
-		return name
-			.split(/\s+/)
-			.map((w) => w[0])
-			.slice(0, 2)
-			.join('')
-			.toUpperCase();
-	}
 
 	const roleLabel: Record<string, string> = {
 		aspirant: 'Aspirant',
@@ -86,10 +78,7 @@
 						</td>
 						<td class="px-2 py-2.5 sm:px-3">
 							<a href={`/members/${m.id}`} class="group flex items-center gap-2 sm:gap-3">
-								<span
-									class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-club-800 font-display text-sm font-semibold text-gold-300"
-									>{initials(m.name)}</span
-								>
+								<Avatar name={m.name} src={m.avatarUrl} class="h-9 w-9 text-sm" />
 								<span class="min-w-0">
 									<span class="block truncate font-semibold group-hover:underline sm:hidden"
 										>{shortName(m.name)}</span

@@ -24,6 +24,10 @@ export const members = sqliteTable('members', {
 	status: text('status').$type<'aspirant' | 'active' | 'inactive'>().notNull().default('aspirant'),
 	hcp: real('hcp').notNull().default(START_HCP),
 	greenCardIssuedAt: integer('green_card_issued_at', { mode: 'timestamp' }),
+	// Profilbild: egen uppladdad (storage-nyckel) har företräde; annars Gravatar
+	// (sha256 av e-post) om påslaget; annars initialer.
+	avatarKey: text('avatar_key'),
+	gravatar: integer('gravatar', { mode: 'boolean' }).notNull().default(true),
 	createdAt: integer('created_at', { mode: 'timestamp' })
 		.notNull()
 		.default(sql`(unixepoch())`)
