@@ -6,82 +6,34 @@
 	import AvatarCropper from '$lib/components/AvatarCropper.svelte';
 	import { deserialize } from '$app/forms';
 	import { page } from '$app/state';
+	import { disablePush, enablePush, hasPushSubscription, pushSupported } from '$lib/push-client';
 	let { data, form } = $props();
 
 	const fmt = (d: Date | null) => (d ? new Date(d).toLocaleDateString('sv-SE') : '—');
 
-	// Notiser (Web Push): prenumerera via service worker + VAPID-nyckel
+	// Notiser (Web Push) — logik i $lib/push-client
 	let pushState = $state<'idle' | 'busy'>('idle');
 	let pushMsg = $state<string | null>(null);
-	let pushSupported = $state(false);
+	let pushSupportedHere = $state(false);
 	let pushOnThisDevice = $state(false);
-	const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent);
-	const isStandalone = () =>
-		window.matchMedia('(display-mode: standalone)').matches ||
-		(navigator as { standalone?: boolean }).standalone === true;
 	$effect(() => {
-		pushSupported =
-			'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
-		if (!pushSupported) return;
-		navigator.serviceWorker.ready
-			.then((r) => r.pushManager.getSubscription())
-			.then((s) => (pushOnThisDevice = !!s))
-			.catch(() => {});
+		pushSupportedHere = pushSupported();
+		if (pushSupportedHere) hasPushSubscription().then((v) => (pushOnThisDevice = v));
 	});
-	function b64ToU8(b64: string) {
-		const pad = '='.repeat((4 - (b64.length % 4)) % 4);
-		const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
-		return Uint8Array.from(raw, (c) => c.charCodeAt(0));
-	}
-	async function enablePush() {
+	async function enablePushHere() {
 		pushState = 'busy';
-		pushMsg = null;
-		try {
-			if (isIOS() && !isStandalone()) {
-				pushMsg =
-					'På iPhone: lägg först till Beer Golf på hemskärmen (Dela → Lägg till på hemskärmen) och öppna appen därifrån.';
-				return;
-			}
-			const { enabled, publicKey } = await fetch('/api/push/public-key').then((r) => r.json());
-			if (!enabled) throw new Error('Push är inte konfigurerat på servern.');
-			const perm = await Notification.requestPermission();
-			if (perm !== 'granted')
-				throw new Error('Du nekade notiser. Ändra i webbläsarens inställningar.');
-			const reg = await navigator.serviceWorker.ready;
-			const sub =
-				(await reg.pushManager.getSubscription()) ??
-				(await reg.pushManager.subscribe({
-					userVisibleOnly: true,
-					applicationServerKey: b64ToU8(publicKey)
-				}));
-			const res = await fetch('/api/push/subscribe', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(sub.toJSON())
-			});
-			if (!res.ok) throw new Error('Kunde inte spara prenumerationen.');
+		const r = await enablePush();
+		pushMsg = r.message;
+		if (r.ok) {
 			pushOnThisDevice = true;
-			pushMsg = 'Notiser påslagna på den här enheten.';
 			await invalidateAll();
-		} catch (e) {
-			pushMsg = e instanceof Error ? e.message : 'Något gick fel.';
-		} finally {
-			pushState = 'idle';
 		}
+		pushState = 'idle';
 	}
-	async function disablePush() {
+	async function disablePushHere() {
 		pushState = 'busy';
 		try {
-			const reg = await navigator.serviceWorker.ready;
-			const sub = await reg.pushManager.getSubscription();
-			if (sub) {
-				await fetch('/api/push/unsubscribe', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ endpoint: sub.endpoint })
-				});
-				await sub.unsubscribe();
-			}
+			await disablePush();
 			pushOnThisDevice = false;
 			pushMsg = 'Notiser avstängda på den här enheten.';
 			await invalidateAll();
@@ -275,7 +227,7 @@
 			<p class="mt-3 text-sm text-club-900/50">
 				Push är inte konfigurerat på servern (VAPID-nycklar saknas).
 			</p>
-		{:else if !pushSupported}
+		{:else if !pushSupportedHere}
 			<p class="mt-3 text-sm text-club-900/50">
 				Din webbläsare stöder inte push-notiser här. På iPhone: lägg till Beer Golf på hemskärmen
 				och öppna appen därifrån.
@@ -294,7 +246,7 @@
 					</form>
 					<button
 						type="button"
-						onclick={disablePush}
+						onclick={disablePushHere}
 						disabled={pushState === 'busy'}
 						class="rounded-lg border border-red-700/50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
 						>Stäng av här</button
@@ -302,7 +254,7 @@
 				{:else}
 					<button
 						type="button"
-						onclick={enablePush}
+						onclick={enablePushHere}
 						disabled={pushState === 'busy'}
 						class="rounded-lg bg-club-700 px-4 py-2 text-sm font-semibold text-cream-200 hover:bg-club-800 disabled:opacity-50"
 						>{pushState === 'busy' ? 'Väntar…' : '🔔 Slå på notiser'}</button

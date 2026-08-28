@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Avatar from '$lib/components/Avatar.svelte';
 	import ProofLightbox from '$lib/components/ProofLightbox.svelte';
+	import WelcomeModal from '$lib/components/WelcomeModal.svelte';
 	import HcpTrend from './HcpTrend.svelte';
 	import type { Dashboard } from '$lib/server/dashboard';
 
@@ -499,5 +500,13 @@
 		items={d.cert.practical.proofs}
 		bind:index={proofIndex}
 		onclose={() => (proofIndex = null)}
+	/>
+{/if}
+
+{#if isSelf && d.member.greenCardIssuedAt && !d.member.welcomeSeenAt}
+	<WelcomeModal
+		name={d.member.name}
+		memberNumber={d.member.memberNumber}
+		avatarUrl={d.member.avatarUrl}
 	/>
 {/if}

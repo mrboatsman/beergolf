@@ -44,6 +44,7 @@ export async function getDashboard(memberId: string) {
 			hcp: members.hcp,
 			memberNumber: members.memberNumber,
 			greenCardIssuedAt: members.greenCardIssuedAt,
+			welcomeSeenAt: members.welcomeSeenAt,
 			createdAt: members.createdAt,
 			// Global leaderboard-placering (lägst hcp = bäst). OBS: literal
 			// members.hcp — drizzle-interpolation binder fel i subqueries.

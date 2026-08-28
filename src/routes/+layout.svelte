@@ -5,6 +5,7 @@
 	import { page } from '$app/state';
 	import { fly } from 'svelte/transition';
 	import Avatar from '$lib/components/Avatar.svelte';
+	import PushPromptModal from '$lib/components/PushPromptModal.svelte';
 
 	let { children, data } = $props();
 	let member = $derived(data.member);
@@ -119,6 +120,7 @@
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
 {#if member}
+	<PushPromptModal />
 	<div class="flex min-h-screen">
 		<!-- Sidebar (desktop) -->
 		<aside

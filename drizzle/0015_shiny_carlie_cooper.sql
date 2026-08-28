@@ -1,0 +1,1 @@
+ALTER TABLE `members` ADD `welcome_seen_at` integer;

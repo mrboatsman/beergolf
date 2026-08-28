@@ -26,6 +26,8 @@ export const members = sqliteTable('members', {
 	greenCardIssuedAt: integer('green_card_issued_at', { mode: 'timestamp' }),
 	// Profilbild: egen uppladdad (storage-nyckel) har företräde; annars Gravatar
 	// (sha256 av e-post) om påslaget; annars initialer.
+	// Välkomstmodal efter grönt kort — visas en gång, sedan stämplas den här
+	welcomeSeenAt: integer('welcome_seen_at', { mode: 'timestamp' }),
 	avatarKey: text('avatar_key'),
 	gravatar: integer('gravatar', { mode: 'boolean' }).notNull().default(true),
 	createdAt: integer('created_at', { mode: 'timestamp' })

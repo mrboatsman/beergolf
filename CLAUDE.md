@@ -255,6 +255,14 @@ PRIVATE_KEY/SUBJECT`; saknas → `isPushEnabled()=false`, no-op): tabell `push_s
   Coaster-tabellen och leaderboarden ryms på 390 px: kortnamn "Förnamn E." via
   `src/lib/names.ts` (`shortName`) under `sm`, leaderboarden döljer Grönt Kort/Bästa brutto.
 - Signering kräver minst `MIN_COASTER_PLAYERS` (2) spelare på coastern — man spelar inte ensam.
+- **Välkomstmodal** (`WelcomeModal.svelte`, på egen dashboard när `greenCardIssuedAt` satt och
+  `members.welcomeSeenAt` null): gratulation, tips (coasters/bjud in/leaderboard), profilbild via
+  `AvatarCropper` → `/settings?/uploadAvatar`, PWA-installation (`beforeinstallprompt`-knapp,
+  iOS-instruktion), knapp "Slå ut! ⛳" → `?/dismissWelcome` på `/` stämplar → aldrig igen.
+- **Notisfråga i PWA** (`PushPromptModal.svelte` i root-layout): visas EN gång per enhet, bara i
+  standalone-läge, bara om tillstånd ej beslutat och ingen prenumeration; localStorage
+  `bg:push-asked`. Aldrig i vanlig webbläsare (Inställningar → Notiser istället). Klientlogik för
+  push delad i `src/lib/push-client.ts` (`enablePush`, `disablePush`, `shouldShowPushPrompt`).
 - Profilens HCP-kort visar global leaderboard-placering ("#N av M", länkad till /members).
 
 - **Turneringar = välgörenhetsinsamlingar** (`/tournaments`, logik i
