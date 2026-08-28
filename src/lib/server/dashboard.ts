@@ -2,7 +2,7 @@ import { desc, eq, sql } from 'drizzle-orm';
 import { db } from './db';
 import { grossTotal } from '$lib/scoring';
 import { coasters, coasterPlayers, members, quizAttempts, rounds } from './db/schema';
-import { getCertStatus } from './certification';
+import { getCertStatus, getPendingAspirantsFor } from './certification';
 import { avatarUrl } from './avatar';
 
 const FALLBACK_PAR = 35; // äldre rundor utan coaster-koppling
@@ -154,6 +154,8 @@ export async function getDashboard(memberId: string) {
 		.all();
 
 	return {
+		// Fadder-att-göra (bara meningsfullt för egen dashboard)
+		pendingAspirants: member.status === 'aspirant' ? [] : getPendingAspirantsFor(member.id),
 		member: (() => {
 			// e-post/nycklar stannar på servern — bara avatar-URL går ut
 			const { email, avatarKey, gravatar, ...rest } = member;

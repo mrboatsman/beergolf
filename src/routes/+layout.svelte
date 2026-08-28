@@ -44,7 +44,8 @@
 					{
 						href: '/certification',
 						label: 'Grönt Kort',
-						active: page.url.pathname.startsWith('/certification')
+						active: page.url.pathname.startsWith('/certification'),
+						badge: data.pendingAspirants
 					},
 					...quizItem,
 					{ href: '/invite', label: 'Bjud in', active: page.url.pathname.startsWith('/invite') },
@@ -159,6 +160,12 @@
 						<span class="h-1.5 w-1.5 rounded-full {item.active ? 'bg-gold-400' : 'bg-cream-200/30'}"
 						></span>
 						{item.label}
+						{#if 'badge' in item && item.badge}
+							<span
+								class="ml-auto rounded-full bg-gold-400 px-2 py-0.5 text-[11px] font-bold text-club-900"
+								title="Aspiranter som väntar på dig">{item.badge}</span
+							>
+						{/if}
 					</a>
 				{/each}
 			</nav>
@@ -259,6 +266,12 @@
 								class="h-1.5 w-1.5 rounded-full {item.active ? 'bg-gold-400' : 'bg-cream-200/30'}"
 							></span>
 							{item.label}
+							{#if 'badge' in item && item.badge}
+								<span
+									class="ml-auto rounded-full bg-gold-400 px-2 py-0.5 text-[11px] font-bold text-club-900"
+									title="Aspiranter som väntar på dig">{item.badge}</span
+								>
+							{/if}
 						</a>
 					{/each}
 				</nav>
@@ -322,17 +335,25 @@
 								: 'text-cream-200/60'}"
 							aria-label="Öppna menyn"
 						>
-							<svg
-								viewBox="0 0 24 24"
-								class="h-6 w-6"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="1.8"
-								stroke-linecap="round"
-								aria-hidden="true"
-							>
-								<path d="M4 7h16M4 12h16M4 17h16" />
-							</svg>
+							<span class="relative">
+								<svg
+									viewBox="0 0 24 24"
+									class="h-6 w-6"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1.8"
+									stroke-linecap="round"
+									aria-hidden="true"
+								>
+									<path d="M4 7h16M4 12h16M4 17h16" />
+								</svg>
+								{#if data.pendingAspirants}
+									<span
+										class="absolute -top-1 -right-2 min-w-4 rounded-full bg-gold-400 px-1 text-center text-[10px] font-bold leading-4 text-club-900"
+										>{data.pendingAspirants}</span
+									>
+								{/if}
+							</span>
 							Meny
 						</button>
 					</div>

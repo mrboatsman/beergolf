@@ -177,6 +177,11 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
 - **FAQ** (`/faq`, nav-länk, member+): innehåll i `src/lib/faq.ts` (`buildFaq(vars)`), servern
   skickar riktiga konstanter (HCP-start/faktor/gränser, min/max spelare, par) + räkneexempel via
   `nextHcp()`. Regelsektionen renderar `<CoasterRules open />` — regeltext bara i `rules.ts`.
+- **Fadder-att-göra**: `getPendingAspirantsFor(fadderId)` (certification.ts) = aspiranter med
+  `certifications.fadderId = jag` som ännu är aspirant, med `missing[]`. Visas som kort överst på
+  egen dashboard ("Dina aspiranter väntar", länk `/certification?aspirant=<id>` för bevis +
+  godkännande), antal som badge på "Grönt Kort" i sidebar/sheet och på Meny-fliken
+  (`data.pendingAspirants` från root-layout-load).
 - Listor är paginerade + filtrerbara (server-side, GET-params): `/members` (q/page,
   namn eller e-post), admin-medlemmar (mq/mpage) och invalskoder (iq/ipage — sök på kod
   eller medlemsnamn; kolumnen "Blev medlem" länkar till profilen som koden skapade).

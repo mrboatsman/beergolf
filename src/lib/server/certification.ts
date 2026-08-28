@@ -1,4 +1,4 @@
-import { asc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import { db } from './db';
 import { randomUUID } from 'node:crypto';
 import { certificationProofs, certifications, members, START_HCP } from './db/schema';
@@ -147,4 +147,34 @@ export function issueGreenCardDirect(memberId: string, comment: string, byId: st
 			.run();
 	});
 	return true;
+}
+
+/**
+ * Aspiranter som väntar på sin fadder: certifications.fadderId = fadderId
+ * (inbjudan eller tidigare godkännande) och status fortfarande aspirant.
+ * Returnerar vad som saknas per aspirant så faddern ser vad som är kvar.
+ */
+export function getPendingAspirantsFor(fadderId: string) {
+	return db
+		.select({
+			id: members.id,
+			name: members.name,
+			createdAt: members.createdAt,
+			theory: certifications.theoryPassed,
+			practical: certifications.practicalPassed,
+			etiquette: certifications.etiquettePassed
+		})
+		.from(certifications)
+		.innerJoin(members, eq(certifications.memberId, members.id))
+		.where(and(eq(certifications.fadderId, fadderId), eq(members.status, 'aspirant')))
+		.orderBy(asc(members.createdAt))
+		.all()
+		.map((a) => ({
+			...a,
+			missing: [
+				...(a.theory ? [] : ['Teoriprov']),
+				...(a.practical ? [] : ['Praktiskt prov']),
+				...(a.etiquette ? [] : ['Etikett'])
+			]
+		}));
 }
