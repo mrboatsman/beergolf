@@ -291,7 +291,7 @@
 				<a
 					href={`/invite/print?codes=${[...selectedCodes].join(',')}`}
 					class="ml-3 rounded-lg border border-club-700 px-3 py-1 text-xs font-semibold text-club-800 hover:bg-club-100"
-					>🖨️ Skriv ut valda ({selectedCodes.size})</a
+					>Skriv ut valda ({selectedCodes.size})</a
 				>
 			{/if}
 		</h2>

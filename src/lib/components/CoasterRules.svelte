@@ -11,7 +11,7 @@
 	<summary
 		class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-2.5 text-sm font-semibold select-none"
 	>
-		<span>📜 Regler för Beer Golf™</span>
+		<span>Regler för Beer Golf™</span>
 		<span class="text-xs font-normal text-club-900/60 group-open:hidden">Visa</span>
 		<span class="hidden text-xs font-normal text-club-900/60 group-open:inline">Dölj</span>
 	</summary>

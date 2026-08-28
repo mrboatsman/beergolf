@@ -33,7 +33,7 @@
 	>
 		<div class="w-full max-w-md rounded-t-3xl bg-parchment p-6 shadow-2xl sm:rounded-3xl">
 			<h2 id="push-title" class="font-display text-2xl font-semibold text-club-900">
-				🔔 Vill du få notiser?
+				Vill du få notiser?
 			</h2>
 			<p class="mt-2 text-sm text-club-900/80">
 				Vi säger till när någon du bjudit in skapar konto eller när du läggs till på en Score

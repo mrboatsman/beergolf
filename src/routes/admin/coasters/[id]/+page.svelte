@@ -20,7 +20,7 @@
 		<p class="text-sm text-club-900/60">
 			Skapad {fmt(coaster.createdAt)} · par {coaster.par.join('-')} = {parTotal}
 			{#if data.tournament}
-				· 🏆 {data.tournament.name} ({data.tournament.format === 'match'
+				· Turnering: {data.tournament.name} ({data.tournament.format === 'match'
 					? 'matchspel'
 					: 'slagspel'})
 			{/if}

@@ -257,7 +257,7 @@
 						onclick={enablePushHere}
 						disabled={pushState === 'busy'}
 						class="rounded-lg bg-club-700 px-4 py-2 text-sm font-semibold text-cream-200 hover:bg-club-800 disabled:opacity-50"
-						>{pushState === 'busy' ? 'Väntar…' : '🔔 Slå på notiser'}</button
+						>{pushState === 'busy' ? 'Väntar…' : 'Slå på notiser'}</button
 					>
 				{/if}
 			</div>

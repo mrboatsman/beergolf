@@ -35,9 +35,7 @@
 
 {#if data.isStaff}
 	<section class="mt-6 rounded-2xl bg-club-800 p-6 text-cream-200 shadow-md">
-		<h2 class="font-display flex items-center gap-2 text-2xl font-semibold">
-			<span>🏆</span> Ny turnering
-		</h2>
+		<h2 class="font-display flex items-center gap-2 text-2xl font-semibold">Ny turnering</h2>
 		<form method="POST" action="?/create" use:enhance class="mt-4 space-y-4">
 			<label class="block text-sm">
 				<span class="text-xs font-semibold tracking-[0.18em] text-gold-400 uppercase">Namn</span>

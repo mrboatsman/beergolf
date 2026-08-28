@@ -71,7 +71,7 @@
 {/if}
 {#if form?.signed}
 	<p class="mt-4 rounded bg-gold-400/20 px-3 py-2 text-sm text-gold-600">
-		Signerat! Ditt resultat räknas nu på leaderboarden. 🍻
+		Signerat! Ditt resultat räknas nu på leaderboarden.
 	</p>
 {/if}
 

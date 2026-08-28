@@ -112,7 +112,7 @@
 			href={`/tournaments/${data.tournament.id}`}
 			class="block rounded-xl bg-club-800 px-4 py-2 text-sm text-cream-200 shadow-sm hover:bg-club-700"
 		>
-			🏆 Turneringscoaster: <strong>{data.tournament.name}</strong> — signerade rundor räknas på turneringens
+			Turneringscoaster: <strong>{data.tournament.name}</strong> — signerade rundor räknas på turneringens
 			leaderboard
 		</a>
 	</div>
@@ -260,7 +260,7 @@
 	{#if myRow && data.backLockAt}
 		<p class="mx-auto mt-2 max-w-2xl text-center text-xs text-club-900/50">
 			{#if data.backLocked}
-				🔒 Baksidan låstes {new Date(data.backLockAt).toLocaleString('sv-SE', {
+				Baksidan låstes {new Date(data.backLockAt).toLocaleString('sv-SE', {
 					dateStyle: 'short',
 					timeStyle: 'short'
 				})} — två dagar efter att rundan avslutades.

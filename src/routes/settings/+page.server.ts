@@ -85,7 +85,7 @@ export const actions: Actions = {
 		const me = requireMember(locals.member);
 		await sendPush(me.id, {
 			title: 'Beer Golf',
-			body: 'Notiserna fungerar. Färre slag. Fler skål. 🍻',
+			body: 'Notiserna fungerar. Färre slag. Fler skål.',
 			url: '/settings',
 			tag: 'test'
 		});

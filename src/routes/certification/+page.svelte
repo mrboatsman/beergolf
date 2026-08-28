@@ -38,7 +38,7 @@
 	<p class="mt-4 rounded bg-club-100 px-3 py-2 text-sm text-club-700">
 		{form.approved === 'practical' ? 'Praktiskt prov' : 'Etikett & hänsyn'} godkänt för
 		{form.aspirantName}.
-		{#if form.issued}<strong>Alla delar klara — Grönt Kort utfärdat! 🍺⛳</strong>{/if}
+		{#if form.issued}<strong>Alla delar klara — Grönt Kort utfärdat!</strong>{/if}
 		{#if form.promoted}<strong>Du är nu fadder.</strong>{/if}
 	</p>
 {/if}

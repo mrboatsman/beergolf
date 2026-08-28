@@ -282,7 +282,7 @@
 			<div
 				class="absolute inset-0 flex items-center justify-center px-16 text-center font-coaster text-5xl text-print/30"
 			>
-				{canEdit ? 'Ladda upp bilder och rita något fint 🍻' : 'Inget på baksidan än.'}
+				{canEdit ? 'Ladda upp bilder och rita något fint' : 'Inget på baksidan än.'}
 			</div>
 		{/if}
 		{#each editor.images as img (img.id)}

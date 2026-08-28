@@ -59,7 +59,7 @@
 	>
 		<p class="text-xs font-semibold tracking-[0.2em] text-gold-600 uppercase">Grattis</p>
 		<h2 id="welcome-title" class="font-display mt-1 text-3xl font-semibold text-club-900">
-			Välkommen till klubbhuset, {name.split(' ')[0]}! 🍻⛳
+			Välkommen till klubbhuset, {name.split(' ')[0]}!
 		</h2>
 		<p class="mt-2 text-sm text-club-900/80">
 			Du har nu Grönt Kort{#if memberNumber}&nbsp;nr&nbsp;<strong>{memberNumber}</strong>{/if} och är
@@ -67,11 +67,11 @@
 		</p>
 		<ul class="mt-3 space-y-1.5 text-sm text-club-900/85">
 			<li>
-				🃏 <strong>Skapa Score Coasters</strong> under Coasters och spela matcher med andra medlemmar
-				— poängen sparas automatiskt och ditt handikapp justeras när du signerar.
+				<strong>Skapa Score Coasters</strong> under Coasters och spela matcher med andra medlemmar — poängen
+				sparas automatiskt och ditt handikapp justeras när du signerar.
 			</li>
-			<li>🤝 <strong>Bjuda in nya</strong> under Bjud in — den du bjuder in får dig som fadder.</li>
-			<li>🏆 Klättra på <strong>leaderboarden</strong> — lägst handikapp vinner.</li>
+			<li><strong>Bjuda in nya</strong> under Bjud in — den du bjuder in får dig som fadder.</li>
+			<li>Klättra på <strong>leaderboarden</strong> — lägst handikapp vinner.</li>
 		</ul>
 
 		<!-- Profilbild -->
@@ -123,7 +123,7 @@
 						installEvent = null;
 					}}
 					class="mt-2 rounded-lg bg-club-700 px-3 py-1.5 text-xs font-semibold text-cream-200 hover:bg-club-800"
-					>📲 Installera Beer Golf</button
+					>Installera Beer Golf</button
 				>
 			{:else if ios}
 				<p class="mt-1 text-club-900/70">
@@ -145,7 +145,7 @@
 		<form method="POST" action="?/dismissWelcome" use:enhance class="mt-5">
 			<button
 				class="w-full rounded-xl bg-gold-500 px-5 py-3 font-display text-lg font-semibold text-club-900 hover:bg-gold-400"
-				>Slå ut! ⛳</button
+				>Slå ut!</button
 			>
 		</form>
 	</div>

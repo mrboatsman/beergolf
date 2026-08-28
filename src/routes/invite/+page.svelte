@@ -69,7 +69,7 @@
 		<a
 			href={selected.size ? printUrl : '/invite/print'}
 			class="rounded-lg border border-club-700 px-4 py-2.5 text-sm font-semibold text-club-800 hover:bg-club-100"
-			>🖨️ {selected.size ? `Skriv ut valda (${selected.size})` : 'Skriv ut alla öppna kort'}</a
+			>{selected.size ? `Skriv ut valda (${selected.size})` : 'Skriv ut alla öppna kort'}</a
 		>
 	{/if}
 </div>

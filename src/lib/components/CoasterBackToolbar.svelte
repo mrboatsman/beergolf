@@ -15,14 +15,14 @@
 					onclick={() => (editor.mode = 'draw')}
 					class="px-3 py-1.5 {editor.mode === 'draw'
 						? 'bg-club-700 text-cream-200'
-						: 'text-club-800 hover:bg-club-100'}">✏️ Rita</button
+						: 'text-club-800 hover:bg-club-100'}">Rita</button
 				>
 				<button
 					type="button"
 					onclick={() => (editor.mode = 'images')}
 					class="px-3 py-1.5 {editor.mode === 'images'
 						? 'bg-club-700 text-cream-200'
-						: 'text-club-800 hover:bg-club-100'}">🖼️ Bilder</button
+						: 'text-club-800 hover:bg-club-100'}">Bilder</button
 				>
 			</div>
 			<button
