@@ -8,6 +8,7 @@ import { listPasskeys } from '$lib/server/passkeys';
 import { avatarUrl, gravatarUrl } from '$lib/server/avatar';
 import { storage } from '$lib/server/storage';
 import { newId } from '$lib/server/ids';
+import { isPushEnabled, listSubscriptions, sendPush } from '$lib/server/push';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -15,6 +16,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	return {
 		forced: me.mustChangePassword,
 		passkeys: listPasskeys(me.id),
+		push: { enabled: isPushEnabled(), devices: listSubscriptions(me.id) },
 		avatar: {
 			url: avatarUrl(me),
 			hasCustom: !!me.avatarKey,
@@ -77,6 +79,17 @@ export const actions: Actions = {
 		if (me.avatarKey) await storage.remove(me.avatarKey).catch(() => {});
 		await db.update(members).set({ avatarKey: null }).where(eq(members.id, me.id));
 		return { avatarSaved: 'Egen bild borttagen.' };
+	},
+
+	testPush: async ({ locals }) => {
+		const me = requireMember(locals.member);
+		await sendPush(me.id, {
+			title: 'Beer Golf',
+			body: 'Notiserna fungerar. Färre slag. Fler skål. 🍻',
+			url: '/settings',
+			tag: 'test'
+		});
+		return { pushTested: true };
 	},
 
 	deletePasskey: async ({ request, locals }) => {

@@ -234,6 +234,14 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   aldrig rounds/HCP. Matchresultat avgörs inte om automatiskt vid rättning.
 - Regeltext i `src/lib/rules.ts` (`RULES`, sektioner Spelet / Räkning & signatur / Etikett),
   visas hopfällbart (`CoasterRules.svelte`) ovanför coastern på `/coasters/[id]`.
+- **Web Push** (`src/lib/server/push.ts`, `web-push` + VAPID från .env `VAPID_PUBLIC_KEY/
+PRIVATE_KEY/SUBJECT`; saknas → `isPushEnabled()=false`, no-op): tabell `push_subscriptions`
+  (en per enhet), API `/api/push/public-key|subscribe|unsubscribe` (öppna i hooks-gaterna),
+  service worker hanterar `push` (payload `{title, body, url, tag}`) + `notificationclick`
+  (fokusera/navigera). `sendPush(memberIds, payload)` fire-and-forget (`void sendPush(...)` i
+  actions), rensar döda prenumerationer (404/410). Händelser hittills: inbjuden skapar konto →
+  faddern (`/join`), tillagd på coaster → medlemmen (`addPlayer`). Inställningar → Notiser:
+  slå på/av per enhet, testnotis, enhetslista. iOS kräver installerad PWA (hemskärm).
 - **PWA**: `static/manifest.webmanifest` + ikoner i `static/icons/` (genererade från
   `src/lib/assets/logo.png` med sips; maskable = logo på club-800), meta/länkar i `src/app.html`,
   service worker `src/service-worker.ts` (auto-registrerad av SvelteKit): app-skalet (build +

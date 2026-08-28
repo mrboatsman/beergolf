@@ -10,6 +10,100 @@
 
 	const fmt = (d: Date | null) => (d ? new Date(d).toLocaleDateString('sv-SE') : '—');
 
+	// Notiser (Web Push): prenumerera via service worker + VAPID-nyckel
+	let pushState = $state<'idle' | 'busy'>('idle');
+	let pushMsg = $state<string | null>(null);
+	let pushSupported = $state(false);
+	let pushOnThisDevice = $state(false);
+	const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent);
+	const isStandalone = () =>
+		window.matchMedia('(display-mode: standalone)').matches ||
+		(navigator as { standalone?: boolean }).standalone === true;
+	$effect(() => {
+		pushSupported =
+			'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+		if (!pushSupported) return;
+		navigator.serviceWorker.ready
+			.then((r) => r.pushManager.getSubscription())
+			.then((s) => (pushOnThisDevice = !!s))
+			.catch(() => {});
+	});
+	function b64ToU8(b64: string) {
+		const pad = '='.repeat((4 - (b64.length % 4)) % 4);
+		const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+		return Uint8Array.from(raw, (c) => c.charCodeAt(0));
+	}
+	async function enablePush() {
+		pushState = 'busy';
+		pushMsg = null;
+		try {
+			if (isIOS() && !isStandalone()) {
+				pushMsg =
+					'På iPhone: lägg först till Beer Golf på hemskärmen (Dela → Lägg till på hemskärmen) och öppna appen därifrån.';
+				return;
+			}
+			const { enabled, publicKey } = await fetch('/api/push/public-key').then((r) => r.json());
+			if (!enabled) throw new Error('Push är inte konfigurerat på servern.');
+			const perm = await Notification.requestPermission();
+			if (perm !== 'granted')
+				throw new Error('Du nekade notiser. Ändra i webbläsarens inställningar.');
+			const reg = await navigator.serviceWorker.ready;
+			const sub =
+				(await reg.pushManager.getSubscription()) ??
+				(await reg.pushManager.subscribe({
+					userVisibleOnly: true,
+					applicationServerKey: b64ToU8(publicKey)
+				}));
+			const res = await fetch('/api/push/subscribe', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(sub.toJSON())
+			});
+			if (!res.ok) throw new Error('Kunde inte spara prenumerationen.');
+			pushOnThisDevice = true;
+			pushMsg = 'Notiser påslagna på den här enheten.';
+			await invalidateAll();
+		} catch (e) {
+			pushMsg = e instanceof Error ? e.message : 'Något gick fel.';
+		} finally {
+			pushState = 'idle';
+		}
+	}
+	async function disablePush() {
+		pushState = 'busy';
+		try {
+			const reg = await navigator.serviceWorker.ready;
+			const sub = await reg.pushManager.getSubscription();
+			if (sub) {
+				await fetch('/api/push/unsubscribe', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ endpoint: sub.endpoint })
+				});
+				await sub.unsubscribe();
+			}
+			pushOnThisDevice = false;
+			pushMsg = 'Notiser avstängda på den här enheten.';
+			await invalidateAll();
+		} finally {
+			pushState = 'idle';
+		}
+	}
+	const deviceLabel = (ua: string | null) =>
+		!ua
+			? 'Okänd enhet'
+			: /iPhone/.test(ua)
+				? 'iPhone'
+				: /iPad/.test(ua)
+					? 'iPad'
+					: /Android/.test(ua)
+						? 'Android'
+						: /Mac/.test(ua)
+							? 'Mac'
+							: /Windows/.test(ua)
+								? 'Windows'
+								: 'Enhet';
+
 	// Profilbild: vald fil → beskärare → uppladdning
 	let cropFile = $state<File | null>(null);
 	let avatarMsg = $state<string | null>(null);
@@ -167,6 +261,68 @@
 					</form>
 				</div>
 			</div>
+		{/if}
+	</section>
+
+	<!-- Notiser -->
+	<section class="mt-6 rounded-2xl bg-parchment p-5 shadow-sm">
+		<h2 class="font-display text-2xl font-semibold text-club-900">Notiser</h2>
+		<p class="mt-1 text-sm text-club-900/70">
+			Få en notis när någon du bjudit in skapar konto, när du läggs till på en Score Coaster och
+			framöver när något annat kräver dig. Slås på per enhet.
+		</p>
+		{#if !data.push.enabled}
+			<p class="mt-3 text-sm text-club-900/50">
+				Push är inte konfigurerat på servern (VAPID-nycklar saknas).
+			</p>
+		{:else if !pushSupported}
+			<p class="mt-3 text-sm text-club-900/50">
+				Din webbläsare stöder inte push-notiser här. På iPhone: lägg till Beer Golf på hemskärmen
+				och öppna appen därifrån.
+			</p>
+		{:else}
+			<div class="mt-3 flex flex-wrap items-center gap-2">
+				{#if pushOnThisDevice}
+					<span class="rounded-full bg-club-800 px-2.5 py-0.5 text-xs font-semibold text-cream-200"
+						>På på den här enheten</span
+					>
+					<form method="POST" action="?/testPush" use:enhance>
+						<button
+							class="rounded-lg border border-club-700 px-3 py-1.5 text-xs font-semibold text-club-800 hover:bg-club-100"
+							>Skicka testnotis</button
+						>
+					</form>
+					<button
+						type="button"
+						onclick={disablePush}
+						disabled={pushState === 'busy'}
+						class="rounded-lg border border-red-700/50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+						>Stäng av här</button
+					>
+				{:else}
+					<button
+						type="button"
+						onclick={enablePush}
+						disabled={pushState === 'busy'}
+						class="rounded-lg bg-club-700 px-4 py-2 text-sm font-semibold text-cream-200 hover:bg-club-800 disabled:opacity-50"
+						>{pushState === 'busy' ? 'Väntar…' : '🔔 Slå på notiser'}</button
+					>
+				{/if}
+			</div>
+			{#if pushMsg}<p class="mt-2 text-sm text-club-700">{pushMsg}</p>{/if}
+			{#if form?.pushTested}<p class="mt-2 text-sm text-club-700">
+					Testnotis skickad till dina enheter.
+				</p>{/if}
+			{#if data.push.devices.length}
+				<ul class="mt-3 divide-y divide-cream-300 text-sm">
+					{#each data.push.devices as dev (dev.id)}
+						<li class="flex items-center justify-between py-2">
+							<span class="font-semibold text-club-900">{deviceLabel(dev.userAgent)}</span>
+							<span class="text-xs text-club-900/60">Sedan {fmt(dev.createdAt)}</span>
+						</li>
+					{/each}
+				</ul>
+			{/if}
 		{/if}
 	</section>
 

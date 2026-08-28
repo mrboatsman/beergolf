@@ -17,6 +17,7 @@ import { newId } from '$lib/server/ids';
 import { nextHcp, netScore } from '$lib/handicap';
 import { maybeDecideMatch } from '$lib/server/tournaments';
 import { notifyCoaster } from '$lib/server/live';
+import { sendPush } from '$lib/server/push';
 import { storage } from '$lib/server/storage';
 import { BACK_W, BACK_H } from '$lib/back-editor.svelte';
 import { fillMissingWithX, grossTotal, grossTotalComplete, parseScore } from '$lib/scoring';
@@ -286,6 +287,12 @@ export const actions: Actions = {
 			scores: Array(9).fill(null)
 		});
 		notifyCoaster(coaster.id);
+		void sendPush(targetId, {
+			title: 'Du är med på en Score Coaster',
+			body: `${me.name} lade till dig på ${coaster.name ?? 'en coaster'}. Fyll i din rad!`,
+			url: `/coasters/${coaster.id}`,
+			tag: `coaster-${coaster.id}`
+		});
 		return { added: target.name };
 	},
 

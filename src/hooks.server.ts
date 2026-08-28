@@ -19,6 +19,7 @@ const ASPIRANT_ALLOWED = [
 	'/password',
 	'/settings',
 	'/api/passkey',
+	'/api/push',
 	'/t'
 ];
 // /t = publika turneringssidor, /api/stripe = webhook — öppna även för
@@ -54,6 +55,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 			p === '/password' ||
 			p === '/settings' ||
 			p.startsWith('/api/passkey') ||
+			p.startsWith('/api/push') ||
 			p === '/logout';
 		if (!allowed) throw redirect(303, '/settings');
 	}

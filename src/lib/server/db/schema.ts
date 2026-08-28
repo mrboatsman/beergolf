@@ -55,6 +55,22 @@ export const invites = sqliteTable('invites', {
 		.default(sql`(unixepoch())`)
 });
 
+// Web Push-prenumerationer (PWA-notiser). En rad per enhet/webbläsare.
+export const pushSubscriptions = sqliteTable('push_subscriptions', {
+	id: text('id').primaryKey(),
+	memberId: text('member_id')
+		.notNull()
+		.references(() => members.id, { onDelete: 'cascade' }),
+	endpoint: text('endpoint').notNull().unique(),
+	p256dh: text('p256dh').notNull(),
+	auth: text('auth').notNull(),
+	userAgent: text('user_agent'),
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`(unixepoch())`),
+	lastUsedAt: integer('last_used_at', { mode: 'timestamp' })
+});
+
 // Passkeys (WebAuthn): inloggning utan lösenord. id = credentialID (base64url).
 export const passkeys = sqliteTable('passkeys', {
 	id: text('id').primaryKey(),

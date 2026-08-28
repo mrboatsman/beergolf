@@ -46,6 +46,7 @@ docker run -d --name beergolf \
   -e ORIGIN=https://beergolf.example.se \
   -e STRIPE_SECRET_KEY=sk_live_... \
   -e STRIPE_WEBHOOK_SECRET=whsec_... \
+  -e VAPID_PUBLIC_KEY=... -e VAPID_PRIVATE_KEY=... -e VAPID_SUBJECT=mailto:du@example.se \
   ghcr.io/mrboatsman/beergolf:latest
 
 # Första admin + teoriprov-frågor (en gång)
@@ -56,4 +57,5 @@ docker exec -e ADMIN_EMAIL=du@example.se -e ADMIN_PASSWORD=hemligt beergolf node
 - Seeden ger admin grönt kort nr 1. Konton som seedats med äldre version: Admin → medlemstabellen → **Utfärda grönt kort**.
 - `/data` = SQLite-db + uppladdningar; montera som volym.
 - `ORIGIN` måste sättas till den publika URL:en (form actions/CSRF bakom proxy).
+- Push-notiser (PWA) kräver VAPID-nycklar: `npx web-push generate-vapid-keys`. Utan dem är notiser avstängda (appen funkar ändå).
 - Lokalt bygge: `docker build -t beergolf .`

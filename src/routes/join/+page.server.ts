@@ -9,6 +9,7 @@ import {
 	setSessionCookie
 } from '$lib/server/auth';
 import { newId } from '$lib/server/ids';
+import { sendPush } from '$lib/server/push';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
@@ -89,6 +90,16 @@ export const actions: Actions = {
 				}
 			}
 		});
+
+		// Notis till faddern: ny aspirant att examinera (fire-and-forget)
+		if (invite.createdBy) {
+			void sendPush(invite.createdBy, {
+				title: 'Ny aspirant',
+				body: `${name} har skapat konto med din invalskod. Dags för provslingan!`,
+				url: `/certification?aspirant=${id}`,
+				tag: `aspirant-${id}`
+			});
+		}
 
 		const token = generateSessionToken();
 		const session = await createSession(token, id);
