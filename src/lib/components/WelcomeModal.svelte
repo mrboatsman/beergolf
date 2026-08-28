@@ -62,9 +62,8 @@
 			Välkommen till klubbhuset, {name.split(' ')[0]}! 🍻⛳
 		</h2>
 		<p class="mt-2 text-sm text-club-900/80">
-			Du har nu Grönt Kort{#if memberNumber}
-				nr <strong>{memberNumber}</strong>{/if} och är fullvärdig medlem i Tablers Beer Golf Society.
-			Från och med nu kan du:
+			Du har nu Grönt Kort{#if memberNumber}&nbsp;nr&nbsp;<strong>{memberNumber}</strong>{/if} och är
+			fullvärdig medlem i Tablers Beer Golf Society. Från och med nu kan du:
 		</p>
 		<ul class="mt-3 space-y-1.5 text-sm text-club-900/85">
 			<li>
