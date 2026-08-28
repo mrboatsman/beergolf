@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Avatar from '$lib/components/Avatar.svelte';
+	import ProofLightbox from '$lib/components/ProofLightbox.svelte';
 	import HcpTrend from './HcpTrend.svelte';
 	import type { Dashboard } from '$lib/server/dashboard';
 
@@ -27,6 +28,9 @@
 	let certDone = $derived(
 		[d.cert.theory.passed, d.cert.practical.passed, d.cert.etiquette.passed].filter(Boolean).length
 	);
+
+	// Helskärmsvisare för bevis (null = stängd)
+	let proofIndex = $state<number | null>(null);
 
 	// Info-modal: bevismaterial, teoriprov-resultat och fadderns omdöme
 	let showCertInfo = $state(false);
@@ -358,20 +362,37 @@
 				Bevismaterial
 			</h4>
 			{#if d.cert.practical.proofs.length > 0}
-				<div class="mt-2 grid grid-cols-2 gap-2">
-					{#each d.cert.practical.proofs as p (p.id)}
-						{#if p.contentType.startsWith('image/')}
-							<a href={p.url} target="_blank" rel="noreferrer">
+				<div class="mt-2 grid grid-cols-3 gap-2">
+					{#each d.cert.practical.proofs as p, i (p.id)}
+						<button
+							type="button"
+							onclick={() => (proofIndex = i)}
+							class="group relative aspect-square overflow-hidden rounded-xl bg-club-900 shadow-sm ring-gold-400 focus:ring-2 focus:outline-none"
+							aria-label={`Visa ${p.filename}`}
+						>
+							{#if p.contentType.startsWith('image/')}
 								<img
 									src={p.url}
-									alt={p.filename}
-									class="h-28 w-full rounded-lg object-cover shadow-sm"
+									alt=""
+									loading="lazy"
+									class="h-full w-full object-cover transition group-hover:scale-105"
 								/>
-							</a>
-						{:else}
-							<!-- svelte-ignore a11y_media_has_caption -->
-							<video src={p.url} controls class="h-28 w-full rounded-lg bg-black shadow-sm"></video>
-						{/if}
+							{:else}
+								<!-- Film: första bildrutan som thumbnail + play-badge -->
+								<!-- svelte-ignore a11y_media_has_caption -->
+								<video
+									src={p.url}
+									muted
+									playsinline
+									preload="metadata"
+									class="h-full w-full object-cover opacity-80"
+								></video>
+								<span
+									class="absolute inset-0 flex items-center justify-center text-3xl text-cream-200 drop-shadow"
+									aria-hidden="true">▶</span
+								>
+							{/if}
+						</button>
 					{/each}
 				</div>
 			{:else}
@@ -427,3 +448,11 @@
 		</div>
 	{/if}
 </div>
+
+{#if proofIndex !== null}
+	<ProofLightbox
+		items={d.cert.practical.proofs}
+		bind:index={proofIndex}
+		onclose={() => (proofIndex = null)}
+	/>
+{/if}

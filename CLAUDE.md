@@ -142,6 +142,9 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
 - Underkänt visar felen med facit i resultatvyn (lära sig rätt, inte klicka rätt) +
   knappen "Jag har lärt mig läxan — autorätta": godkänner teorin på heder
   (`certifications.theoryAutoPassed`), misslyckade försök står kvar i historiken.
+- Bevis i certifieringsmodalen: kvadratiska thumbnails (film = första bildrutan + ▶) som öppnar
+  `ProofLightbox.svelte` (helskärm z-70, bild/video, svep/pilar, stäng med ✕/Esc/kort tryck,
+  safe-area). Ingen `target=_blank` — skulle öppna Safari ur PWA:n.
 - Profilen (dashboard) visar Grönt Kort-kortet (som på /certification) med en (i)-knapp
   i hörnet → modal "Certifieringsunderlag": teoriprov-resultat + försökshistorik
   (inkl. "Autorättat på heder"-badge), fadderns omdöme och bevismaterialet.
