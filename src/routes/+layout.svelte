@@ -55,6 +55,11 @@
 						label: 'Leaderboard',
 						active: page.url.pathname.startsWith('/members')
 					},
+					{
+						href: '/history',
+						label: 'Historik',
+						active: page.url.pathname.startsWith('/history')
+					},
 					{ href: '/faq', label: 'FAQ', active: page.url.pathname.startsWith('/faq') },
 					...(isStaff
 						? [{ href: '/admin', label: 'Admin', active: page.url.pathname.startsWith('/admin') }]

@@ -4,6 +4,7 @@ import { grossTotal } from '$lib/scoring';
 import { coasters, coasterPlayers, members, quizAttempts, rounds } from './db/schema';
 import { getCertStatus, getPendingAspirantsFor } from './certification';
 import { avatarUrl } from './avatar';
+import { currentSeason } from './seasons';
 
 const FALLBACK_PAR = 35; // äldre rundor utan coaster-koppling
 
@@ -81,8 +82,12 @@ export async function getDashboard(memberId: string) {
 			return { ...r, toPar: r.grossTotal - parTotal };
 		});
 
-	const seasonYear = new Date().getFullYear();
-	const season = allRounds.filter((r) => new Date(r.playedAt).getFullYear() === seasonYear);
+	const cur = currentSeason();
+	const seasonYear = cur.label;
+	const season = allRounds.filter((r) => {
+		const t = new Date(r.playedAt).getTime();
+		return t >= cur.start.getTime() && t < cur.end.getTime();
+	});
 
 	// Säsongsstatistik
 	const bestGross = season.length ? Math.min(...season.map((r) => r.grossTotal)) : null;

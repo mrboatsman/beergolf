@@ -104,6 +104,57 @@
 	</a>
 {/if}
 
+{#if form?.seasonSaved}
+	<p class="mt-4 rounded bg-club-100 px-3 py-2 text-sm text-club-700">
+		Säsongsstart sparad. Nuvarande säsong: {form.seasonSaved}.
+	</p>
+{/if}
+{#if isAdmin}
+	<section class="mt-6 rounded-2xl bg-parchment p-5 shadow-sm">
+		<h2 class="font-semibold text-club-900">Säsong</h2>
+		<p class="mt-1 text-sm text-club-900/70">
+			Säsongen börjar den valda dagen varje år och varar ett år. Leaderboarden nollställs vid start;
+			avslutade säsonger arkiveras under <a href="/history" class="underline">Historik</a>.
+			Nuvarande säsong:
+			<strong>{data.season.label}</strong>.
+		</p>
+		<form
+			method="POST"
+			action="?/setSeason"
+			use:enhance
+			class="mt-3 flex flex-wrap items-end gap-3"
+		>
+			<label class="text-sm">
+				<span class="block text-club-900/70">Startmånad</span>
+				<select
+					name="startMonth"
+					value={String(data.season.startMonth)}
+					class="mt-1 rounded-lg border-cream-300 bg-white text-sm"
+				>
+					{#each ['januari', 'februari', 'mars', 'april', 'maj', 'juni', 'juli', 'augusti', 'september', 'oktober', 'november', 'december'] as mname, i (i)}
+						<option value={String(i + 1)}>{mname}</option>
+					{/each}
+				</select>
+			</label>
+			<label class="text-sm">
+				<span class="block text-club-900/70">Dag</span>
+				<input
+					name="startDay"
+					type="number"
+					min="1"
+					max="28"
+					value={data.season.startDay}
+					class="mt-1 w-20 rounded-lg border-cream-300 bg-white text-sm"
+				/>
+			</label>
+			<button
+				class="rounded-lg bg-club-700 px-4 py-2 text-sm font-semibold text-cream-200 hover:bg-club-800"
+				>Spara</button
+			>
+		</form>
+	</section>
+{/if}
+
 <div class="mt-6 grid gap-6 md:grid-cols-2">
 	<section class="rounded-2xl bg-parchment shadow-sm p-5">
 		<h2 class="font-semibold text-club-900">Skapa invalskod</h2>

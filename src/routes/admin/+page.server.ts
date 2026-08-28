@@ -17,6 +17,7 @@ import { newId, newInviteCode } from '$lib/server/ids';
 import { requireRole } from '$lib/server/guard';
 import { buildFadderTree } from '$lib/fadder-tree';
 import { issueGreenCardDirect } from '$lib/server/certification';
+import { currentSeason, getSeasonConfig, setSeasonConfig } from '$lib/server/seasons';
 import { MAX_HCP, MIN_HCP, round1 } from '$lib/handicap';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -120,6 +121,7 @@ export const load: PageServerLoad = async ({ url }) => {
 	);
 
 	return {
+		season: { ...getSeasonConfig(), label: currentSeason().label },
 		members: memberList.map(({ passwordHash: _drop, ...mm }) => mm),
 		memberTotal,
 		memberPage,
@@ -328,6 +330,20 @@ export const actions: Actions = {
 			me.id === id ? null : me.id
 		);
 		return { greenCardIssued: target.name };
+	},
+
+	// Säsongsstart (månad/dag). Ändring kastar cachade säsongsarkiv.
+	setSeason: async ({ request, locals }) => {
+		requireRole(locals.member, 'admin');
+		const form = await request.formData();
+		const startMonth = Number(form.get('startMonth'));
+		const startDay = Number(form.get('startDay'));
+		if (!Number.isInteger(startMonth) || startMonth < 1 || startMonth > 12)
+			return fail(400, { error: 'Ogiltig månad.' });
+		if (!Number.isInteger(startDay) || startDay < 1 || startDay > 28)
+			return fail(400, { error: 'Dag 1–28.' });
+		setSeasonConfig({ startMonth, startDay });
+		return { seasonSaved: currentSeason().label };
 	},
 
 	toggleActive: async ({ request, locals }) => {

@@ -57,6 +57,24 @@ export const invites = sqliteTable('invites', {
 		.default(sql`(unixepoch())`)
 });
 
+// Klubbinställningar (nyckel/värde). Används för säsongsstart m.m.
+export const clubSettings = sqliteTable('club_settings', {
+	key: text('key').primaryKey(),
+	value: text('value').notNull()
+});
+
+// Arkiverade säsonger: färdig statistik (JSON) beräknas första gången någon
+// tittar efter säsongens slut och cachas här. Etikett t.ex. "2026/27" eller "2026".
+export const seasonArchives = sqliteTable('season_archives', {
+	label: text('label').primaryKey(),
+	startsAt: integer('starts_at', { mode: 'timestamp' }).notNull(),
+	endsAt: integer('ends_at', { mode: 'timestamp' }).notNull(),
+	data: text('data', { mode: 'json' }).notNull(),
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`(unixepoch())`)
+});
+
 // Web Push-prenumerationer (PWA-notiser). En rad per enhet/webbläsare.
 export const pushSubscriptions = sqliteTable('push_subscriptions', {
 	id: text('id').primaryKey(),

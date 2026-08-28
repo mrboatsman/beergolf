@@ -3,6 +3,7 @@ import { db } from '$lib/server/db';
 import { members } from '$lib/server/db/schema';
 import { requireMember } from '$lib/server/guard';
 import { avatarUrl } from '$lib/server/avatar';
+import { currentSeason } from '$lib/server/seasons';
 import type { PageServerLoad } from './$types';
 
 const PAGE_SIZE = 25;
@@ -27,10 +28,13 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 	const current = Math.min(page, pages);
 
-	const seasonStart = Math.floor(new Date(new Date().getFullYear(), 0, 1).getTime() / 1000);
+	const season = currentSeason();
+	const seasonStart = Math.floor(season.start.getTime() / 1000);
+	const seasonEnd = Math.floor(season.end.getTime() / 1000);
 
-	// Leaderboard: rankad på handikapp (lägst = bäst). Ranken är global
-	// (hela klubben) även när listan är filtrerad eller paginerad.
+	// Säsongens leaderboard: bara medlemmar som spelat (signerat) minst en runda
+	// under säsongen rankas — på handikapp, lägst bäst. Övriga listas orankade
+	// efteråt. Ranken är global (hela klubben) även vid filter/paginering.
 	const list = await db
 		.select({
 			id: members.id,
@@ -42,27 +46,43 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			status: members.status,
 			hcp: members.hcp,
 			memberNumber: members.memberNumber,
-			rank: sql<number>`(select count(*) + 1 from members m2 where m2.hcp < members.hcp)`,
+			// Aktiv i säsongen = minst en runda mellan start och slut
+			active: sql<number>`exists(
+				select 1 from rounds r
+				where r.member_id = members.id and r.played_at >= ${seasonStart} and r.played_at < ${seasonEnd}
+			)`,
+			rank: sql<number>`(
+				select count(*) + 1 from members m2
+				where m2.hcp < members.hcp and exists(
+					select 1 from rounds r where r.member_id = m2.id and r.played_at >= ${seasonStart} and r.played_at < ${seasonEnd}
+				)
+			)`,
 			roundsSeason: sql<number>`(
 				select count(*) from rounds r
-				where r.member_id = members.id and r.played_at >= ${seasonStart}
+				where r.member_id = members.id and r.played_at >= ${seasonStart} and r.played_at < ${seasonEnd}
 			)`,
 			bestGross: sql<number | null>`(
 				select min(r.gross_total) from rounds r
-				where r.member_id = members.id and r.played_at >= ${seasonStart}
+				where r.member_id = members.id and r.played_at >= ${seasonStart} and r.played_at < ${seasonEnd}
 			)`
 		})
 		.from(members)
 		.where(where)
-		.orderBy(asc(members.hcp), asc(members.name))
+		.orderBy(
+			sql`exists(select 1 from rounds r where r.member_id = members.id and r.played_at >= ${seasonStart} and r.played_at < ${seasonEnd}) desc`,
+			asc(members.hcp),
+			asc(members.name)
+		)
 		.limit(PAGE_SIZE)
 		.offset((current - 1) * PAGE_SIZE)
 		.all();
 
 	// Skicka aldrig e-post/nycklar till klienten — bara färdig avatar-URL
-	const rows = list.map(({ email, avatarKey, gravatar, ...m }) => ({
+	const rows = list.map(({ email, avatarKey, gravatar, active, ...m }) => ({
 		...m,
+		active: !!active,
+		rank: active ? m.rank : null,
 		avatarUrl: avatarUrl({ email, avatarKey, gravatar })
 	}));
-	return { members: rows, q, page: current, pages, total, seasonYear: new Date().getFullYear() };
+	return { members: rows, q, page: current, pages, total, seasonLabel: season.label };
 };

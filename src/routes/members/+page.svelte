@@ -19,7 +19,8 @@
 		return s ? `/members?${s}` : '/members';
 	}
 
-	function rankClass(rank: number) {
+	function rankClass(rank: number | null) {
+		if (rank === null) return 'text-club-900/30';
 		if (rank === 1) return 'text-gold-500';
 		if (rank <= 3) return 'text-gold-600';
 		return 'text-club-900/60';
@@ -29,10 +30,13 @@
 <div class="flex flex-wrap items-end justify-between gap-3">
 	<div>
 		<p class="text-xs font-semibold tracking-[0.2em] text-gold-600 uppercase">
-			Klubben · Säsong {data.seasonYear}
+			Klubben · Säsong {data.seasonLabel}
 		</p>
 		<h1 class="font-display mt-1 text-4xl font-semibold">Leaderboard</h1>
-		<p class="mt-1 text-sm text-club-900/60">{data.total} medlemmar, rankade på handikapp.</p>
+		<p class="mt-1 text-sm text-club-900/60">
+			{data.total} medlemmar. Rankade på handikapp bland dem som spelat i säsongen — ny säsong, ny leaderboard.
+			<a href="/history" class="underline">Tidigare säsonger</a>.
+		</p>
 	</div>
 	<form method="GET" class="flex gap-2">
 		<input
@@ -68,12 +72,13 @@
 			</thead>
 			<tbody>
 				{#each data.members as m (m.id)}
-					<tr class="border-t border-cream-300 hover:bg-white/60">
+					<tr class="border-t border-cream-300 hover:bg-white/60 {m.active ? '' : 'opacity-60'}">
 						<td class="px-2 py-2.5 text-right sm:px-4">
 							<span
 								class="font-display text-lg font-semibold whitespace-nowrap {rankClass(m.rank)}"
 							>
-								{m.rank}{#if m.rank === 1}<span class="ml-1">🏆</span>{/if}
+								{#if m.rank === null}–{:else}{m.rank}{#if m.rank === 1}<span class="ml-1">🏆</span
+										>{/if}{/if}
 							</span>
 						</td>
 						<td class="px-2 py-2.5 sm:px-3">

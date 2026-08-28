@@ -185,6 +185,15 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
 - Listor är paginerade + filtrerbara (server-side, GET-params): `/members` (q/page,
   namn eller e-post), admin-medlemmar (mq/mpage) och invalskoder (iq/ipage — sök på kod
   eller medlemsnamn; kolumnen "Blev medlem" länkar till profilen som koden skapade).
+- **Säsonger** (`src/lib/season.ts` ren logik, `src/lib/server/seasons.ts`): start månad/dag i
+  `club_settings` (admin → Säsong, default 1 jan), etikett "2026" eller "2026/27". Leaderboard och
+  dashboard använder `currentSeason()`-gränser; leaderboarden rankar bara medlemmar med ≥1 runda i
+  säsongen (övriga orankade "–" efteråt) ⇒ ny säsong = ny leaderboard, HCP löper vidare.
+  Avslutade säsonger: `/history` + `/history/[label]` (`getSeasonArchive`: beräknas via
+  `computeSeasonStats` första gången efter säsongsslut, cachas i `season_archives` som JSON;
+  ändrad säsongsstart kastar cachen). Statistik: slutställning (HCP vid säsongsslut = sista
+  rundans hcpAfter), vinnare, bästa fadder (certifiedAt i säsongen), flest rundor/vinster,
+  störst HCP-sänkning, bästa brutto/netto, nya gröna kort/konton.
 - `/members` är kombinerad **Leaderboard + medlemslista** (nav-etikett "Leaderboard"):
   rankad på HCP (lägst bäst), global rank via korrelerad subquery. OBS: skriv
   `members.hcp` som literal text i sql-templaten — drizzle-interpolation av kolumner
