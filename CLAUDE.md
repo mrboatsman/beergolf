@@ -256,6 +256,11 @@ PRIVATE_KEY/SUBJECT`; saknas → `isPushEnabled()=false`, no-op): tabell `push_s
   service worker `src/service-worker.ts` (auto-registrerad av SvelteKit): app-skalet (build +
   static) cache-first, navigeringar network-first med inbyggd offline-sida, data/`/files/`
   cachas aldrig. Kräver HTTPS i produktion för installation.
+- **Installera som app**: `app.html` fångar `beforeinstallprompt` tidigt (`window.__bgInstallPrompt`),
+  `src/lib/pwa-install.svelte.ts` (`pwaInstall`: canPrompt/installed/platform, `prompt()`),
+  `InstallPwaButton.svelte` = native prompt där den finns, annars instruktionsmodal per plattform
+  (iOS Safari/iOS annan/Android/desktop). Används i Inställningar ("App på hemskärmen") och
+  välkomstmodalen.
 - Mobil (<lg): topbaren har bara logo/titel. Fast bottennav med ikoner: Hem, Coasters,
   Leaderboard, Bjud in, Meny (aspiranter: Grönt Kort, Teoriprov, Meny). "Meny" öppnar
   en bottom sheet (fly-transition) ovanför navet med användarkort + hela navlistan, stängs

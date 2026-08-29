@@ -4,10 +4,9 @@
 	// "Slå ut!" stämplar members.welcomeSeenAt via ?/dismissWelcome.
 	import { enhance, deserialize } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
-	import { onMount } from 'svelte';
 	import Avatar from '$lib/components/Avatar.svelte';
 	import AvatarCropper from '$lib/components/AvatarCropper.svelte';
-	import { isIOS, isStandalone } from '$lib/push-client';
+	import InstallPwaButton from '$lib/components/InstallPwaButton.svelte';
 
 	let {
 		name,
@@ -31,21 +30,6 @@
 		cropFile = null;
 		await invalidateAll();
 	}
-
-	// PWA-installation: Chrome/Android ger beforeinstallprompt, iOS kräver Dela-menyn
-	let installEvent = $state<(Event & { prompt: () => Promise<void> }) | null>(null);
-	let standalone = $state(false);
-	let ios = $state(false);
-	onMount(() => {
-		standalone = isStandalone();
-		ios = isIOS();
-		const h = (e: Event) => {
-			e.preventDefault();
-			installEvent = e as Event & { prompt: () => Promise<void> };
-		};
-		window.addEventListener('beforeinstallprompt', h);
-		return () => window.removeEventListener('beforeinstallprompt', h);
-	});
 </script>
 
 <div
@@ -112,31 +96,10 @@
 		<!-- PWA -->
 		<div class="mt-3 rounded-2xl bg-cream-200 p-4 text-sm">
 			<h3 class="font-semibold text-club-900">Lägg till som app på telefonen</h3>
-			{#if standalone}
-				<p class="mt-1 text-club-900/70">✓ Du kör redan Beer Golf som app.</p>
-			{:else if installEvent}
-				<p class="mt-1 text-club-900/70">Få snabbmenyn längst ner, helskärm och notiser.</p>
-				<button
-					type="button"
-					onclick={async () => {
-						await installEvent?.prompt();
-						installEvent = null;
-					}}
-					class="mt-2 rounded-lg bg-club-700 px-3 py-1.5 text-xs font-semibold text-cream-200 hover:bg-club-800"
-					>Installera Beer Golf</button
-				>
-			{:else if ios}
-				<p class="mt-1 text-club-900/70">
-					iPhone: tryck på <strong>Dela</strong>-knappen i Safari och välj
-					<strong>Lägg till på hemskärmen</strong>. Öppna sedan appen därifrån — då får du också
-					notiser.
-				</p>
-			{:else}
-				<p class="mt-1 text-club-900/70">
-					I Chrome/Edge: menyn (⋮) → <strong>Installera app</strong>. Öppna sedan Beer Golf från
-					hemskärmen.
-				</p>
-			{/if}
+			<p class="mt-1 text-club-900/70">
+				Snabbmeny längst ner, helskärm och notiser när något händer.
+			</p>
+			<div class="mt-2"><InstallPwaButton /></div>
 			<p class="mt-1.5 text-xs text-club-900/50">
 				Notiser slår du på under Inställningar → Notiser (i appen frågar vi en gång).
 			</p>

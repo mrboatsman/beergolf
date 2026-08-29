@@ -11,6 +11,18 @@
 		<meta name="mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 		<meta name="apple-mobile-web-app-title" content="Beer Golf" />
+		<script>
+			// Fånga PWA-installprompten innan appen hydrerat (eventet kommer tidigt).
+			window.addEventListener('beforeinstallprompt', function (e) {
+				e.preventDefault();
+				window.__bgInstallPrompt = e;
+				window.dispatchEvent(new Event('bg:installprompt'));
+			});
+			window.addEventListener('appinstalled', function () {
+				window.__bgInstallPrompt = null;
+				window.dispatchEvent(new Event('bg:installed'));
+			});
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

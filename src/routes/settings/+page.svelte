@@ -4,6 +4,7 @@
 	import { startRegistration } from '@simplewebauthn/browser';
 	import Avatar from '$lib/components/Avatar.svelte';
 	import AvatarCropper from '$lib/components/AvatarCropper.svelte';
+	import InstallPwaButton from '$lib/components/InstallPwaButton.svelte';
 	import { deserialize } from '$app/forms';
 	import { page } from '$app/state';
 	import { disablePush, enablePush, hasPushSubscription, pushSupported } from '$lib/push-client';
@@ -214,6 +215,16 @@
 				</div>
 			</div>
 		{/if}
+	</section>
+
+	<!-- App (PWA) -->
+	<section class="mt-6 rounded-2xl bg-parchment p-5 shadow-sm">
+		<h2 class="font-display text-2xl font-semibold text-club-900">App på hemskärmen</h2>
+		<p class="mt-1 text-sm text-club-900/70">
+			Installera Beer Golf som app: helskärm, snabbmeny längst ner och notiser. På iPhone går det
+			via Safaris Dela-meny — knappen visar hur.
+		</p>
+		<div class="mt-3"><InstallPwaButton /></div>
 	</section>
 
 	<!-- Notiser -->
