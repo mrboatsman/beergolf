@@ -1,9 +1,10 @@
 import { fail } from '@sveltejs/kit';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { invites, members } from '$lib/server/db/schema';
 import { requireRole } from '$lib/server/guard';
 import { newId, newInviteCode } from '$lib/server/ids';
+import { myClubs, pickClubById } from '$lib/server/clubs';
 import type { Actions, PageServerLoad } from './$types';
 
 const INVITE_DAYS = 30;
@@ -11,12 +12,14 @@ const MAX_OPEN_INVITES = 10;
 
 // Bjud in: varje medlem (member+) kan skapa invalskoder. Den som löser in koden
 // får inbjudaren som fadder (sätts i /join), och inbjudaren blir fadder.
+// Koden hör till den AKTIVA klubben — inlösaren får den som hemmaklubb.
 export const load: PageServerLoad = async ({ locals, url }) => {
 	const me = requireRole(locals.member, 'member');
 	const mine = await db
 		.select({
 			id: invites.id,
 			code: invites.code,
+			clubName: sql<string | null>`(select c.name from clubs c where c.id = invites.club_id)`,
 			createdAt: invites.createdAt,
 			expiresAt: invites.expiresAt,
 			usedAt: invites.usedAt,
@@ -29,12 +32,24 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		.where(eq(invites.createdBy, me.id))
 		.orderBy(desc(invites.createdAt))
 		.all();
-	return { invites: mine, origin: url.origin, inviteDays: INVITE_DAYS };
+	return {
+		invites: mine,
+		origin: url.origin,
+		inviteDays: INVITE_DAYS,
+		clubs: myClubs(me).filter((c) => c.status === 'active' && c.clubStatus === 'active'),
+		homeClubId: me.homeClubId
+	};
 };
 
 export const actions: Actions = {
-	create: async ({ locals }) => {
+	create: async ({ locals, request }) => {
 		const me = requireRole(locals.member, 'member');
+		const form = await request.formData();
+		// Klubben väljs i formuläret (default hemmaklubb) — koden ger den som hemmaklubb
+		const picked = pickClubById(me, String(form.get('clubId') ?? ''));
+		if (picked.role === null && me.role !== 'admin') {
+			return fail(403, { error: 'Du är inte medlem i den valda klubben.' });
+		}
 		const now = Date.now();
 		const open = db
 			.select({ id: invites.id, usedBy: invites.usedBy, expiresAt: invites.expiresAt })
@@ -52,6 +67,7 @@ export const actions: Actions = {
 			id: newId(),
 			code,
 			role: 'aspirant',
+			clubId: picked.club.id,
 			createdBy: me.id,
 			expiresAt: new Date(now + INVITE_DAYS * 24 * 60 * 60 * 1000)
 		});

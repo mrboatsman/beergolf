@@ -2,6 +2,7 @@ import { error, fail } from '@sveltejs/kit';
 import { and, asc, eq, isNotNull, isNull, notInArray, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import {
+	clubMembers,
 	coasters,
 	coasterBackImages,
 	coasterPlayers,
@@ -19,6 +20,7 @@ import { maybeDecideMatch } from '$lib/server/tournaments';
 import { notifyCoaster } from '$lib/server/live';
 import { sendPush } from '$lib/server/push';
 import { storage } from '$lib/server/storage';
+import { isActiveMember, touchClub } from '$lib/server/clubs';
 import { BACK_W, BACK_H } from '$lib/back-editor.svelte';
 import { fillMissingWithX, grossTotal, grossTotalComplete, parseScore } from '$lib/scoring';
 import type { Actions, PageServerLoad } from './$types';
@@ -160,15 +162,20 @@ export const load: PageServerLoad = async ({ locals, params, depends }) => {
 						.orderBy(asc(tournamentParticipants.createdAt))
 						.all();
 	} else {
-		// Bara spelare med grönt kort kan läggas till (och inte redan på coastern)
+		// Bara klubbens aktiva medlemmar med grönt kort kan läggas till (och inte
+		// redan på coastern) — dubbelmedlemmar räknas som medlemmar här.
 		const taken = players.map((p) => p.memberId).filter((x): x is string => !!x);
 		addable = await db
 			.select({ id: members.id, name: members.name })
 			.from(members)
+			.innerJoin(clubMembers, eq(clubMembers.memberId, members.id))
 			.where(
-				taken.length
-					? and(isNotNull(members.greenCardIssuedAt), notInArray(members.id, taken))
-					: isNotNull(members.greenCardIssuedAt)
+				and(
+					eq(clubMembers.clubId, coaster.clubId),
+					eq(clubMembers.status, 'active'),
+					isNotNull(members.greenCardIssuedAt),
+					taken.length ? notInArray(members.id, taken) : undefined
+				)
 			)
 			.orderBy(asc(members.name))
 			.all();
@@ -274,6 +281,9 @@ export const actions: Actions = {
 		if (!target) return fail(400, { error: 'Ogiltig medlem.' });
 		if (!target.greenCardIssuedAt) {
 			return fail(400, { error: `${target.name} har inget grönt kort ännu.` });
+		}
+		if (!isActiveMember(coaster.clubId, targetId)) {
+			return fail(400, { error: `${target.name} är inte medlem i coasterns klubb.` });
 		}
 		if (players.some((p) => p.memberId === targetId)) {
 			return fail(400, { error: `${target.name} är redan med på coastern.` });
@@ -511,6 +521,7 @@ export const actions: Actions = {
 					id: roundId,
 					memberId: me.id,
 					tournamentId: coaster.tournamentId,
+					clubId: coaster.clubId,
 					holes: 9,
 					scores,
 					grossTotal,
@@ -528,6 +539,7 @@ export const actions: Actions = {
 
 		// Matchspel: avgör matchen om båda spelarna nu signerat (lägst netto vinner)
 		if (coaster.tournamentId) maybeDecideMatch(coaster.id);
+		touchClub(coaster.clubId);
 
 		notifyCoaster(coaster.id);
 		return { signed: true, hcpBefore, hcpAfter };

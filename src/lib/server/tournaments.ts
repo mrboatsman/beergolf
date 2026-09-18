@@ -13,7 +13,7 @@ import {
 	type PrizeTier,
 	type Tournament
 } from './db/schema';
-import { hasRole } from './guard';
+import { isClubCaptain } from './clubs';
 import { newId } from './ids';
 import type { SafeMember } from './auth';
 
@@ -43,11 +43,11 @@ export function getParticipant(tournamentId: string, memberId: string) {
 }
 
 /**
- * Synlighetsregler: draft ser bara captain+; open/public ser alla medlemmar;
- * closed ser inbjudna deltagare + captain+.
+ * Synlighetsregler: draft ser bara klubbens captain/admin; open/public ser alla
+ * medlemmar; closed ser inbjudna deltagare + captain.
  */
 export async function canSee(t: Tournament, member: SafeMember): Promise<boolean> {
-	if (hasRole(member, 'captain')) return true;
+	if (isClubCaptain(member, t.clubId)) return true;
 	if (t.status === 'draft') return false;
 	if (t.visibility === 'closed') return !!(await getParticipant(t.id, member.id));
 	return true;

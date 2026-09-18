@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import {
 	certificationProofs,
+	clubs,
 	coasterBackImages,
 	coasters,
 	members,
@@ -66,6 +67,9 @@ function lookupFile(key: string): { contentType: string; filename: string } | nu
 		.where(eq(members.avatarKey, key))
 		.get();
 	if (avatar) return { contentType: 'image/jpeg', filename: 'profilbild.jpg' };
+	// Klubbloggor (alltid JPEG från beskäraren)
+	const logo = db.select({ id: clubs.id }).from(clubs).where(eq(clubs.logoKey, key)).get();
+	if (logo) return { contentType: 'image/jpeg', filename: 'logga.jpg' };
 	return null;
 }
 

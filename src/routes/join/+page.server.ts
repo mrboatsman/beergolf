@@ -10,6 +10,7 @@ import {
 } from '$lib/server/auth';
 import { newId } from '$lib/server/ids';
 import { sendPush } from '$lib/server/push';
+import { PRIMARY_CLUB_ID, ensureMembership, getClub } from '$lib/server/clubs';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
@@ -51,6 +52,10 @@ export const actions: Actions = {
 		const existing = await db.select().from(members).where(eq(members.email, email)).get();
 		if (existing) return fail(400, { ...back, error: 'E-posten är redan registrerad.' });
 
+		// Kodens klubb blir hemmaklubb (arkiverad klubb ⇒ huvudklubben)
+		const inviteClub = getClub(invite.clubId);
+		const homeClubId = inviteClub?.status === 'active' ? inviteClub.id : PRIMARY_CLUB_ID;
+
 		const id = newId();
 		const passwordHash = await hashPassword(password);
 
@@ -63,9 +68,13 @@ export const actions: Actions = {
 					email,
 					passwordHash,
 					role: invite.role,
-					status: 'aspirant'
+					status: 'aspirant',
+					homeClubId
 				})
 				.run();
+			// Medlemskap i hemmaklubben + huvudklubben (alla är med i Tablers)
+			ensureMembership(tx, homeClubId, id);
+			if (homeClubId !== PRIMARY_CLUB_ID) ensureMembership(tx, PRIMARY_CLUB_ID, id);
 			tx.update(invites)
 				.set({ usedBy: id, usedAt: new Date() })
 				.where(eq(invites.id, invite.id))

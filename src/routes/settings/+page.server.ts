@@ -9,12 +9,14 @@ import { avatarUrl, gravatarUrl } from '$lib/server/avatar';
 import { storage } from '$lib/server/storage';
 import { newId } from '$lib/server/ids';
 import { isPushEnabled, listSubscriptions, sendPush } from '$lib/server/push';
+import { myClubs } from '$lib/server/clubs';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const me = requireMember(locals.member);
 	return {
 		forced: me.mustChangePassword,
+		clubs: myClubs(me),
 		passkeys: listPasskeys(me.id),
 		push: { enabled: isPushEnabled(), devices: listSubscriptions(me.id) },
 		avatar: {

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ClubTabs from '$lib/components/ClubTabs.svelte';
 	import CoasterBackView from '$lib/components/CoasterBackView.svelte';
 	import CoasterPaper from '$lib/components/CoasterPaper.svelte';
 	import { shortName } from '$lib/names';
@@ -64,8 +65,11 @@
 <svelte:head><title>Galleri — Beer Golf</title></svelte:head>
 <svelte:window onkeydown={onKey} />
 
-<p class="text-xs font-semibold tracking-[0.2em] text-gold-600 uppercase">Klubbens minnen</p>
+<p class="text-xs font-semibold tracking-[0.2em] text-gold-600 uppercase">
+	{data.clubName} · minnen
+</p>
 <h1 class="font-display mt-1 text-4xl font-semibold">Coaster-galleri</h1>
+<ClubTabs clubs={data.clubs} current={data.clubId} />
 <p class="mt-2 max-w-xl text-sm text-club-900/70">
 	Baksidorna på färdigspelade coasters. Tryck på en för att titta närmare, vänd den för score och
 	deltagare, svep för nästa.

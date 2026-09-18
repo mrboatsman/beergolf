@@ -25,6 +25,22 @@
 <section class="mt-6 rounded-2xl bg-club-800 p-6 text-cream-200 shadow-md">
 	<h2 class="font-display flex items-center gap-2 text-2xl font-semibold">Ny Score Coaster</h2>
 	<form method="POST" action="?/create" use:enhance class="mt-4 space-y-4">
+		{#if data.clubs.length > 1}
+			<label class="block text-sm">
+				<span class="text-xs font-semibold tracking-[0.18em] text-gold-400 uppercase"
+					>Spelas för klubb</span
+				>
+				<select
+					name="clubId"
+					value={data.homeClubId}
+					class="mt-1 w-full rounded-lg border-club-600 bg-club-900/40 text-cream-200 focus:border-gold-400 focus:ring-gold-400"
+				>
+					{#each data.clubs as c (c.id)}
+						<option value={c.id}>{c.name}{c.isHome ? ' (hemmaklubb)' : ''}</option>
+					{/each}
+				</select>
+			</label>
+		{/if}
 		<label class="block text-sm">
 			<span class="text-xs font-semibold tracking-[0.18em] text-gold-400 uppercase"
 				>Namn (valfritt)</span
@@ -83,6 +99,12 @@
 							<span class="ml-2 text-sm text-club-900/60"
 								>av {c.creatorName} · {fmtDate(c.createdAt)}</span
 							>
+							{#if data.clubs.length > 1}
+								<span
+									class="ml-2 rounded-full bg-club-100 px-2 py-0.5 text-[11px] font-semibold text-club-800"
+									>{c.clubName}</span
+								>
+							{/if}
 						</div>
 						<span class="text-sm text-club-900/60">
 							{c.signedCount}/{c.playerCount} signerade
@@ -122,6 +144,12 @@
 							<span class="ml-2 text-sm text-club-900/60"
 								>av {c.creatorName} · {fmtDate(c.createdAt)}</span
 							>
+							{#if data.clubs.length > 1}
+								<span
+									class="ml-2 rounded-full bg-club-100 px-2 py-0.5 text-[11px] font-semibold text-club-800"
+									>{c.clubName}</span
+								>
+							{/if}
 						</div>
 						<span class="text-sm text-club-900/60">
 							{c.playerCount} spelare · {c.signedCount} signerade
@@ -154,6 +182,12 @@
 							<span class="ml-2 text-sm text-club-900/60"
 								>av {c.creatorName} · {fmtDate(c.createdAt)}</span
 							>
+							{#if data.clubs.length > 1}
+								<span
+									class="ml-2 rounded-full bg-club-100 px-2 py-0.5 text-[11px] font-semibold text-club-800"
+									>{c.clubName}</span
+								>
+							{/if}
 						</div>
 						<span class="text-sm text-club-900/60">
 							{c.playerCount} spelare

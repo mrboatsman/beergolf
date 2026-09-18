@@ -5,6 +5,7 @@ import { db } from '$lib/server/db';
 import {
 	certificationProofs,
 	certifications,
+	clubs,
 	invites,
 	members,
 	sessions,
@@ -17,11 +18,11 @@ import { newId, newInviteCode } from '$lib/server/ids';
 import { requireRole } from '$lib/server/guard';
 import { buildFadderTree } from '$lib/fadder-tree';
 import { issueGreenCardDirect } from '$lib/server/certification';
-import { currentSeason, getSeasonConfig, setSeasonConfig } from '$lib/server/seasons';
+import { PRIMARY_CLUB_ID, ensureMembership, getClub, listActiveClubs } from '$lib/server/clubs';
 import { MAX_HCP, MIN_HCP, round1 } from '$lib/handicap';
 import type { Actions, PageServerLoad } from './$types';
 
-const ROLES: Role[] = ['aspirant', 'member', 'fadder', 'captain', 'admin'];
+const ROLES: Role[] = ['aspirant', 'member', 'fadder', 'admin'];
 
 const PAGE_SIZE = 25;
 
@@ -91,11 +92,13 @@ export const load: PageServerLoad = async ({ url }) => {
 			usedById: usedBy.id,
 			usedByName: usedBy.name,
 			createdById: createdBy.id,
-			createdByName: createdBy.name
+			createdByName: createdBy.name,
+			clubName: clubs.name
 		})
 		.from(invites)
 		.leftJoin(usedBy, eq(invites.usedBy, usedBy.id))
 		.leftJoin(createdBy, eq(invites.createdBy, createdBy.id))
+		.leftJoin(clubs, eq(invites.clubId, clubs.id))
 		.where(inviteWhere)
 		.orderBy(desc(invites.createdAt))
 		.limit(PAGE_SIZE)
@@ -121,7 +124,7 @@ export const load: PageServerLoad = async ({ url }) => {
 	);
 
 	return {
-		season: { ...getSeasonConfig(), label: currentSeason().label },
+		clubs: listActiveClubs(),
 		members: memberList.map(({ passwordHash: _drop, ...mm }) => mm),
 		memberTotal,
 		memberPage,
@@ -140,10 +143,13 @@ export const load: PageServerLoad = async ({ url }) => {
 export const actions: Actions = {
 	// Skapa engångskod
 	createInvite: async ({ request, locals }) => {
-		const me = requireRole(locals.member, 'captain');
+		const me = requireRole(locals.member, 'admin');
 		const form = await request.formData();
 		const role = String(form.get('role') ?? 'aspirant') as Role;
 		if (!ROLES.includes(role)) return fail(400, { error: 'Ogiltig roll.' });
+
+		const clubId = String(form.get('clubId') ?? PRIMARY_CLUB_ID);
+		if (getClub(clubId)?.status !== 'active') return fail(400, { error: 'Ogiltig klubb.' });
 
 		const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 dagar
 		const code = newInviteCode();
@@ -151,6 +157,7 @@ export const actions: Actions = {
 			id: newId(),
 			code,
 			role,
+			clubId,
 			createdBy: me.id,
 			expiresAt
 		});
@@ -159,7 +166,7 @@ export const actions: Actions = {
 
 	// Skapa medlem direkt (admin skapar konto med temporärt lösenord)
 	createMember: async ({ request, locals }) => {
-		requireRole(locals.member, 'captain');
+		requireRole(locals.member, 'admin');
 		const form = await request.formData();
 		const name = String(form.get('name') ?? '').trim();
 		const email = String(form.get('email') ?? '')
@@ -176,20 +183,31 @@ export const actions: Actions = {
 		const existing = await db.select().from(members).where(eq(members.email, email)).get();
 		if (existing) return fail(400, { error: 'E-posten finns redan.' });
 
-		await db.insert(members).values({
-			id: newId(),
-			name,
-			email,
-			role,
-			status: role === 'aspirant' ? 'aspirant' : 'active',
-			passwordHash: await hashPassword(password)
+		const clubId = String(form.get('clubId') ?? PRIMARY_CLUB_ID);
+		if (getClub(clubId)?.status !== 'active') return fail(400, { error: 'Ogiltig klubb.' });
+		const id = newId();
+		const passwordHash = await hashPassword(password);
+		db.transaction((tx) => {
+			tx.insert(members)
+				.values({
+					id,
+					name,
+					email,
+					role,
+					status: role === 'aspirant' ? 'aspirant' : 'active',
+					passwordHash,
+					homeClubId: clubId
+				})
+				.run();
+			ensureMembership(tx, clubId, id);
+			if (clubId !== PRIMARY_CLUB_ID) ensureMembership(tx, PRIMARY_CLUB_ID, id);
 		});
 		return { memberCreated: true };
 	},
 
 	// --- Teoriprov-frågor ---------------------------------------------------
 	createQuestion: async ({ request, locals }) => {
-		requireRole(locals.member, 'captain');
+		requireRole(locals.member, 'admin');
 		const form = await request.formData();
 		const question = String(form.get('question') ?? '').trim();
 		const options = [0, 1, 2, 3]
@@ -214,7 +232,7 @@ export const actions: Actions = {
 	},
 
 	toggleQuestion: async ({ request, locals }) => {
-		requireRole(locals.member, 'captain');
+		requireRole(locals.member, 'admin');
 		const form = await request.formData();
 		const id = String(form.get('id') ?? '');
 		const q = await db.select().from(quizQuestions).where(eq(quizQuestions.id, id)).get();
@@ -224,7 +242,7 @@ export const actions: Actions = {
 	},
 
 	deleteQuestion: async ({ request, locals }) => {
-		requireRole(locals.member, 'captain');
+		requireRole(locals.member, 'admin');
 		const form = await request.formData();
 		const id = String(form.get('id') ?? '');
 		await db.delete(quizQuestions).where(eq(quizQuestions.id, id));
@@ -330,20 +348,6 @@ export const actions: Actions = {
 			me.id === id ? null : me.id
 		);
 		return { greenCardIssued: target.name };
-	},
-
-	// Säsongsstart (månad/dag). Ändring kastar cachade säsongsarkiv.
-	setSeason: async ({ request, locals }) => {
-		requireRole(locals.member, 'admin');
-		const form = await request.formData();
-		const startMonth = Number(form.get('startMonth'));
-		const startDay = Number(form.get('startDay'));
-		if (!Number.isInteger(startMonth) || startMonth < 1 || startMonth > 12)
-			return fail(400, { error: 'Ogiltig månad.' });
-		if (!Number.isInteger(startDay) || startDay < 1 || startDay > 28)
-			return fail(400, { error: 'Dag 1–28.' });
-		setSeasonConfig({ startMonth, startDay });
-		return { seasonSaved: currentSeason().label };
 	},
 
 	toggleActive: async ({ request, locals }) => {

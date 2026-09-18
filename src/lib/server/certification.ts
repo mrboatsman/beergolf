@@ -1,7 +1,14 @@
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { db } from './db';
 import { randomUUID } from 'node:crypto';
-import { certificationProofs, certifications, members, START_HCP } from './db/schema';
+import {
+	PRIMARY_CLUB_ID,
+	certificationProofs,
+	certifications,
+	members,
+	START_HCP
+} from './db/schema';
+import { ensureMembership } from './clubs';
 
 /** Certifieringsstatus för en medlem — de tre delarna av grönt kort. */
 export async function getCertStatus(memberId: string) {
@@ -90,6 +97,9 @@ export async function maybeIssueGreenCard(memberId: string) {
 			.where(eq(members.id, memberId))
 			.run();
 		tx.update(certifications).set({ certifiedAt: now }).where(eq(certifications.id, cert.id)).run();
+		// Grönt kort ⇒ medlem i hemmaklubben och huvudklubben
+		ensureMembership(tx, member.homeClubId, memberId);
+		if (member.homeClubId !== PRIMARY_CLUB_ID) ensureMembership(tx, PRIMARY_CLUB_ID, memberId);
 	});
 	return true;
 }
@@ -145,6 +155,8 @@ export function issueGreenCardDirect(memberId: string, comment: string, byId: st
 			})
 			.where(eq(members.id, memberId))
 			.run();
+		ensureMembership(tx, member.homeClubId, memberId);
+		if (member.homeClubId !== PRIMARY_CLUB_ID) ensureMembership(tx, PRIMARY_CLUB_ID, memberId);
 	});
 	return true;
 }

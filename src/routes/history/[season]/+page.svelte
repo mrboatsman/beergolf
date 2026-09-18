@@ -6,7 +6,7 @@
 
 <svelte:head><title>Säsongen {s.label} — Beer Golf</title></svelte:head>
 
-<a href="/history" class="text-sm text-club-900/60 hover:underline">← Historik</a>
+<a href={data.backHref} class="text-sm text-club-900/60 hover:underline">← Historik</a>
 <p class="mt-2 text-xs font-semibold tracking-[0.2em] text-gold-600 uppercase">
 	Arkiv · {data.range}
 </p>

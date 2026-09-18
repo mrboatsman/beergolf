@@ -53,11 +53,15 @@ DB-fil: `./data/beergolf.db` (via `DATABASE_URL` i `.env`, ej i git).
 
 ## Arkitektur
 
-- `src/lib/server/db/schema.ts` — Drizzle-schema. Tabeller: members, sessions, invites,
-  certifications, quiz_questions, quiz_attempts, tournaments, rounds.
+- `src/lib/server/db/schema.ts` — Drizzle-schema. Tabeller: clubs, club_members, members,
+  sessions, invites, certifications, quiz_questions, quiz_attempts, tournaments, rounds.
 - `src/lib/server/auth.ts` — lösenord (argon2), sessioner, cookies. `toSafeMember` droppar hash.
 - `src/lib/server/guard.ts` — rollhierarki + `requireMember` / `requireRole`.
-  Roller: aspirant < member < fadder < captain < admin.
+  Globala roller: aspirant < member < fadder < admin. **captain är en klubbroll**
+  (`club_members.role`), se Klubbar nedan — `isClubCaptain(member, clubId)` i
+  `src/lib/server/clubs.ts` (admin räknas alltid som captain).
+- `src/lib/server/clubs.ts` — klubbar (se Klubbar). Klubbkontext per sida via
+  `pickClub(member, url)` — inget i `locals`.
 - `src/lib/handicap.ts` — självjusterande handikapp. Lägre score = bättre.
   Ny medlem HCP 36, justeras per runda mot `nextHcp(hcp, gross, par)` där par är
   coasterns totala par.
@@ -77,6 +81,58 @@ DB-fil: `./data/beergolf.db` (via `DATABASE_URL` i `.env`, ej i git).
 3. Etikett & hänsyn (fadder bedömer löpande)
 
 Klart → numrerat grönt kort + ingångshandicap HCP 36.
+
+## Klubbar (hemmaklubb + dubbelmedlemskap — modell som svensk golf)
+
+- **Huvudklubb**: Tablers Beer Golf Society, fast id `PRIMARY_CLUB_ID = 'tablers'`, kan inte
+  arkiveras/lämnas. Alla med grönt kort blir automatiskt medlemmar där (`ensureMembership` i
+  `/join`, `maybeIssueGreenCard`, `issueGreenCardDirect`).
+- **Hemmaklubb** (`members.homeClubId`, exakt en): där rankas man (leaderboard `/members`,
+  dashboardens "#N av M"), säsongsstatistik/arkiv och turneringsrepresentation. Byts på
+  klubbsidan ("Gör till hemmaklubb", kräver aktivt medlemskap).
+- **Dubbelmedlemskap** = fler rader i `club_members` (status `pending` = ansökan, `active`).
+  Dubbelmedlemmar kan läggas på klubbens coasters, ser galleri/turneringar, listas orankade
+  ("· dubbelmedlem") på leaderboarden, kan INTE anmäla sig till klubbens turneringar
+  ("turneringar spelas via hemmaklubb"; gäster i publika turneringar undantagna).
+- **Globalt (följer personen)**: konto, grönt kort + kortnummer, certifiering/fadderträd/
+  teoriprov, **HCP** (en runda justerar HCP oavsett klubb). `rounds.clubId` = coasterns klubb
+  (för klubbens leaderboard/säsong), `coasters.clubId`, `tournaments.clubId`, `invites.clubId`
+  (inlösaren får kodens klubb som hemmaklubb; arkiverad ⇒ huvudklubben). Kolumnerna har
+  default `'tablers'` och **ingen DB-FK** (SQLite ADD COLUMN-begränsning) — appkod vaktar.
+- **Inget globalt klubbläge** — klubb väljs **på plats**: `pickClub(member, url)` i clubs.ts
+  läser `?club=<slug>` (måste vara aktivt medlemskap; admin valfri), annars hemmaklubben, och
+  returnerar `clubs` (mina aktiva klubbar). Sidor med klubbkontext visar `ClubTabs.svelte`
+  (flikar, bara om >1 klubb, länkar `?club=slug`): `/members`, `/history` (+ säsongslänkar bär
+  `?club`), `/gallery`, `/tournaments` (skapa-formuläret skickar flikens `clubId`).
+  Formulärval `clubId` (bara om >1 klubb, default hemmaklubb, `pickClubById`): ny coaster
+  ("Spelas för klubb"), ny invalskod. `/coasters` listar alla coasters i mina klubbar med
+  klubbchip. Admin väljer klubb i "Skapa invalskod"/"Skapa medlem". Menyns namn + logga =
+  hemmaklubben (`data.homeClub`/`homeLogoUrl`). Klubbsidan har snabblänkar till klubbens sidor.
+- **Skapa klubb**: alla med grönt kort (`/clubs`, "Starta ny klubb"), skaparen blir captain,
+  valfritt hemmaklubb direkt; slug från namn (`slugify`). Medlemmar ansöker själva på
+  `/clubs/[slug]` → captain godkänner/avslår (push till captains vid ansökan, till sökanden
+  vid godkännande). **Klubbsidan = "loungen"**: mörkgrön salong (club-900, guldkant, logga i
+  guldring, namn i serif), min status + åtgärder, snabblänkar till klubbens sidor, medlemsroster
+  "Sällskapet" (hemma/dubbel). Captain där: utse/avsätt captain (minst en kvar), ta bort
+  dubbelmedlemmar (hemmamedlemmar måste byta hemmaklubb först). **Klubbinställningar = egen sida**
+  `/clubs/[slug]/settings` bakom kugghjulet (captain/admin, arkiverad ⇒ redirect): namn/
+  beskrivning, logga, **säsongsstart per klubb** (`club_settings`/`season_archives` har `clubId`
+  i PK; flyttat från admin), arkivera (redirect tillbaka till klubbsidan).
+- **Klubblogga** (`clubs.logoKey`, migration 0018): samma flöde som profilbilden —
+  `AvatarCropper` (prop `out={512}`) → `?/uploadLogo` (captain, JPEG ≤2 MB) → storage
+  `clubs/<id>/logo-*.jpg`, serveras via `/files/` (lookup i clubs). `removeLogo` tar bort.
+  Visas i sidebar/topbar för hemmamedlemmar (`data.homeLogoUrl`, annars sällskapets emblem),
+  i klubblistan och klubbhuvudet.
+- **Arkivering**: `clubs.lastActivityAt` stämplas via `touchClub` (coaster skapad/signerad,
+  turnering skapad). `sweepInactiveClubs()` (root-layout-load, throttlad 1 h/process) arkiverar
+  klubbar utan aktivitet på `CLUB_INACTIVITY_MS` (365 d): hemmamedlemmar flyttas till
+  huvudklubben (medlemskap i klubben behålls), cookie-val faller tillbaka. Bara admin
+  återaktiverar. Captain kan arkivera manuellt.
+- `/admin` = endast rollen admin (captain-saker bor på klubbsidan). Migration `0017_clubs`
+  skapade huvudklubben, `club_members` för alla befintliga, och konverterade gamla globala
+  `captain` → captain i huvudklubben + global roll fadder/member.
+- OBS (samma som leaderboarden): drizzle-kolumner i korrelerade subqueries renderas
+  okvalificerade — skriv `clubs.id`, `members.home_club_id` som literal text i `sql`-mallar.
 
 ## Byggt
 
@@ -186,16 +242,19 @@ Klart → numrerat grönt kort + ingångshandicap HCP 36.
   namn eller e-post), admin-medlemmar (mq/mpage) och invalskoder (iq/ipage — sök på kod
   eller medlemsnamn; kolumnen "Blev medlem" länkar till profilen som koden skapade).
 - **Säsonger** (`src/lib/season.ts` ren logik, `src/lib/server/seasons.ts`): start månad/dag i
-  `club_settings` (admin → Säsong, default 1 jan), etikett "2026" eller "2026/27". Leaderboard och
-  dashboard använder `currentSeason()`-gränser; leaderboarden rankar bara medlemmar med ≥1 runda i
-  säsongen (övriga orankade "–" efteråt) ⇒ ny säsong = ny leaderboard, HCP löper vidare.
+  `club_settings` **per klubb** (klubbsidan → Säsong, default 1 jan), etikett "2026" eller
+  "2026/27". Alla funktioner i seasons.ts tar `clubId`. Leaderboard använder flikens klubbs
+  `currentSeason(clubId)` (vald flik), dashboard hemmaklubbens; leaderboarden rankar bara hemmamedlemmar med
+  ≥1 runda i klubben under säsongen (övriga orankade "–" efteråt) ⇒ ny säsong = ny leaderboard,
+  HCP löper vidare.
   Avslutade säsonger: `/history` + `/history/[label]` (`getSeasonArchive`: beräknas via
   `computeSeasonStats` första gången efter säsongsslut, cachas i `season_archives` som JSON;
   ändrad säsongsstart kastar cachen). Statistik: slutställning (HCP vid säsongsslut = sista
   rundans hcpAfter), vinnare, bästa fadder (certifiedAt i säsongen), flest rundor/vinster,
   störst HCP-sänkning, bästa brutto/netto, nya gröna kort/konton.
-- `/members` är kombinerad **Leaderboard + medlemslista** (nav-etikett "Leaderboard"):
-  rankad på HCP (lägst bäst), global rank via korrelerad subquery. OBS: skriv
+- `/members` är kombinerad **Leaderboard + medlemslista** (nav-etikett "Leaderboard") för
+  vald klubb (flik, default hemmaklubb): hemmaklubbsmedlemmar rankade på HCP (lägst bäst) bland dem med ≥1 runda i
+  klubben under säsongen; dubbelmedlemmar orankade. Rank via korrelerad subquery. OBS: skriv
   `members.hcp` som literal text i sql-templaten — drizzle-interpolation av kolumner
   inuti korrelerade subqueries renderas okvalificerat och binder till fel tabell.
   Kolumner: grönt kort-nr, rundor i år, bästa brutto. 🏆 på (delad) förstaplats.
@@ -279,6 +338,9 @@ PRIVATE_KEY/SUBJECT`; saknas → `isPushEnabled()=false`, no-op): tabell `push_s
   push delad i `src/lib/push-client.ts` (`enablePush`, `disablePush`, `shouldShowPushPrompt`).
 - Profilens HCP-kort visar global leaderboard-placering ("#N av M", länkad till /members).
 
+- **Turneringar hör till en klubb**: `tournaments.clubId` = vald flik vid skapande; klubbens
+  captain (eller admin) skapar/hanterar; bara **hemmaklubbsmedlemmar** kan anmäla sig/bjudas in
+  (gäster i publika turneringar undantagna). Turneringscoasters ärver `clubId`.
 - **Turneringar = välgörenhetsinsamlingar** (`/tournaments`, logik i
   `src/lib/server/tournaments.ts`): innan öppning deklareras välgörenhet,
   anmälningsavgift och prisupplägg (inga/fasta/procent av potten, max 3 nivåer).

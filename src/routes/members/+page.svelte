@@ -1,18 +1,19 @@
 <script lang="ts">
 	import { shortName } from '$lib/names';
 	import Avatar from '$lib/components/Avatar.svelte';
+	import ClubTabs from '$lib/components/ClubTabs.svelte';
 	let { data } = $props();
 
 	const roleLabel: Record<string, string> = {
 		aspirant: 'Aspirant',
 		member: 'Medlem',
 		fadder: 'Fadder',
-		captain: 'Klubbmästare',
 		admin: 'Admin'
 	};
 
 	function pageUrl(p: number) {
 		const params = new URLSearchParams();
+		if (data.clubs.length > 1) params.set('club', data.clubSlug);
 		if (data.q) params.set('q', data.q);
 		if (p > 1) params.set('page', String(p));
 		const s = params.toString();
@@ -30,15 +31,17 @@
 <div class="flex flex-wrap items-end justify-between gap-3">
 	<div>
 		<p class="text-xs font-semibold tracking-[0.2em] text-gold-600 uppercase">
-			Klubben · Säsong {data.seasonLabel}
+			{data.clubName} · Säsong {data.seasonLabel}
 		</p>
 		<h1 class="font-display mt-1 text-4xl font-semibold">Leaderboard</h1>
 		<p class="mt-1 text-sm text-club-900/60">
-			{data.total} medlemmar. Rankade på handikapp bland dem som spelat i säsongen — ny säsong, ny leaderboard.
+			{data.total} medlemmar. Hemmaklubbsmedlemmar rankas på handikapp bland dem som spelat i klubben
+			under säsongen — dubbelmedlemmar rankas i sin hemmaklubb. Ny säsong, ny leaderboard.
 			<a href="/history" class="underline">Tidigare säsonger</a>.
 		</p>
 	</div>
 	<form method="GET" class="flex gap-2">
+		{#if data.clubs.length > 1}<input type="hidden" name="club" value={data.clubSlug} />{/if}
 		<input
 			type="search"
 			name="q"
@@ -52,6 +55,8 @@
 		>
 	</form>
 </div>
+
+<ClubTabs clubs={data.clubs} current={data.clubId} />
 
 {#if data.members.length === 0}
 	<p class="mt-6 text-sm text-club-900/60">Ingen medlem matchar ”{data.q}”.</p>
@@ -91,7 +96,9 @@
 									<span class="hidden truncate font-semibold group-hover:underline sm:block"
 										>{m.name}</span
 									>
-									<span class="block text-xs text-club-900/50">{roleLabel[m.role] ?? m.role}</span>
+									<span class="block text-xs text-club-900/50"
+										>{roleLabel[m.role] ?? m.role}{m.isHome ? '' : ' · dubbelmedlem'}</span
+									>
 								</span>
 								{#if m.status === 'aspirant'}
 									<span

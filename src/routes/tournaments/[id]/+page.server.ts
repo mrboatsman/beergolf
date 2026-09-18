@@ -11,7 +11,8 @@ import {
 	DEFAULT_PAR,
 	type PrizeTier
 } from '$lib/server/db/schema';
-import { hasRole, requireMember, requireRole } from '$lib/server/guard';
+import { requireMember } from '$lib/server/guard';
+import { isClubCaptain, requireClubCaptain } from '$lib/server/clubs';
 import { newId } from '$lib/server/ids';
 import { parseKr } from '$lib/money';
 import { storage } from '$lib/server/storage';
@@ -92,7 +93,7 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 		throw redirect(303, `/tournaments/${t.id}`);
 	}
 
-	const staff = hasRole(me, 'captain');
+	const staff = isClubCaptain(me, t.clubId);
 	const participants = getParticipants(t.id);
 	const leaderboard = t.status === 'draft' || t.format === 'match' ? null : getLeaderboard(t.id);
 	const bracket = t.format === 'match' && t.status !== 'draft' ? getBracket(t.id) : null;
@@ -118,6 +119,7 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 			.where(
 				and(
 					sql`${members.greenCardIssuedAt} is not null`,
+					eq(members.homeClubId, t.clubId),
 					like(members.name, `%${q}%`),
 					taken.length ? notInArray(members.id, taken) : undefined
 				)
@@ -139,15 +141,17 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 		myParticipant,
 		coasters: tournamentCoasters(t.id),
 		isStaff: staff,
-		canPlay: !!me.greenCardIssuedAt
+		// Turneringar spelas via hemmaklubben — dubbelmedlemmar kan inte anmäla sig
+		canPlay: !!me.greenCardIssuedAt && me.homeClubId === t.clubId,
+		isHomeClub: me.homeClubId === t.clubId
 	};
 };
 
 export const actions: Actions = {
 	// Redigera grunduppgifter — endast i utkastläge; allt är låst efter öppning.
 	update: async ({ request, locals, params }) => {
-		requireRole(locals.member, 'captain');
 		const t = await getTournament(params.id);
+		requireClubCaptain(locals.member, t.clubId);
 		if (t.status !== 'draft') {
 			return fail(400, { error: 'Turneringen kan bara redigeras som utkast.' });
 		}
@@ -247,8 +251,8 @@ export const actions: Actions = {
 	},
 
 	openTournament: async ({ locals, params }) => {
-		requireRole(locals.member, 'captain');
 		const t = await getTournament(params.id);
+		requireClubCaptain(locals.member, t.clubId);
 		if (t.status !== 'draft') return fail(400, { error: 'Bara utkast kan öppnas.' });
 		const problem = validateOpen(t);
 		if (problem) return fail(400, { error: problem });
@@ -260,8 +264,8 @@ export const actions: Actions = {
 	},
 
 	finish: async ({ locals, params }) => {
-		requireRole(locals.member, 'captain');
 		const t = await getTournament(params.id);
+		requireClubCaptain(locals.member, t.clubId);
 		if (t.status !== 'open') return fail(400, { error: 'Bara öppna turneringar kan avslutas.' });
 		await db
 			.update(tournaments)
@@ -271,8 +275,8 @@ export const actions: Actions = {
 	},
 
 	cancel: async ({ locals, params }) => {
-		requireRole(locals.member, 'captain');
 		const t = await getTournament(params.id);
+		requireClubCaptain(locals.member, t.clubId);
 		if (t.status !== 'draft' && t.status !== 'open') {
 			return fail(400, { error: 'Turneringen kan inte ställas in.' });
 		}
@@ -288,6 +292,11 @@ export const actions: Actions = {
 		}
 		const t = await getTournament(params.id);
 		if (t.status !== 'open') return fail(400, { error: 'Anmälan är inte öppen.' });
+		if (me.homeClubId !== t.clubId) {
+			return fail(403, {
+				error: 'Turneringar spelas via hemmaklubben — bara klubbens hemmamedlemmar kan anmäla sig.'
+			});
+		}
 
 		let participant = getParticipant(t.id, me.id);
 		if (participant && participant.status !== 'invited' && participant.status !== 'pending') {
@@ -347,8 +356,8 @@ export const actions: Actions = {
 
 	// Captain bjuder in medlem till stängd turnering.
 	invite: async ({ request, locals, params }) => {
-		requireRole(locals.member, 'captain');
 		const t = await getTournament(params.id);
+		requireClubCaptain(locals.member, t.clubId);
 		if (t.visibility !== 'closed') {
 			return fail(400, { error: 'Inbjudningar gäller bara stängda turneringar.' });
 		}
@@ -361,6 +370,9 @@ export const actions: Actions = {
 		const target = await db.select().from(members).where(eq(members.id, memberId)).get();
 		if (!target || !target.greenCardIssuedAt) {
 			return fail(400, { error: 'Bara medlemmar med grönt kort kan bjudas in.' });
+		}
+		if (target.homeClubId !== t.clubId) {
+			return fail(400, { error: `${target.name} har inte klubben som hemmaklubb.` });
 		}
 		if (getParticipant(t.id, memberId)) {
 			return fail(400, { error: `${target.name} är redan inbjuden.` });
@@ -378,8 +390,8 @@ export const actions: Actions = {
 
 	// Captain markerar deltagare som betald utanför Stripe (kontant/comp).
 	markPaid: async ({ request, locals, params }) => {
-		requireRole(locals.member, 'captain');
 		const t = await getTournament(params.id);
+		requireClubCaptain(locals.member, t.clubId);
 		const form = await request.formData();
 		const participantId = String(form.get('participantId') ?? '');
 		const p = await db
@@ -410,8 +422,8 @@ export const actions: Actions = {
 
 	// Captain markerar återbetald (själva återbetalningen görs i Stripe-dashboarden).
 	refund: async ({ request, locals, params }) => {
-		requireRole(locals.member, 'captain');
 		const t = await getTournament(params.id);
+		requireClubCaptain(locals.member, t.clubId);
 		const form = await request.formData();
 		const participantId = String(form.get('participantId') ?? '');
 		const result = await db
@@ -431,8 +443,8 @@ export const actions: Actions = {
 
 	// Captain tar bort ej betald deltagare (betalda går via refund).
 	removeParticipant: async ({ request, locals, params }) => {
-		requireRole(locals.member, 'captain');
 		const t = await getTournament(params.id);
+		requireClubCaptain(locals.member, t.clubId);
 		const form = await request.formData();
 		const participantId = String(form.get('participantId') ?? '');
 		const p = await db
@@ -457,8 +469,8 @@ export const actions: Actions = {
 	// Slumpad lottning av betalda deltagare. Kan göras om tills första matchen
 	// har en coaster eller ett resultat.
 	drawBracket: async ({ locals, params }) => {
-		requireRole(locals.member, 'captain');
 		const t = await getTournament(params.id);
+		requireClubCaptain(locals.member, t.clubId);
 		if (t.format !== 'match') return fail(400, { error: 'Lottning gäller bara matchspel.' });
 		if (t.status !== 'open') return fail(400, { error: 'Öppna turneringen först.' });
 		const existing = getBracket(t.id);
@@ -471,8 +483,8 @@ export const actions: Actions = {
 	},
 
 	setWinner: async ({ request, locals, params }) => {
-		requireRole(locals.member, 'captain');
-		await getTournament(params.id);
+		const t = await getTournament(params.id);
+		requireClubCaptain(locals.member, t.clubId);
 		const form = await request.formData();
 		const problem = setMatchWinner(
 			String(form.get('matchId') ?? ''),
@@ -507,7 +519,7 @@ export const actions: Actions = {
 		const isPlayer =
 			myParticipant &&
 			(myParticipant.id === match.participant1Id || myParticipant.id === match.participant2Id);
-		if (!isPlayer && !hasRole(me, 'captain')) {
+		if (!isPlayer && !isClubCaptain(me, t.clubId)) {
 			return fail(403, { error: 'Bara matchens spelare (eller captain) kan skapa coastern.' });
 		}
 
@@ -527,6 +539,7 @@ export const actions: Actions = {
 					name: `${t.name} — omgång ${match.round}`,
 					par: DEFAULT_PAR,
 					tournamentId: t.id,
+					clubId: t.clubId,
 					createdBy: me.id
 				})
 				.run();
@@ -563,7 +576,7 @@ export const actions: Actions = {
 		}
 		const myParticipant = getParticipant(t.id, me.id);
 		const isPaid = myParticipant?.status === 'paid';
-		if (!isPaid && !hasRole(me, 'captain')) {
+		if (!isPaid && !isClubCaptain(me, t.clubId)) {
 			return fail(403, { error: 'Bara betalda deltagare (eller captain) kan skapa coasters.' });
 		}
 
@@ -572,7 +585,14 @@ export const actions: Actions = {
 		const id = newId();
 		db.transaction((tx) => {
 			tx.insert(coasters)
-				.values({ id, name, par: DEFAULT_PAR, tournamentId: t.id, createdBy: me.id })
+				.values({
+					id,
+					name,
+					par: DEFAULT_PAR,
+					tournamentId: t.id,
+					clubId: t.clubId,
+					createdBy: me.id
+				})
 				.run();
 			// Betald deltagare får sin egen rad direkt (en rad per deltagare —
 			// unikt index vaktar dubbletter).
@@ -601,8 +621,8 @@ export const actions: Actions = {
 
 	// --- Kostnadsbok & välgörenhetsutbetalning (transparensen) --------------
 	addExpense: async ({ request, locals, params }) => {
-		const me = requireRole(locals.member, 'captain');
 		const t = await getTournament(params.id);
+		const me = requireClubCaptain(locals.member, t.clubId);
 		const form = await request.formData();
 		const description = String(form.get('description') ?? '').trim();
 		if (!description) return fail(400, { error: 'Kostnaden behöver en beskrivning.' });
@@ -636,8 +656,8 @@ export const actions: Actions = {
 	},
 
 	removeExpense: async ({ request, locals, params }) => {
-		requireRole(locals.member, 'captain');
 		const t = await getTournament(params.id);
+		requireClubCaptain(locals.member, t.clubId);
 		const form = await request.formData();
 		const expenseId = String(form.get('expenseId') ?? '');
 		const expense = await db
@@ -652,8 +672,8 @@ export const actions: Actions = {
 	},
 
 	markCharityPaid: async ({ request, locals, params }) => {
-		requireRole(locals.member, 'captain');
 		const t = await getTournament(params.id);
+		requireClubCaptain(locals.member, t.clubId);
 		if (t.status !== 'finished') {
 			return fail(400, { error: 'Utbetalningen markeras efter att turneringen avslutats.' });
 		}

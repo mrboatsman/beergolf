@@ -120,6 +120,20 @@
       "when": 1787907203426,
       "tag": "0016_blushing_slapstick",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1789768414116,
+      "tag": "0017_clubs",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1789769390843,
+      "tag": "0018_club_logo",
+      "breakpoints": true
     }
   ]
 }

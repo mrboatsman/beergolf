@@ -2,13 +2,13 @@ import { error, redirect } from '@sveltejs/kit';
 import type { Role } from './db/schema';
 import type { SafeMember } from './auth';
 
-// Rollhierarki — högre tal = mer behörighet.
+// Rollhierarki (globala roller) — högre tal = mer behörighet.
+// Klubbmästare (captain) är en klubbroll: se isClubCaptain i clubs.ts.
 const RANK: Record<Role, number> = {
 	aspirant: 0,
 	member: 1,
 	fadder: 2,
-	captain: 3,
-	admin: 4
+	admin: 3
 };
 
 export function hasRole(member: SafeMember | null, min: Role): boolean {

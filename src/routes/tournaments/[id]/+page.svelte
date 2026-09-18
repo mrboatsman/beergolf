@@ -156,6 +156,12 @@
 			<p class="mt-2 text-sm text-club-900/70">Din anmälan är återbetald.</p>
 		{:else if t.visibility === 'closed' && !data.myParticipant}
 			<p class="mt-2 text-sm text-club-900/70">Stängd turnering — anmälan kräver inbjudan.</p>
+		{:else if !data.isHomeClub}
+			<p class="mt-2 text-sm text-club-900/70">
+				Turneringar spelas via hemmaklubben — bara klubbens hemmamedlemmar kan anmäla sig. Byt
+				hemmaklubb på <a href="/clubs" class="underline">klubbsidan</a> om du vill representera den här
+				klubben.
+			</p>
 		{:else if !data.canPlay}
 			<p class="mt-2 text-sm text-club-900/70">Grönt kort krävs för att spela turnering.</p>
 		{:else}

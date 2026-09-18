@@ -4,10 +4,16 @@
 	let {
 		file,
 		oncancel,
-		onsave
-	}: { file: File; oncancel: () => void; onsave: (blob: Blob) => void | Promise<void> } = $props();
+		onsave,
+		out = 320
+	}: {
+		file: File;
+		oncancel: () => void;
+		onsave: (blob: Blob) => void | Promise<void>;
+		out?: number; // utdatastorlek i px (kvadrat)
+	} = $props();
 
-	const OUT = 320;
+	const OUT = $derived(out);
 	const VIEW = 260; // px på skärmen
 	let url = $state('');
 	let img = $state<HTMLImageElement | null>(null);

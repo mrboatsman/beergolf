@@ -1,9 +1,14 @@
-// Säsongsinställning (club_settings) + arkiv med statistik per avslutad säsong.
+// Säsongsinställning (club_settings, per klubb) + arkiv med statistik per avslutad
+// säsong och klubb. Statistiken räknar klubbens rundor (rounds.clubId) och
+// hemmaklubbsmedlemmar (members.homeClubId) — dubbelmedlemmar rankas inte här.
 import { and, asc, eq, gte, isNotNull, lt, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/sqlite-core';
 import { db } from './db';
 import {
+	PRIMARY_CLUB_ID,
 	certifications,
 	clubSettings,
+	clubs,
 	coasterPlayers,
 	coasters,
 	members,
@@ -22,8 +27,8 @@ import {
 const KEY_MONTH = 'season.startMonth';
 const KEY_DAY = 'season.startDay';
 
-export function getSeasonConfig(): SeasonConfig {
-	const rows = db.select().from(clubSettings).all();
+export function getSeasonConfig(clubId: string): SeasonConfig {
+	const rows = db.select().from(clubSettings).where(eq(clubSettings.clubId, clubId)).all();
 	const get = (k: string) => rows.find((r) => r.key === k)?.value;
 	const m = Number(get(KEY_MONTH) ?? DEFAULT_SEASON.startMonth);
 	const d = Number(get(KEY_DAY) ?? DEFAULT_SEASON.startDay);
@@ -33,38 +38,48 @@ export function getSeasonConfig(): SeasonConfig {
 	};
 }
 
-export function setSeasonConfig(cfg: SeasonConfig) {
+export function setSeasonConfig(clubId: string, cfg: SeasonConfig) {
 	db.transaction((tx) => {
 		for (const [key, value] of [
 			[KEY_MONTH, String(cfg.startMonth)],
 			[KEY_DAY, String(cfg.startDay)]
 		]) {
 			tx.insert(clubSettings)
-				.values({ key, value })
-				.onConflictDoUpdate({ target: clubSettings.key, set: { value } })
+				.values({ clubId, key, value })
+				.onConflictDoUpdate({ target: [clubSettings.clubId, clubSettings.key], set: { value } })
 				.run();
 		}
+		// Byts säsongsgränserna ändras historiken — kasta klubbens cachade arkiv
+		tx.delete(seasonArchives).where(eq(seasonArchives.clubId, clubId)).run();
 	});
-	// Byts säsongsgränserna ändras historiken — kasta cachade arkiv
-	db.delete(seasonArchives).run();
 }
 
-export function currentSeason(now = new Date()): Season {
-	return seasonAt(now, getSeasonConfig());
+export function currentSeason(clubId: string, now = new Date()): Season {
+	return seasonAt(now, getSeasonConfig(clubId));
 }
 
-/** Avslutade säsonger från klubbens första runda/medlem till nu. */
-export function listEndedSeasons(now = new Date()): Season[] {
-	const cfg = getSeasonConfig();
+/** Avslutade säsonger från klubbens första runda/skapande till nu. */
+export function listEndedSeasons(clubId: string, now = new Date()): Season[] {
+	const cfg = getSeasonConfig(clubId);
 	const firstRound = db
 		.select({ at: sql<number | null>`min(${rounds.playedAt})` })
 		.from(rounds)
+		.where(eq(rounds.clubId, clubId))
 		.get()?.at;
-	const firstMember = db
-		.select({ at: sql<number | null>`min(${members.createdAt})` })
-		.from(members)
+	const clubCreated = db
+		.select({ at: sql<number | null>`min(${clubs.createdAt})` })
+		.from(clubs)
+		.where(eq(clubs.id, clubId))
 		.get()?.at;
-	const first = Math.min(firstRound ?? Infinity, firstMember ?? Infinity);
+	// Huvudklubben fanns från första kontot
+	const firstMember =
+		clubId === PRIMARY_CLUB_ID
+			? db
+					.select({ at: sql<number | null>`min(${members.createdAt})` })
+					.from(members)
+					.get()?.at
+			: null;
+	const first = Math.min(firstRound ?? Infinity, clubCreated ?? Infinity, firstMember ?? Infinity);
 	if (!Number.isFinite(first)) return [];
 	return endedSeasons(new Date(first * 1000), now, cfg);
 }
@@ -111,9 +126,11 @@ function top<T extends { value: number }>(xs: T[], desc = true, n = 3): T[] {
 	return sorted.filter((x) => (desc ? x.value >= cut : x.value <= cut));
 }
 
-export function computeSeasonStats(season: Season): SeasonStats {
+export function computeSeasonStats(clubId: string, season: Season): SeasonStats {
 	const start = season.start;
 	const end = season.end;
+	// Klubbens rundor (spelade på klubbens coasters) av hemmaklubbsmedlemmar —
+	// bara de representerar klubben i statistiken.
 	const rs = db
 		.select({
 			id: rounds.id,
@@ -129,7 +146,14 @@ export function computeSeasonStats(season: Season): SeasonStats {
 		.from(rounds)
 		.innerJoin(members, eq(rounds.memberId, members.id))
 		.leftJoin(coasterPlayers, eq(coasterPlayers.roundId, rounds.id))
-		.where(and(gte(rounds.playedAt, start), lt(rounds.playedAt, end)))
+		.where(
+			and(
+				eq(rounds.clubId, clubId),
+				eq(members.homeClubId, clubId),
+				gte(rounds.playedAt, start),
+				lt(rounds.playedAt, end)
+			)
+		)
 		.orderBy(asc(rounds.playedAt), asc(rounds.id))
 		.all();
 
@@ -153,7 +177,7 @@ export function computeSeasonStats(season: Season): SeasonStats {
 		.from(coasterPlayers)
 		.leftJoin(rounds, eq(coasterPlayers.roundId, rounds.id))
 		.innerJoin(coasters, eq(coasterPlayers.coasterId, coasters.id))
-		.where(isNotNull(coasterPlayers.signedAt))
+		.where(and(isNotNull(coasterPlayers.signedAt), eq(coasters.clubId, clubId)))
 		.all()
 		.filter(
 			(r) =>
@@ -167,7 +191,7 @@ export function computeSeasonStats(season: Season): SeasonStats {
 		(byCoaster.get(f.coasterId) ?? byCoaster.set(f.coasterId, []).get(f.coasterId)!).push(f);
 	const wins = new Map<string, number>();
 	for (const rows of byCoaster.values()) {
-		const nets = rows.filter((r) => r.net !== null && r.memberId);
+		const nets = rows.filter((r) => r.net !== null && r.memberId && per.has(r.memberId));
 		if (!nets.length) continue;
 		const best = Math.min(...nets.map((r) => r.net as number));
 		for (const r of nets)
@@ -198,12 +222,16 @@ export function computeSeasonStats(season: Season): SeasonStats {
 		.map((s) => ({ memberId: s.memberId, name: s.name, hcpEnd: s.hcpEnd }));
 
 	// Faddrar: certifieringar klara i säsongen
+	// Faddrar: certifieringar klara i säsongen för klubbens hemmamedlemmar
+	const certMember = alias(members, 'cert_member');
 	const certs = db
 		.select({ fadderId: certifications.fadderId, name: members.name })
 		.from(certifications)
 		.leftJoin(members, eq(certifications.fadderId, members.id))
+		.innerJoin(certMember, eq(certifications.memberId, certMember.id))
 		.where(
 			and(
+				eq(certMember.homeClubId, clubId),
 				gte(certifications.certifiedAt, start),
 				lt(certifications.certifiedAt, end),
 				isNotNull(certifications.fadderId)
@@ -221,14 +249,26 @@ export function computeSeasonStats(season: Season): SeasonStats {
 	const newMembers = db
 		.select({ memberId: members.id, name: members.name, memberNumber: members.memberNumber })
 		.from(members)
-		.where(and(gte(members.greenCardIssuedAt, start), lt(members.greenCardIssuedAt, end)))
+		.where(
+			and(
+				eq(members.homeClubId, clubId),
+				gte(members.greenCardIssuedAt, start),
+				lt(members.greenCardIssuedAt, end)
+			)
+		)
 		.orderBy(asc(members.memberNumber))
 		.all();
 	const newAccounts =
 		db
 			.select({ n: sql<number>`count(*)` })
 			.from(members)
-			.where(and(gte(members.createdAt, start), lt(members.createdAt, end)))
+			.where(
+				and(
+					eq(members.homeClubId, clubId),
+					gte(members.createdAt, start),
+					lt(members.createdAt, end)
+				)
+			)
 			.get()?.n ?? 0;
 
 	const bestGrossRound = rs.length ? rs.reduce((b, r) => (r.gross < b.gross ? r : b), rs[0]) : null;
@@ -280,15 +320,23 @@ export function computeSeasonStats(season: Season): SeasonStats {
 }
 
 /** Arkiv för en avslutad säsong — beräknas och cachas första gången. */
-export function getSeasonArchive(label: string, now = new Date()): SeasonStats | null {
-	const cfg = getSeasonConfig();
+export function getSeasonArchive(
+	clubId: string,
+	label: string,
+	now = new Date()
+): SeasonStats | null {
+	const cfg = getSeasonConfig(clubId);
 	const season = seasonFromLabel(label, cfg);
 	if (!season || season.end > now) return null;
-	const cached = db.select().from(seasonArchives).where(eq(seasonArchives.label, label)).get();
+	const cached = db
+		.select()
+		.from(seasonArchives)
+		.where(and(eq(seasonArchives.clubId, clubId), eq(seasonArchives.label, label)))
+		.get();
 	if (cached) return cached.data as SeasonStats;
-	const stats = computeSeasonStats(season);
+	const stats = computeSeasonStats(clubId, season);
 	db.insert(seasonArchives)
-		.values({ label, startsAt: season.start, endsAt: season.end, data: stats })
+		.values({ clubId, label, startsAt: season.start, endsAt: season.end, data: stats })
 		.onConflictDoNothing()
 		.run();
 	return stats;

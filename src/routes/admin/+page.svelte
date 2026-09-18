@@ -4,7 +4,7 @@
 	import FadderTree from '$lib/components/FadderTree.svelte';
 	let { data, form } = $props();
 
-	const roles = ['aspirant', 'member', 'fadder', 'captain', 'admin'];
+	const roles = ['aspirant', 'member', 'fadder', 'admin'];
 	let isAdmin = $derived(page.data.member?.role === 'admin');
 	let meId = $derived(page.data.member?.id);
 
@@ -104,61 +104,22 @@
 	</a>
 {/if}
 
-{#if form?.seasonSaved}
-	<p class="mt-4 rounded bg-club-100 px-3 py-2 text-sm text-club-700">
-		Säsongsstart sparad. Nuvarande säsong: {form.seasonSaved}.
-	</p>
-{/if}
-{#if isAdmin}
-	<section class="mt-6 rounded-2xl bg-parchment p-5 shadow-sm">
-		<h2 class="font-semibold text-club-900">Säsong</h2>
-		<p class="mt-1 text-sm text-club-900/70">
-			Säsongen börjar den valda dagen varje år och varar ett år. Leaderboarden nollställs vid start;
-			avslutade säsonger arkiveras under <a href="/history" class="underline">Historik</a>.
-			Nuvarande säsong:
-			<strong>{data.season.label}</strong>.
-		</p>
-		<form
-			method="POST"
-			action="?/setSeason"
-			use:enhance
-			class="mt-3 flex flex-wrap items-end gap-3"
-		>
-			<label class="text-sm">
-				<span class="block text-club-900/70">Startmånad</span>
-				<select
-					name="startMonth"
-					value={String(data.season.startMonth)}
-					class="mt-1 rounded-lg border-cream-300 bg-white text-sm"
-				>
-					{#each ['januari', 'februari', 'mars', 'april', 'maj', 'juni', 'juli', 'augusti', 'september', 'oktober', 'november', 'december'] as mname, i (i)}
-						<option value={String(i + 1)}>{mname}</option>
-					{/each}
-				</select>
-			</label>
-			<label class="text-sm">
-				<span class="block text-club-900/70">Dag</span>
-				<input
-					name="startDay"
-					type="number"
-					min="1"
-					max="28"
-					value={data.season.startDay}
-					class="mt-1 w-20 rounded-lg border-cream-300 bg-white text-sm"
-				/>
-			</label>
-			<button
-				class="rounded-lg bg-club-700 px-4 py-2 text-sm font-semibold text-cream-200 hover:bg-club-800"
-				>Spara</button
-			>
-		</form>
-	</section>
-{/if}
+<p class="mt-4 text-sm text-club-900/60">
+	Säsongsstart och klubbmästare (captain) hanteras per klubb på <a href="/clubs" class="underline"
+		>klubbsidan</a
+	>. Invalskoder och nya medlemmar får vald klubb som hemmaklubb.
+</p>
 
 <div class="mt-6 grid gap-6 md:grid-cols-2">
 	<section class="rounded-2xl bg-parchment shadow-sm p-5">
 		<h2 class="font-semibold text-club-900">Skapa invalskod</h2>
 		<form method="POST" action="?/createInvite" use:enhance class="mt-3 space-y-3">
+			<label class="block text-sm">
+				<span class="text-club-900/70">Klubb</span>
+				<select name="clubId" class="mt-1 w-full rounded-lg border-cream-300 bg-white">
+					{#each data.clubs as c (c.id)}<option value={c.id}>{c.name}</option>{/each}
+				</select>
+			</label>
 			<label class="block text-sm">
 				<span class="text-club-900/70">Roll</span>
 				<select name="role" class="mt-1 w-full rounded-lg border-cream-300 bg-white">
@@ -175,6 +136,12 @@
 	<section class="rounded-2xl bg-parchment shadow-sm p-5">
 		<h2 class="font-semibold text-club-900">Skapa medlem direkt</h2>
 		<form method="POST" action="?/createMember" use:enhance class="mt-3 space-y-3">
+			<label class="block text-sm">
+				<span class="text-club-900/70">Klubb</span>
+				<select name="clubId" class="mt-1 w-full rounded-lg border-cream-300 bg-white">
+					{#each data.clubs as c (c.id)}<option value={c.id}>{c.name}</option>{/each}
+				</select>
+			</label>
 			<label class="block text-sm">
 				<span class="text-club-900/70">Namn</span>
 				<input name="name" required class="mt-1 w-full rounded-lg border-cream-300 bg-white" />

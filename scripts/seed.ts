@@ -2,13 +2,35 @@
 // Körs med:  npm run db:seed
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { hash } from '@node-rs/argon2';
 import { randomUUID } from 'node:crypto';
-import { certifications, members, quizQuestions } from '../src/lib/server/db/schema.ts';
+import {
+	PRIMARY_CLUB_ID,
+	certifications,
+	clubMembers,
+	clubs,
+	members,
+	quizQuestions
+} from '../src/lib/server/db/schema.ts';
 
 const url = (process.env.DATABASE_URL ?? './data/beergolf.db').replace(/^file:/, '');
-const db = drizzle(new Database(url), { schema: { members, quizQuestions, certifications } });
+const db = drizzle(new Database(url), {
+	schema: { members, quizQuestions, certifications, clubs, clubMembers }
+});
+
+// --- Huvudklubben (finns normalt via migrationen) ---------------------------
+if (!db.select().from(clubs).where(eq(clubs.id, PRIMARY_CLUB_ID)).get()) {
+	db.insert(clubs)
+		.values({
+			id: PRIMARY_CLUB_ID,
+			slug: PRIMARY_CLUB_ID,
+			name: 'Tablers Beer Golf Society',
+			description: 'Huvudklubben. Alla med grönt kort är medlemmar här.'
+		})
+		.run();
+	console.log('Huvudklubben skapad.');
+}
 
 const ARGON = { memoryCost: 19456, timeCost: 2, outputLen: 32, parallelism: 1 };
 
@@ -64,6 +86,26 @@ if (!admin.greenCardIssuedAt) {
 			.run();
 	}
 	console.log(`Grönt kort nr ${admin.memberNumber ?? next} utfärdat till admin.`);
+}
+
+// Admin är captain i huvudklubben
+if (
+	!db
+		.select()
+		.from(clubMembers)
+		.where(and(eq(clubMembers.clubId, PRIMARY_CLUB_ID), eq(clubMembers.memberId, admin.id)))
+		.get()
+) {
+	db.insert(clubMembers)
+		.values({
+			id: randomUUID(),
+			clubId: PRIMARY_CLUB_ID,
+			memberId: admin.id,
+			role: 'captain',
+			status: 'active',
+			joinedAt: new Date()
+		})
+		.run();
 }
 
 // --- Teoriprov ------------------------------------------------------------

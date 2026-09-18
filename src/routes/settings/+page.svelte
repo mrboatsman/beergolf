@@ -217,6 +217,41 @@
 		{/if}
 	</section>
 
+	<!-- Klubbar -->
+	<section class="mt-6 rounded-2xl bg-parchment p-5 shadow-sm">
+		<h2 class="font-display text-2xl font-semibold text-club-900">Mina klubbar</h2>
+		<p class="mt-1 text-sm text-club-900/70">
+			En hemmaklubb (där du rankas och representerar), dubbelmedlem i fler. Byt hemmaklubb eller
+			ansök om medlemskap på <a href="/clubs" class="underline">klubbsidan</a>.
+		</p>
+		<ul class="mt-3 space-y-1 text-sm">
+			{#each data.clubs as c (c.id)}
+				<li class="flex items-center gap-2">
+					<a href="/clubs/{c.slug}" class="font-semibold hover:underline">{c.name}</a>
+					{#if c.isHome}
+						<span
+							class="rounded-full bg-gold-400 px-2 py-0.5 text-[11px] font-semibold text-club-900"
+							>Hemmaklubb</span
+						>
+					{:else if c.status === 'pending'}
+						<span class="rounded-full bg-cream-300 px-2 py-0.5 text-[11px] text-club-800"
+							>Ansökan väntar</span
+						>
+					{:else}
+						<span class="rounded-full bg-club-100 px-2 py-0.5 text-[11px] text-club-800"
+							>Dubbelmedlem</span
+						>
+					{/if}
+					{#if c.role === 'captain' && c.status === 'active'}
+						<span class="rounded-full bg-club-700 px-2 py-0.5 text-[11px] text-cream-200"
+							>Captain</span
+						>
+					{/if}
+				</li>
+			{/each}
+		</ul>
+	</section>
+
 	<!-- App (PWA) -->
 	<section class="mt-6 rounded-2xl bg-parchment p-5 shadow-sm">
 		<h2 class="font-display text-2xl font-semibold text-club-900">App på hemskärmen</h2>

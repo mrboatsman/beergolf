@@ -1,17 +1,23 @@
 <script lang="ts">
+	import ClubTabs from '$lib/components/ClubTabs.svelte';
 	let { data } = $props();
 </script>
 
 <svelte:head><title>Historik — Beer Golf</title></svelte:head>
 
-<p class="text-xs font-semibold tracking-[0.2em] text-gold-600 uppercase">Klubben</p>
+<p class="text-xs font-semibold tracking-[0.2em] text-gold-600 uppercase">{data.clubName}</p>
 <h1 class="font-display mt-1 text-4xl font-semibold text-club-900">Historik</h1>
 <p class="mt-2 max-w-xl text-sm text-club-900/70">
 	Avslutade säsonger med slutställning, vinnare och statistik. Pågående säsong: <strong
 		>{data.current.label}</strong
 	>
-	({data.current.range}) — se <a href="/members" class="underline">leaderboarden</a>.
+	({data.current.range}) — se
+	<a href="/members{data.clubs.length > 1 ? `?club=${data.clubSlug}` : ''}" class="underline"
+		>leaderboarden</a
+	>.
 </p>
+
+<ClubTabs clubs={data.clubs} current={data.clubId} />
 
 {#if data.seasons.length === 0}
 	<p class="mt-8 text-sm text-club-900/60">
@@ -22,7 +28,9 @@
 		{#each data.seasons as s (s.label)}
 			<li>
 				<a
-					href="/history/{encodeURIComponent(s.label)}"
+					href="/history/{encodeURIComponent(s.label)}{data.clubs.length > 1
+						? `?club=${data.clubSlug}`
+						: ''}"
 					class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-club-800 px-5 py-4 text-cream-200 shadow-md hover:bg-club-700"
 				>
 					<div>

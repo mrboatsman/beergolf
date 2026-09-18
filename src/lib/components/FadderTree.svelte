@@ -62,7 +62,6 @@
 
 	const roleColor: Record<string, string> = {
 		admin: 'var(--color-gold-500)',
-		captain: 'var(--color-gold-500)',
 		fadder: 'var(--color-club-600)',
 		member: 'var(--color-club-800)',
 		aspirant: 'var(--color-gold-300)'
@@ -235,7 +234,7 @@
 		</g>
 	</svg>
 	<p class="mt-2 text-xs text-club-900/50">
-		Klicka på en nod för att se dess relaterade träd. ◦ = aspirant. Guld = captain/admin, grön =
+		Klicka på en nod för att se dess relaterade träd. ◦ = aspirant. Guld = admin, grön =
 		fadder/medlem.
 	</p>
 </div>

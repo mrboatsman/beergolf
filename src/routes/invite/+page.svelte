@@ -59,7 +59,19 @@
 {/if}
 
 <div class="mt-6 flex flex-wrap items-center gap-2">
-	<form method="POST" action="?/create" use:enhance>
+	<form method="POST" action="?/create" use:enhance class="flex flex-wrap items-center gap-2">
+		{#if data.clubs.length > 1}
+			<select
+				name="clubId"
+				value={data.homeClubId}
+				aria-label="Klubb"
+				class="rounded-lg border-cream-300 bg-white text-sm"
+			>
+				{#each data.clubs as c (c.id)}
+					<option value={c.id}>{c.name}{c.isHome ? ' (hemmaklubb)' : ''}</option>
+				{/each}
+			</select>
+		{/if}
 		<button
 			class="rounded-lg bg-gold-500 px-5 py-2.5 text-sm font-semibold text-club-900 hover:bg-gold-400"
 			>+ Ny invalskod</button

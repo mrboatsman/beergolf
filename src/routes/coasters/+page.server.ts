@@ -1,20 +1,25 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { desc, eq, sql } from 'drizzle-orm';
+import { desc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { coasters, coasterPlayers, members, DEFAULT_PAR } from '$lib/server/db/schema';
+import { clubs, coasters, coasterPlayers, members, DEFAULT_PAR } from '$lib/server/db/schema';
 import { requireMember } from '$lib/server/guard';
 import { newId } from '$lib/server/ids';
+import { pickClubById, myClubs, touchClub } from '$lib/server/clubs';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const me = requireMember(locals.member);
-	// Låga volymer + klubbtransparens: lista alla coasters, nyast först.
+	// Alla coasters i mina klubbar (hemma + dubbel), nyast först, med klubbnamn.
+	const mine = myClubs(me).filter((c) => c.status === 'active' && c.clubStatus === 'active');
+	const clubIds = mine.map((c) => c.id);
 	const list = await db
 		.select({
 			id: coasters.id,
 			name: coasters.name,
 			createdAt: coasters.createdAt,
 			creatorName: members.name,
+			clubId: coasters.clubId,
+			clubName: clubs.name,
 			playerCount: sql<number>`(
 				select count(*) from ${coasterPlayers} where ${coasterPlayers.coasterId} = ${coasters.id}
 			)`,
@@ -31,9 +36,17 @@ export const load: PageServerLoad = async ({ locals }) => {
 		})
 		.from(coasters)
 		.innerJoin(members, eq(coasters.createdBy, members.id))
+		.innerJoin(clubs, eq(coasters.clubId, clubs.id))
+		.where(clubIds.length ? inArray(coasters.clubId, clubIds) : sql`0`)
 		.orderBy(desc(coasters.createdAt))
 		.all();
-	return { coasters: list, defaultPar: DEFAULT_PAR };
+	return {
+		coasters: list,
+		defaultPar: DEFAULT_PAR,
+		// Klubbval i formuläret (bara om >1), hemmaklubb först
+		clubs: mine,
+		homeClubId: me.homeClubId
+	};
 };
 
 export const actions: Actions = {
@@ -44,6 +57,12 @@ export const actions: Actions = {
 			return fail(403, { error: 'Grönt kort krävs för att skapa en Score Coaster.' });
 		}
 		const form = await request.formData();
+		// Klubben väljs i formuläret (default hemmaklubb) — måste vara en av mina
+		const picked = pickClubById(me, String(form.get('clubId') ?? ''));
+		if (picked.role === null && me.role !== 'admin') {
+			return fail(403, { error: 'Du är inte medlem i den valda klubben.' });
+		}
+		const clubId = picked.club.id;
 		const name = String(form.get('name') ?? '').trim() || null;
 
 		const par: number[] = [];
@@ -58,7 +77,7 @@ export const actions: Actions = {
 		const id = newId();
 		// Skaparen blir automatiskt spelare 1 på coastern.
 		db.transaction((tx) => {
-			tx.insert(coasters).values({ id, name, par, createdBy: me.id }).run();
+			tx.insert(coasters).values({ id, name, par, clubId, createdBy: me.id }).run();
 			tx.insert(coasterPlayers)
 				.values({
 					id: newId(),
@@ -69,6 +88,7 @@ export const actions: Actions = {
 				})
 				.run();
 		});
+		touchClub(clubId);
 
 		throw redirect(302, `/coasters/${id}`);
 	}

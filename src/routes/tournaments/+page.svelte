@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ClubTabs from '$lib/components/ClubTabs.svelte';
 	import { enhance } from '$app/forms';
 	import { formatKr } from '$lib/money';
 	let { data, form } = $props();
@@ -23,10 +24,16 @@
 	}
 </script>
 
-<p class="text-xs font-semibold tracking-[0.2em] text-gold-600 uppercase">Klubben · Välgörenhet</p>
+<p class="text-xs font-semibold tracking-[0.2em] text-gold-600 uppercase">
+	{data.clubName} · Välgörenhet
+</p>
 <h1 class="font-display mt-1 text-4xl font-semibold">Turneringar</h1>
+<ClubTabs clubs={data.clubs} current={data.clubId} />
 <p class="mt-1 text-sm text-club-900/60">
 	Varje turnering spelas till förmån för en välgörenhet — full transparens efter avslut.
+	{#if !data.isHomeClub}
+		Turneringar spelas via hemmaklubben: som dubbelmedlem kan du följa men inte anmäla dig här.
+	{/if}
 </p>
 
 {#if form?.error}
@@ -37,6 +44,7 @@
 	<section class="mt-6 rounded-2xl bg-club-800 p-6 text-cream-200 shadow-md">
 		<h2 class="font-display flex items-center gap-2 text-2xl font-semibold">Ny turnering</h2>
 		<form method="POST" action="?/create" use:enhance class="mt-4 space-y-4">
+			<input type="hidden" name="clubId" value={data.clubId} />
 			<label class="block text-sm">
 				<span class="text-xs font-semibold tracking-[0.18em] text-gold-400 uppercase">Namn</span>
 				<input

@@ -9,6 +9,7 @@ import {
 	tournamentParticipants
 } from '$lib/server/db/schema';
 import { requireMember } from '$lib/server/guard';
+import { pickClub } from '$lib/server/clubs';
 import { grossTotalComplete } from '$lib/scoring';
 import type { PageServerLoad } from './$types';
 
@@ -16,8 +17,10 @@ const LIMIT = 200;
 
 // Galleri: alla färdigspelade coasters (≥2 spelare, alla signerade), nyast först,
 // med baksida (bilder + ritning) och framsida (spelare, brutto/netto, vinnare).
-export const load: PageServerLoad = async ({ locals }) => {
-	requireMember(locals.member);
+export const load: PageServerLoad = async ({ locals, url }) => {
+	const me = requireMember(locals.member);
+	const { club, clubs } = pickClub(me, url);
+	const clubId = club.id;
 
 	const finished = db
 		.select({
@@ -31,7 +34,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.from(coasters)
 		.innerJoin(members, eq(coasters.createdBy, members.id))
 		.where(
-			sql`(select count(*) from coaster_players cp where cp.coaster_id = ${coasters.id}) >= 2
+			sql`${coasters.clubId} = ${clubId}
+				and (select count(*) from coaster_players cp where cp.coaster_id = ${coasters.id}) >= 2
 				and not exists (select 1 from coaster_players cp where cp.coaster_id = ${coasters.id} and cp.signed_at is null)`
 		)
 		.orderBy(desc(coasters.createdAt))
@@ -105,6 +109,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 	}
 
 	return {
+		clubName: club.name,
+		clubId: club.id,
+		clubs,
 		coasters: finished.map((c) => {
 			const players = playersBy.get(c.id) ?? [];
 			const nets = players.filter((p) => p.net !== null).map((p) => p.net as number);

@@ -9,7 +9,12 @@
 
 	let { children, data } = $props();
 	let member = $derived(data.member);
-	let isStaff = $derived(!!member && ['captain', 'admin'].includes(member.role));
+	let isStaff = $derived(member?.role === 'admin');
+	// Hemmaklubben ger namn + logga i menyn (annars sällskapets emblem).
+	let club = $derived(data.homeClub);
+	let clubTitle = $derived(club?.name ?? 'Tablers Beer Golf Society');
+	let isPrimaryClub = $derived(!club || club.id === 'tablers');
+	let clubLogo = $derived(data.homeLogoUrl ?? logo);
 
 	// Aspiranter ser bara certifieringsflödet tills grönt kort är utfärdat.
 	// Avklarat teoriprov plockar bort Teoriprov ur menyn.
@@ -60,6 +65,7 @@
 						label: 'Historik',
 						active: page.url.pathname.startsWith('/history')
 					},
+					{ href: '/clubs', label: 'Klubbar', active: page.url.pathname.startsWith('/clubs') },
 					{ href: '/faq', label: 'FAQ', active: page.url.pathname.startsWith('/faq') },
 					...(isStaff
 						? [{ href: '/admin', label: 'Admin', active: page.url.pathname.startsWith('/admin') }]
@@ -139,14 +145,12 @@
 					aria-label="Om sällskapet"
 					class="shrink-0 rounded-full transition-transform hover:scale-105"
 				>
-					<img src={logo} alt="" class="h-12 w-12 rounded-full" />
+					<img src={clubLogo} alt="" class="h-12 w-12 rounded-full object-cover" />
 				</button>
-				<a href="/">
-					<span class="font-display block text-xl leading-tight font-semibold"
-						>Tablers Beer Golf Society</span
-					>
+				<a href="/" class="min-w-0">
+					<span class="font-display block text-xl leading-tight font-semibold">{clubTitle}</span>
 					<span class="block text-[10px] tracking-[0.25em] text-gold-400 uppercase"
-						>estd · 2026</span
+						>{isPrimaryClub ? 'estd · 2026' : 'Beer Golf™ · klubb'}</span
 					>
 				</a>
 			</div>
@@ -216,11 +220,9 @@
 							aria-label="Om sällskapet"
 							class="shrink-0 rounded-full"
 						>
-							<img src={logo} alt="" class="h-8 w-8 rounded-full" />
+							<img src={clubLogo} alt="" class="h-8 w-8 rounded-full object-cover" />
 						</button>
-						<a href="/" class="font-display truncate text-lg font-semibold"
-							>Tablers Beer Golf Society</a
-						>
+						<a href="/" class="font-display truncate text-lg font-semibold">{clubTitle}</a>
 					</div>
 				</div>
 			</header>

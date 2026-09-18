@@ -118,7 +118,7 @@
 			<a
 				href="/members"
 				class="text-xs font-semibold tracking-widest text-gold-300 uppercase hover:underline"
-				>#{d.member.rank} av {d.member.memberCount} på leaderboarden</a
+				>#{d.member.rank} av {d.member.memberCount} i {d.member.homeClubName ?? 'hemmaklubben'}</a
 			>
 		</div>
 		<div class="mt-2 flex items-center gap-4">

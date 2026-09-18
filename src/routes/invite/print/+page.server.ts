@@ -3,7 +3,8 @@ import { and, eq, inArray, isNull } from 'drizzle-orm';
 import QRCode from 'qrcode';
 import { db } from '$lib/server/db';
 import { invites, members } from '$lib/server/db/schema';
-import { hasRole, requireRole } from '$lib/server/guard';
+import { requireRole } from '$lib/server/guard';
+import { myClubs } from '$lib/server/clubs';
 import type { PageServerLoad } from './$types';
 
 const MAX_CARDS = 40; // 10 ark
@@ -13,7 +14,9 @@ const MAX_CARDS = 40; // 10 ark
 // Bara egna koder (captain+ får skriva ut allas). Använda/utgångna koder ignoreras.
 export const load: PageServerLoad = async ({ locals, url }) => {
 	const me = requireRole(locals.member, 'member');
-	const staff = hasRole(me, 'captain');
+	// Captain i någon av mina klubbar (eller admin) får skriva ut allas koder
+	const staff =
+		me.role === 'admin' || myClubs(me).some((c) => c.status === 'active' && c.role === 'captain');
 	const wanted = (url.searchParams.get('codes') ?? '')
 		.split(',')
 		.map((c) => c.trim().toUpperCase())

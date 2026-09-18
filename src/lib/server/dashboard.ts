@@ -1,7 +1,7 @@
 import { desc, eq, sql } from 'drizzle-orm';
 import { db } from './db';
 import { grossTotal } from '$lib/scoring';
-import { coasters, coasterPlayers, members, quizAttempts, rounds } from './db/schema';
+import { clubs, coasters, coasterPlayers, members, quizAttempts, rounds } from './db/schema';
 import { getCertStatus, getPendingAspirantsFor } from './certification';
 import { avatarUrl } from './avatar';
 import { currentSeason } from './seasons';
@@ -24,6 +24,7 @@ export type DashboardRound = {
 export type DashboardMatch = {
 	id: string;
 	name: string | null;
+	clubId: string;
 	createdAt: Date;
 	playerCount: number;
 	signedCount: number;
@@ -47,12 +48,15 @@ export async function getDashboard(memberId: string) {
 			greenCardIssuedAt: members.greenCardIssuedAt,
 			welcomeSeenAt: members.welcomeSeenAt,
 			createdAt: members.createdAt,
-			// Global leaderboard-placering (lägst hcp = bäst). OBS: literal
+			homeClubId: members.homeClubId,
+			homeClubName: clubs.name,
+			// Leaderboard-placering i hemmaklubben (lägst hcp = bäst). OBS: literal
 			// members.hcp — drizzle-interpolation binder fel i subqueries.
-			rank: sql<number>`(select count(*) + 1 from members m2 where m2.hcp < members.hcp)`,
-			memberCount: sql<number>`(select count(*) from members)`
+			rank: sql<number>`(select count(*) + 1 from members m2 where m2.hcp < members.hcp and m2.home_club_id = members.home_club_id)`,
+			memberCount: sql<number>`(select count(*) from members m3 where m3.home_club_id = members.home_club_id)`
 		})
 		.from(members)
+		.leftJoin(clubs, eq(members.homeClubId, clubs.id))
 		.where(eq(members.id, memberId))
 		.get();
 	if (!member) return null;
@@ -82,7 +86,8 @@ export async function getDashboard(memberId: string) {
 			return { ...r, toPar: r.grossTotal - parTotal };
 		});
 
-	const cur = currentSeason();
+	// Säsong enligt hemmaklubbens inställning; rundorna räknas globalt (HCP följer personen)
+	const cur = currentSeason(member.homeClubId);
 	const seasonYear = cur.label;
 	const season = allRounds.filter((r) => {
 		const t = new Date(r.playedAt).getTime();
@@ -113,6 +118,7 @@ export async function getDashboard(memberId: string) {
 		.select({
 			id: coasters.id,
 			name: coasters.name,
+			clubId: coasters.clubId,
 			createdAt: coasters.createdAt,
 			myScores: coasterPlayers.scores,
 			mySignedAt: coasterPlayers.signedAt,
@@ -134,6 +140,7 @@ export async function getDashboard(memberId: string) {
 			return {
 				id: m.id,
 				name: m.name,
+				clubId: m.clubId,
 				createdAt: m.createdAt,
 				playerCount: m.playerCount,
 				signedCount: m.signedCount,

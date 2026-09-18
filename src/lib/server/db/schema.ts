@@ -1,16 +1,65 @@
-import { sqliteTable, text, integer, real, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, uniqueIndex, primaryKey } from 'drizzle-orm/sqlite-core';
 import { relations, sql } from 'drizzle-orm';
 
-// --- Roller ---------------------------------------------------------------
+// --- Roller (globala, per konto) -----------------------------------------
 // aspirant  = under upplärning, ej grönt kort
 // member    = certifierad medlem med grönt kort
-// fadder     = får examinera aspiranter (praktiskt + etikett)
-// captain    = klubbmästare, håller i turneringar
-// admin      = full åtkomst (skapa medlemmar, invites, allt)
-export type Role = 'aspirant' | 'member' | 'fadder' | 'captain' | 'admin';
+// fadder    = får examinera aspiranter (praktiskt + etikett)
+// admin     = sajtadmin, full åtkomst (alla klubbar)
+// Klubbmästare (captain) är en KLUBBROLL — se club_members.role.
+export type Role = 'aspirant' | 'member' | 'fadder' | 'admin';
+export type ClubRole = 'member' | 'captain';
 
 // Ingångshandicap för nya certifierade medlemmar
 export const START_HCP = 36;
+
+// --- Klubbar --------------------------------------------------------------
+// Modell som svensk golf: varje spelare har EN hemmaklubb (där grönt kort och
+// leaderboard/representation bokförs) och kan vara dubbelmedlem i fler.
+// Huvudklubben (Tablers Beer Golf Society) har fast id och alla med grönt
+// kort är automatiskt medlemmar där. Inaktiva klubbar arkiveras — hemma-
+// medlemskapet flyttas då till huvudklubben.
+export const PRIMARY_CLUB_ID = 'tablers';
+
+export const clubs = sqliteTable('clubs', {
+	id: text('id').primaryKey(),
+	slug: text('slug').notNull().unique(), // a-z0-9-, i URL:er (/clubs/[slug])
+	name: text('name').notNull(),
+	description: text('description'),
+	// Klubblogga: JPEG från klientbeskäraren (som profilbild), lagras under clubs/<id>/
+	logoKey: text('logo_key'),
+	status: text('status').$type<'active' | 'archived'>().notNull().default('active'),
+	archivedAt: integer('archived_at', { mode: 'timestamp' }),
+	// Senaste aktivitet (coaster/signatur/turnering) — styr auto-arkivering
+	lastActivityAt: integer('last_activity_at', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`(unixepoch())`),
+	createdBy: text('created_by').references(() => members.id),
+	createdAt: integer('created_at', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`(unixepoch())`)
+});
+
+// Medlemskap i klubb. status pending = ansökan som väntar på captain.
+export const clubMembers = sqliteTable(
+	'club_members',
+	{
+		id: text('id').primaryKey(),
+		clubId: text('club_id')
+			.notNull()
+			.references(() => clubs.id, { onDelete: 'cascade' }),
+		memberId: text('member_id')
+			.notNull()
+			.references(() => members.id, { onDelete: 'cascade' }),
+		role: text('role').$type<ClubRole>().notNull().default('member'),
+		status: text('status').$type<'pending' | 'active'>().notNull().default('active'),
+		joinedAt: integer('joined_at', { mode: 'timestamp' }),
+		createdAt: integer('created_at', { mode: 'timestamp' })
+			.notNull()
+			.default(sql`(unixepoch())`)
+	},
+	(t) => [uniqueIndex('club_member_unique').on(t.clubId, t.memberId)]
+);
 
 export const members = sqliteTable('members', {
 	id: text('id').primaryKey(), // uuid
@@ -24,6 +73,9 @@ export const members = sqliteTable('members', {
 	status: text('status').$type<'aspirant' | 'active' | 'inactive'>().notNull().default('aspirant'),
 	hcp: real('hcp').notNull().default(START_HCP),
 	greenCardIssuedAt: integer('green_card_issued_at', { mode: 'timestamp' }),
+	// Hemmaklubb (exakt en). Ingen DB-FK: SQLite tillåter inte ADD COLUMN med
+	// REFERENCES + default ≠ NULL när foreign_keys är på — appkod vaktar.
+	homeClubId: text('home_club_id').notNull().default(PRIMARY_CLUB_ID),
 	// Profilbild: egen uppladdad (storage-nyckel) har företräde; annars Gravatar
 	// (sha256 av e-post) om påslaget; annars initialer.
 	// Välkomstmodal efter grönt kort — visas en gång, sedan stämplas den här
@@ -48,6 +100,8 @@ export const invites = sqliteTable('invites', {
 	id: text('id').primaryKey(),
 	code: text('code').notNull().unique(), // slumpad kort kod, delas med aspiranten
 	role: text('role').$type<Role>().notNull().default('aspirant'),
+	// Klubben koden gäller — blir inlösarens hemmaklubb (ingen DB-FK, se members)
+	clubId: text('club_id').notNull().default(PRIMARY_CLUB_ID),
 	createdBy: text('created_by').references(() => members.id),
 	usedBy: text('used_by').references(() => members.id),
 	usedAt: integer('used_at', { mode: 'timestamp' }),
@@ -57,23 +111,37 @@ export const invites = sqliteTable('invites', {
 		.default(sql`(unixepoch())`)
 });
 
-// Klubbinställningar (nyckel/värde). Används för säsongsstart m.m.
-export const clubSettings = sqliteTable('club_settings', {
-	key: text('key').primaryKey(),
-	value: text('value').notNull()
-});
+// Klubbinställningar (nyckel/värde per klubb). Används för säsongsstart m.m.
+export const clubSettings = sqliteTable(
+	'club_settings',
+	{
+		clubId: text('club_id')
+			.notNull()
+			.references(() => clubs.id, { onDelete: 'cascade' }),
+		key: text('key').notNull(),
+		value: text('value').notNull()
+	},
+	(t) => [primaryKey({ columns: [t.clubId, t.key] })]
+);
 
-// Arkiverade säsonger: färdig statistik (JSON) beräknas första gången någon
-// tittar efter säsongens slut och cachas här. Etikett t.ex. "2026/27" eller "2026".
-export const seasonArchives = sqliteTable('season_archives', {
-	label: text('label').primaryKey(),
-	startsAt: integer('starts_at', { mode: 'timestamp' }).notNull(),
-	endsAt: integer('ends_at', { mode: 'timestamp' }).notNull(),
-	data: text('data', { mode: 'json' }).notNull(),
-	createdAt: integer('created_at', { mode: 'timestamp' })
-		.notNull()
-		.default(sql`(unixepoch())`)
-});
+// Arkiverade säsonger per klubb: färdig statistik (JSON) beräknas första gången
+// någon tittar efter säsongens slut och cachas här. Etikett t.ex. "2026/27".
+export const seasonArchives = sqliteTable(
+	'season_archives',
+	{
+		clubId: text('club_id')
+			.notNull()
+			.references(() => clubs.id, { onDelete: 'cascade' }),
+		label: text('label').notNull(),
+		startsAt: integer('starts_at', { mode: 'timestamp' }).notNull(),
+		endsAt: integer('ends_at', { mode: 'timestamp' }).notNull(),
+		data: text('data', { mode: 'json' }).notNull(),
+		createdAt: integer('created_at', { mode: 'timestamp' })
+			.notNull()
+			.default(sql`(unixepoch())`)
+	},
+	(t) => [primaryKey({ columns: [t.clubId, t.label] })]
+);
 
 // Web Push-prenumerationer (PWA-notiser). En rad per enhet/webbläsare.
 export const pushSubscriptions = sqliteTable('push_subscriptions', {
@@ -199,6 +267,8 @@ export type PrizeTier = { place: number; label?: string; amountOre?: number; per
 
 export const tournaments = sqliteTable('tournaments', {
 	id: text('id').primaryKey(),
+	// Arrangerande klubb — bara hemmaklubbsmedlemmar får delta (gäster undantagna)
+	clubId: text('club_id').notNull().default(PRIMARY_CLUB_ID),
 	name: text('name').notNull(),
 	description: text('description'),
 	slug: text('slug').unique(), // krävs (a-z0-9-) när visibility = 'public'
@@ -332,6 +402,9 @@ export const rounds = sqliteTable('rounds', {
 		.notNull()
 		.references(() => members.id, { onDelete: 'cascade' }),
 	tournamentId: text('tournament_id').references(() => tournaments.id, { onDelete: 'set null' }),
+	// Klubben rundan spelades i (= coasterns klubb) — för klubbens leaderboard/säsong.
+	// HCP är globalt: rundan justerar spelarens HCP oavsett klubb.
+	clubId: text('club_id').notNull().default(PRIMARY_CLUB_ID),
 	holes: integer('holes').notNull().default(18),
 	scores: text('scores', { mode: 'json' }).$type<number[]>().notNull(),
 	grossTotal: integer('gross_total').notNull(),
@@ -354,6 +427,8 @@ export const DEFAULT_PAR = [4, 4, 3, 4, 5, 3, 4, 3, 5];
 
 export const coasters = sqliteTable('coasters', {
 	id: text('id').primaryKey(),
+	// Klubben coastern spelas i — bara klubbens (aktiva) medlemmar kan läggas till
+	clubId: text('club_id').notNull().default(PRIMARY_CLUB_ID),
 	name: text('name'), // valfritt, ex "Lördagsslingan"
 	par: text('par', { mode: 'json' }).$type<number[]>().notNull(), // 9 värden
 	// Turneringscoaster: rundor som signeras här bokförs på turneringen
@@ -425,7 +500,17 @@ export const coasterPlayers = sqliteTable(
 export const membersRelations = relations(members, ({ many }) => ({
 	sessions: many(sessions),
 	rounds: many(rounds),
-	certifications: many(certifications)
+	certifications: many(certifications),
+	clubMemberships: many(clubMembers)
+}));
+
+export const clubsRelations = relations(clubs, ({ many }) => ({
+	memberships: many(clubMembers)
+}));
+
+export const clubMembersRelations = relations(clubMembers, ({ one }) => ({
+	club: one(clubs, { fields: [clubMembers.clubId], references: [clubs.id] }),
+	member: one(members, { fields: [clubMembers.memberId], references: [members.id] })
 }));
 
 export const roundsRelations = relations(rounds, ({ one }) => ({
@@ -479,6 +564,8 @@ export const certificationsRelations = relations(certifications, ({ one }) => ({
 }));
 
 export type Member = typeof members.$inferSelect;
+export type Club = typeof clubs.$inferSelect;
+export type ClubMember = typeof clubMembers.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type Invite = typeof invites.$inferSelect;
 export type Round = typeof rounds.$inferSelect;

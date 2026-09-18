@@ -152,6 +152,10 @@ const insertMember = db.prepare(
 	`INSERT INTO members (id,name,email,role,status,hcp,member_number,green_card_issued_at,created_at)
 	 VALUES (?,?,?,?,?,?,?,?,unixepoch())`
 );
+const insertClubMember = db.prepare(
+	`INSERT INTO club_members (id,club_id,member_id,role,status,joined_at,created_at)
+	 VALUES (?,'tablers',?,'member','active',?,unixepoch())`
+);
 const insertCert = db.prepare(
 	`INSERT INTO certifications (id,member_id,fadder_id,theory_passed,theory_score,theory_at,
 	   practical_passed,practical_at,etiquette_passed,certified_at,created_at)
@@ -172,6 +176,7 @@ const seed = db.transaction(() => {
 		const score = Math.random() < 0.25 ? 0.8 : Math.round((0.8 + Math.random() * 0.2) * 100) / 100;
 
 		insertMember.run(id, name, email, 'member', 'active', hcp, memberNumber++, certifiedAt);
+		insertClubMember.run(randomUUID(), id, certifiedAt);
 		insertCert.run(randomUUID(), id, parent.id, score, certifiedAt, certifiedAt, certifiedAt);
 
 		parent.children++;
