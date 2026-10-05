@@ -22,6 +22,13 @@
 	}
 	let printUrl = $derived(`/invite/print?codes=${[...selected].join(',')}`);
 
+	// Vald klubb för nästa kod — hemmaklubben (eller ?club=) är förvald; efter skapande
+	// står valet kvar på klubben man nyss skapade en kod för. Skrivbar derived (bind:value).
+	let clubId = $derived(form?.createdClubId ?? data.selectedClubId);
+	let selectedClub = $derived(data.clubs.find((c) => c.id === clubId));
+	const clubNameOf = (code: string) =>
+		data.invites.find((i) => i.code === code)?.clubName ?? form?.createdClubName ?? null;
+
 	let copied = $state<string | null>(null);
 	async function copy(code: string) {
 		try {
@@ -33,11 +40,12 @@
 		}
 	}
 	function share(code: string) {
+		const club = clubNameOf(code) ?? 'Beer Golf';
 		if (navigator.share) {
 			navigator
 				.share({
-					title: 'Tablers Beer Golf Society',
-					text: 'Du är inbjuden till Beer Golf. Skapa ditt aspirantkonto här:',
+					title: club,
+					text: `Du är inbjuden till ${club}. Skapa ditt aspirantkonto här:`,
 					url: link(code)
 				})
 				.catch(() => {});
@@ -59,18 +67,31 @@
 {/if}
 
 <div class="mt-6 flex flex-wrap items-center gap-2">
-	<form method="POST" action="?/create" use:enhance class="flex flex-wrap items-center gap-2">
+	<form
+		method="POST"
+		action="?/create"
+		use:enhance={() =>
+			async ({ update }) => {
+				// Behåll klubbvalet (reset skulle hoppa till första alternativet)
+				await update({ reset: false });
+			}}
+		class="flex flex-wrap items-center gap-2"
+	>
 		{#if data.clubs.length > 1}
-			<select
-				name="clubId"
-				value={data.homeClubId}
-				aria-label="Klubb"
-				class="rounded-lg border-cream-300 bg-white text-sm"
-			>
-				{#each data.clubs as c (c.id)}
-					<option value={c.id}>{c.name}{c.isHome ? ' (hemmaklubb)' : ''}</option>
-				{/each}
-			</select>
+			<label class="flex items-center gap-2 text-sm text-club-900/70">
+				<span>Klubb</span>
+				<select
+					name="clubId"
+					bind:value={clubId}
+					class="rounded-lg border-cream-300 bg-white text-sm text-club-900"
+				>
+					{#each data.clubs as c (c.id)}
+						<option value={c.id}>{c.name}{c.isHome ? ' (hemmaklubb)' : ''}</option>
+					{/each}
+				</select>
+			</label>
+		{:else}
+			<input type="hidden" name="clubId" value={clubId} />
 		{/if}
 		<button
 			class="rounded-lg bg-gold-500 px-5 py-2.5 text-sm font-semibold text-club-900 hover:bg-gold-400"
@@ -86,9 +107,19 @@
 	{/if}
 </div>
 
+{#if selectedClub}
+	<p class="mt-2 text-xs text-club-900/60">
+		Koden gäller för <strong>{selectedClub.name}</strong>{selectedClub.isHome
+			? ' (din hemmaklubb)'
+			: ''} — den blir aspirantens hemmaklubb.
+	</p>
+{/if}
+
 {#if form?.created}
 	<section class="mt-6 rounded-2xl border border-gold-400/60 bg-parchment p-5 shadow-sm">
-		<p class="text-sm text-club-900/70">Ny kod skapad. Dela länken:</p>
+		<p class="text-sm text-club-900/70">
+			Ny kod skapad{form.createdClubName ? ` för ${form.createdClubName}` : ''}. Dela länken:
+		</p>
 		<p class="mt-2 font-mono text-3xl font-bold tracking-widest text-club-900">{form.created}</p>
 		<p class="mt-1 text-sm break-all text-club-900/70 select-all">{link(form.created)}</p>
 		<div class="mt-3 flex flex-wrap gap-2">
@@ -140,7 +171,12 @@
 						{/if}
 						<span class="font-mono text-lg font-bold tracking-widest text-club-900">{i.code}</span>
 					</label>
-					<span class="text-xs text-club-900/50">Skapad {fmt(i.createdAt)}</span>
+					<span class="text-xs text-club-900/50">
+						{#if i.clubName}<span
+								class="mr-2 rounded bg-club-100 px-1.5 py-0.5 font-medium text-club-800"
+								>{i.clubName}</span
+							>{/if}Skapad {fmt(i.createdAt)}
+					</span>
 				</div>
 				<div class="mt-1 text-sm text-club-900/80">
 					{#if i.usedById}

@@ -2,12 +2,13 @@ import { error } from '@sveltejs/kit';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import QRCode from 'qrcode';
 import { db } from '$lib/server/db';
-import { invites, members } from '$lib/server/db/schema';
+import { clubs, invites, members } from '$lib/server/db/schema';
 import { requireRole } from '$lib/server/guard';
 import { myClubs } from '$lib/server/clubs';
 import type { PageServerLoad } from './$types';
 
 const MAX_CARDS = 40; // 10 ark
+const DEFAULT_CLUB_NAME = 'Tablers Beer Golf Society';
 
 // Utskrift av invalskort (85×55 mm, 4 per A4, speglad baksida med QR).
 // ?codes=A,B,C väljer koder; utan param: alla egna öppna koder.
@@ -28,10 +29,13 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			code: invites.code,
 			createdBy: invites.createdBy,
 			expiresAt: invites.expiresAt,
-			creatorName: members.name
+			creatorName: members.name,
+			clubName: clubs.name,
+			clubLogoKey: clubs.logoKey
 		})
 		.from(invites)
 		.leftJoin(members, eq(invites.createdBy, members.id))
+		.leftJoin(clubs, eq(invites.clubId, clubs.id))
 		.where(
 			and(
 				isNull(invites.usedBy),
@@ -55,7 +59,14 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 				margin: 1,
 				color: { dark: '#17382b', light: '#ffffff' }
 			});
-			return { code: r.code, url: link, qrSvg, creatorName: r.creatorName };
+			return {
+				code: r.code,
+				url: link,
+				qrSvg,
+				creatorName: r.creatorName,
+				clubName: r.clubName ?? DEFAULT_CLUB_NAME,
+				logoUrl: r.clubLogoKey ? `/files/${r.clubLogoKey}` : null
+			};
 		})
 	);
 

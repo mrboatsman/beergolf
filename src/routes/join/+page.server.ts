@@ -15,8 +15,22 @@ import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (locals.member) throw redirect(302, '/');
-	return { code: url.searchParams.get('code') ?? '' };
+	const code = (url.searchParams.get('code') ?? '').trim().toUpperCase();
+	return { code, clubName: code ? inviteClubName(code) : null };
 };
+
+// Klubbnamn för en giltig (oanvänd, ej utgången) kod — annars null så att
+// ogiltiga koder inte avslöjar något.
+function inviteClubName(code: string): string | null {
+	const inv = db
+		.select({ clubId: invites.clubId, expiresAt: invites.expiresAt })
+		.from(invites)
+		.where(and(eq(invites.code, code), isNull(invites.usedBy)))
+		.get();
+	if (!inv || (inv.expiresAt && inv.expiresAt.getTime() < Date.now())) return null;
+	const club = getClub(inv.clubId);
+	return (club?.status === 'active' ? club : getClub(PRIMARY_CLUB_ID))?.name ?? null;
+}
 
 export const actions: Actions = {
 	default: async (event) => {
