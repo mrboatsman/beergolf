@@ -11,7 +11,10 @@
 	let {
 		cards,
 		joinUrl
-	}: { cards: { code: string; url: string; qrSvg: string }[]; joinUrl: string } = $props();
+	}: {
+		cards: { code: string; url: string; qrSvg: string; clubName: string; logoUrl: string | null }[];
+		joinUrl: string;
+	} = $props();
 
 	const PER_SHEET = 4;
 	let sheets = $derived(
@@ -35,8 +38,8 @@
 			{#each sheet as card (card.code)}
 				<div class="card front">
 					<div class="band">
-						<img src={logo} alt="Tablers Beer Golf Society" />
-						<span class="brand">Tablers Beer Golf Society</span>
+						<img src={card.logoUrl ?? logo} alt={card.clubName} />
+						<span class="brand">{card.clubName}</span>
 					</div>
 					<div class="accent"></div>
 					<div class="label">DIN INVALSKOD</div>
@@ -65,7 +68,7 @@
 							<div class="rule"></div>
 							<div class="alt">eller gå till<br />{joinUrl}<br />och ange koden</div>
 							<div class="backcode">{card.code}</div>
-							<div class="society">Tablers Beer Golf Society</div>
+							<div class="society">{card.clubName}</div>
 						</div>
 						<span class="mark tl"></span><span class="mark tr"></span>
 						<span class="mark bl"></span><span class="mark br"></span>
@@ -153,6 +156,13 @@
 		font-size: 11pt;
 		font-weight: 600;
 		letter-spacing: 0.02em;
+		line-height: 1.15;
+		/* Klubbnamn upp till 60 tecken — max två rader i bandet */
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
 	}
 	.accent {
 		width: calc(100% - 16mm);

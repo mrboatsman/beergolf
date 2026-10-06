@@ -116,8 +116,14 @@
 		<form method="POST" action="?/createInvite" use:enhance class="mt-3 space-y-3">
 			<label class="block text-sm">
 				<span class="text-club-900/70">Klubb</span>
-				<select name="clubId" class="mt-1 w-full rounded-lg border-cream-300 bg-white">
-					{#each data.clubs as c (c.id)}<option value={c.id}>{c.name}</option>{/each}
+				<select
+					name="clubId"
+					value={data.homeClubId}
+					class="mt-1 w-full rounded-lg border-cream-300 bg-white"
+				>
+					{#each data.clubs as c (c.id)}<option value={c.id}
+							>{c.name}{c.id === data.homeClubId ? ' (din hemmaklubb)' : ''}</option
+						>{/each}
 				</select>
 			</label>
 			<label class="block text-sm">
@@ -138,8 +144,14 @@
 		<form method="POST" action="?/createMember" use:enhance class="mt-3 space-y-3">
 			<label class="block text-sm">
 				<span class="text-club-900/70">Klubb</span>
-				<select name="clubId" class="mt-1 w-full rounded-lg border-cream-300 bg-white">
-					{#each data.clubs as c (c.id)}<option value={c.id}>{c.name}</option>{/each}
+				<select
+					name="clubId"
+					value={data.homeClubId}
+					class="mt-1 w-full rounded-lg border-cream-300 bg-white"
+				>
+					{#each data.clubs as c (c.id)}<option value={c.id}
+							>{c.name}{c.id === data.homeClubId ? ' (din hemmaklubb)' : ''}</option
+						>{/each}
 				</select>
 			</label>
 			<label class="block text-sm">

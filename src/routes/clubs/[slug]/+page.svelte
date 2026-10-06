@@ -32,7 +32,8 @@
 		['/coasters', 'Coasters'],
 		['/gallery', 'Galleri'],
 		['/tournaments', 'Turneringar'],
-		['/history', 'Historik']
+		['/history', 'Historik'],
+		['/invite', 'Bjud in']
 	] as const;
 
 	// Guldkantad knapp på mörk botten

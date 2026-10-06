@@ -19,6 +19,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		.select({
 			id: invites.id,
 			code: invites.code,
+			clubId: invites.clubId,
 			clubName: sql<string | null>`(select c.name from clubs c where c.id = invites.club_id)`,
 			createdAt: invites.createdAt,
 			expiresAt: invites.expiresAt,
@@ -32,12 +33,18 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		.where(eq(invites.createdBy, me.id))
 		.orderBy(desc(invites.createdAt))
 		.all();
+	const clubs = myClubs(me).filter((c) => c.status === 'active' && c.clubStatus === 'active');
+	// Förval: hemmaklubben, eller ?club=<slug> (t.ex. från klubbsidan) om jag är med där
+	const wanted = url.searchParams.get('club');
+	const home = clubs.find((c) => c.isHome) ?? clubs[0];
+	const preselected = (wanted && clubs.find((c) => c.slug === wanted)) || home;
 	return {
 		invites: mine,
 		origin: url.origin,
 		inviteDays: INVITE_DAYS,
-		clubs: myClubs(me).filter((c) => c.status === 'active' && c.clubStatus === 'active'),
-		homeClubId: me.homeClubId
+		clubs,
+		homeClubId: me.homeClubId,
+		selectedClubId: preselected?.id ?? me.homeClubId
 	};
 };
 
@@ -71,7 +78,7 @@ export const actions: Actions = {
 			createdBy: me.id,
 			expiresAt: new Date(now + INVITE_DAYS * 24 * 60 * 60 * 1000)
 		});
-		return { created: code };
+		return { created: code, createdClubName: picked.club.name, createdClubId: picked.club.id };
 	},
 
 	// Ta bort en egen oanvänd kod

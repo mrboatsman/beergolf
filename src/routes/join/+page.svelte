@@ -5,6 +5,11 @@
 
 <div class="mx-auto max-w-sm">
 	<h1 class="font-display text-4xl font-semibold text-club-900">Lös in invalskod</h1>
+	{#if data.clubName}
+		<p class="mt-3 rounded-lg bg-club-100 px-3 py-2 text-sm text-club-800">
+			Du är inbjuden till <strong>{data.clubName}</strong> — den blir din hemmaklubb.
+		</p>
+	{/if}
 	<p class="mt-2 text-sm text-club-900/60">
 		Skapa ditt aspirant-konto. Grönt kort utfärdas efter godkänt teori-, praktiskt- och etikettprov.
 	</p>

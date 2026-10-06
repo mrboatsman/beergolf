@@ -32,7 +32,7 @@ function paging(url: URL, key: string) {
 	return { q, page };
 }
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ url, locals }) => {
 	// Medlemslistan: filtrera på namn/e-post, paginerad (mq/mpage)
 	const m = paging(url, 'm');
 	const memberWhere = m.q
@@ -125,6 +125,7 @@ export const load: PageServerLoad = async ({ url }) => {
 
 	return {
 		clubs: listActiveClubs(),
+		homeClubId: locals.member?.homeClubId ?? PRIMARY_CLUB_ID,
 		members: memberList.map(({ passwordHash: _drop, ...mm }) => mm),
 		memberTotal,
 		memberPage,
